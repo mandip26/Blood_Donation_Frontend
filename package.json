@@ -7,7 +7,10 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "generate-icons": "node scripts/generate-icons.js",
+    "generate-shortcut-icons": "node scripts/generate-shortcut-icons.js",
+    "generate-all-icons": "npm run generate-icons && npm run generate-shortcut-icons"
   },
   "dependencies": {
     "@gsap/react": "^2.1.2",

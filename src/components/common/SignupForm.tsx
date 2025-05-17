@@ -113,25 +113,20 @@ export default function SignupForm({ userType, isLogin = false }: props) {
     "addharImage" | "organisationIdImage" | "hospitalIdImage"
   >("addharImage");
   const [nameBasedOnUser, setNameBasedOnUser] = useState<string>("name");
-  const [idBasedOnUser, setIdBasedOnUser] = useState<string>("addhar");
 
   useEffect(() => {
     if (userType === "user") {
       setIdName("addharImage");
       setNameBasedOnUser("Full Name");
-      setIdBasedOnUser("Aadhar Number");
     } else if (userType === "organization") {
       setIdName("organisationIdImage");
       setNameBasedOnUser("Organization Name");
-      setIdBasedOnUser("Organization ID");
     } else if (userType === "hospital") {
       setIdName("hospitalIdImage");
       setNameBasedOnUser("Hospital Name");
-      setIdBasedOnUser("Hospital ID");
     } else if (userType === "admin") {
       setIdName("addharImage");
       setNameBasedOnUser("Full Name");
-      setIdBasedOnUser("Aadhar Number");
     }
   }, [userType]);
 
@@ -146,7 +141,7 @@ export default function SignupForm({ userType, isLogin = false }: props) {
       .join(", ");
 
     return (
-      <div className="text-red-400 text-xs ml-2 mt-1 min-h-[20px]">{formattedErrors}</div>
+      <div className="text-red-400 text-xs ml-2 mt-1">{formattedErrors}</div>
     );
   };
 
@@ -360,7 +355,7 @@ export default function SignupForm({ userType, isLogin = false }: props) {
   });
 
   return (
-    <div className="my-4 w-full">
+    <div className="my-4 min-w-2xl w-fit">
       <Toaster position="top-center" />
       <form
         onSubmit={(e) => {
@@ -368,7 +363,7 @@ export default function SignupForm({ userType, isLogin = false }: props) {
           e.stopPropagation();
           void form.handleSubmit();
         }}
-        className="space-y-2 w-full"
+        className="space-y-10"
       >
         {apiError && (
           <div
@@ -384,26 +379,25 @@ export default function SignupForm({ userType, isLogin = false }: props) {
             <form.Field
               name="name"
               children={(field) => {
-                return (                    <div className="flex flex-col gap-y-2">
-                      {/* <label className="text-white text-sm font-light ml-2">
-                        {nameBasedOnUser}
-                      </label> */}
-                      <Input
-                        type="text"
-                        placeholder={nameBasedOnUser}
-                        name={field.name}
-                        value={field.state.value}
-                        onBlur={field.handleBlur}
-                        onChange={(e) => field.handleChange(e.target.value)}
-                        className="bg-white h-10 shadow-even-xl border-0 outline-none focus:outline-none focus:border-0 focus:ring-0 focus-visible:ring-0 focus-visible:ring-transparent focus-visible:border-0 focus-visible:outline-none ring-0 mx-0"
-                      />
-                      <div className="min-h-[20px]">
-                        {field.state.meta.errors &&
-                          field.state.meta.errors.length > 0 && (
-                            <ErrorMessage errors={field.state.meta.errors} />
-                          )}
-                      </div>
-                    </div>
+                return (
+                  <div className="flex flex-col gap-y-2">
+                    {/* <label className="text-white text-sm font-light ml-2">
+                      {nameBasedOnUser}
+                    </label> */}
+                    <Input
+                      type="text"
+                      placeholder={nameBasedOnUser}
+                      name={field.name}
+                      value={field.state.value}
+                      onBlur={field.handleBlur}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      className="bg-white h-10 shadow-even-xl border-0 outline-none focus:outline-none focus:border-0 focus:ring-0 focus-visible:ring-0 focus-visible:ring-transparent focus-visible:border-0 focus-visible:outline-none ring-0 mx-0"
+                    />
+                    {field.state.meta.errors &&
+                      field.state.meta.errors.length > 0 && (
+                        <ErrorMessage errors={field.state.meta.errors} />
+                      )}
+                  </div>
                 );
               }}
             />
@@ -426,12 +420,10 @@ export default function SignupForm({ userType, isLogin = false }: props) {
                         onChange={(e) => field.handleChange(e.target.value)}
                         className="bg-white h-10 shadow-even-xl border-0 outline-none focus:outline-none focus:border-0 focus:ring-0 focus-visible:ring-0 focus-visible:ring-transparent focus-visible:border-0 focus-visible:outline-none ring-0 mx-0"
                       />
-                      <div className="min-h-[20px]">
-                        {field.state.meta.errors &&
-                          field.state.meta.errors.length > 0 && (
-                            <ErrorMessage errors={field.state.meta.errors} />
-                          )}
-                      </div>
+                      {field.state.meta.errors &&
+                        field.state.meta.errors.length > 0 && (
+                          <ErrorMessage errors={field.state.meta.errors} />
+                        )}
                     </div>
                   );
                 }}
@@ -456,12 +448,10 @@ export default function SignupForm({ userType, isLogin = false }: props) {
                         pattern="[0-9]*"
                         inputMode="numeric"
                       />
-                      <div className="min-h-[20px]">
-                        {field.state.meta.errors &&
-                          field.state.meta.errors.length > 0 && (
-                            <ErrorMessage errors={field.state.meta.errors} />
-                          )}
-                      </div>
+                      {field.state.meta.errors &&
+                        field.state.meta.errors.length > 0 && (
+                          <ErrorMessage errors={field.state.meta.errors} />
+                        )}
                     </div>
                   );
                 }}
@@ -488,12 +478,10 @@ export default function SignupForm({ userType, isLogin = false }: props) {
                         onBlur={field.handleBlur}
                         className="bg-white h-10 shadow-even-xl border-0 outline-none focus:outline-none focus:border-0 focus:ring-0 focus-visible:ring-0 focus-visible:ring-transparent focus-visible:border-0 focus-visible:outline-none ring-0 mx-0"
                       />
-                      <div className="min-h-[20px]">
-                        {field.state.meta.errors &&
-                          field.state.meta.errors.length > 0 && (
-                            <ErrorMessage errors={field.state.meta.errors} />
-                          )}
-                      </div>
+                      {field.state.meta.errors &&
+                        field.state.meta.errors.length > 0 && (
+                          <ErrorMessage errors={field.state.meta.errors} />
+                        )}
                       <p className="text-xs text-white/60 ml-2">
                         Upload organisation ID image (JPG, PNG or WEBP, max 5MB)
                       </p>
@@ -556,14 +544,12 @@ export default function SignupForm({ userType, isLogin = false }: props) {
                         onBlur={field.handleBlur}
                         className="bg-white h-10 shadow-even-xl border-0 outline-none focus:outline-none focus:border-0 focus:ring-0 focus-visible:ring-0 focus-visible:ring-transparent focus-visible:border-0 focus-visible:outline-none ring-0 mx-0"
                       />
-                      <div className="min-h-[20px]">
-                        {field.state.meta.errors &&
-                          field.state.meta.errors.length > 0 && (
-                            <ErrorMessage errors={field.state.meta.errors} />
-                          )}
-                      </div>
+                      {field.state.meta.errors &&
+                        field.state.meta.errors.length > 0 && (
+                          <ErrorMessage errors={field.state.meta.errors} />
+                        )}
                       <p className="text-xs text-white/60 ml-2">
-                        Upload {idBasedOnUser ?? "Aadhar"} card image (JPG, PNG or WEBP, max 5MB)
+                        Upload Aadhar card image (JPG, PNG or WEBP, max 5MB)
                       </p>
                     </div>
                   );
@@ -581,7 +567,7 @@ export default function SignupForm({ userType, isLogin = false }: props) {
                       </label> */}
                       <Input
                         type="text"
-                        placeholder={idBasedOnUser ?? "12-digit Aadhar Number"}
+                        placeholder="12-digit Aadhar Number"
                         name={field.name}
                         value={field.state.value || ""}
                         onBlur={field.handleBlur}
@@ -591,14 +577,12 @@ export default function SignupForm({ userType, isLogin = false }: props) {
                         pattern="[0-9]*"
                         inputMode="numeric"
                       />
-                      <div className="min-h-[20px]">
-                        {field.state.meta.errors &&
-                          field.state.meta.errors.length > 0 && (
-                            <ErrorMessage errors={field.state.meta.errors} />
-                          )}
-                      </div>
+                      {field.state.meta.errors &&
+                        field.state.meta.errors.length > 0 && (
+                          <ErrorMessage errors={field.state.meta.errors} />
+                        )}
                       <p className="text-xs text-white/60 ml-2">
-                        Enter your {idBasedOnUser ?? "12-digit Aadhar number"}
+                        Enter your 12-digit Aadhar number
                       </p>
                     </div>
                   );
@@ -623,12 +607,10 @@ export default function SignupForm({ userType, isLogin = false }: props) {
                       onChange={(e) => field.handleChange(e.target.value)}
                       className="bg-white h-10 shadow-even-xl border-0 outline-none focus:outline-none focus:border-0 focus:ring-0 focus-visible:ring-0 focus-visible:ring-transparent focus-visible:border-0 focus-visible:outline-none ring-0 mx-0"
                     />
-                    <div className="min-h-[20px]">
-                      {field.state.meta.errors &&
-                        field.state.meta.errors.length > 0 && (
-                          <ErrorMessage errors={field.state.meta.errors} />
-                        )}
-                    </div>
+                    {field.state.meta.errors &&
+                      field.state.meta.errors.length > 0 && (
+                        <ErrorMessage errors={field.state.meta.errors} />
+                      )}
                   </div>
                 )}
               />
@@ -648,12 +630,10 @@ export default function SignupForm({ userType, isLogin = false }: props) {
                       onChange={(e) => field.handleChange(e.target.value)}
                       className="bg-white h-10 shadow-even-xl border-0 outline-none focus:outline-none focus:border-0 focus:ring-0 focus-visible:ring-0 focus-visible:ring-transparent focus-visible:border-0 focus-visible:outline-none ring-0 mx-0"
                     />
-                    <div className="min-h-[20px]">
-                      {field.state.meta.errors &&
-                        field.state.meta.errors.length > 0 && (
-                          <ErrorMessage errors={field.state.meta.errors} />
-                        )}
-                    </div>
+                    {field.state.meta.errors &&
+                      field.state.meta.errors.length > 0 && (
+                        <ErrorMessage errors={field.state.meta.errors} />
+                      )}
                   </div>
                 )}
               />
@@ -680,12 +660,10 @@ export default function SignupForm({ userType, isLogin = false }: props) {
                       onChange={(e) => field.handleChange(e.target.value)}
                       className="bg-white h-10 shadow-even-xl border-0 outline-none focus:outline-none focus:border-0 focus:ring-0 focus-visible:ring-0 focus-visible:ring-transparent focus-visible:border-0 focus-visible:outline-none ring-0 mx-0"
                     />
-                    <div className="min-h-[20px]">
-                      {field.state.meta.errors &&
-                        field.state.meta.errors.length > 0 && (
-                          <ErrorMessage errors={field.state.meta.errors} />
-                        )}
-                    </div>
+                    {field.state.meta.errors &&
+                      field.state.meta.errors.length > 0 && (
+                        <ErrorMessage errors={field.state.meta.errors} />
+                      )}
                   </div>
                 );
               }}
@@ -706,12 +684,10 @@ export default function SignupForm({ userType, isLogin = false }: props) {
                     onChange={(e) => field.handleChange(e.target.value)}
                     className="bg-white h-10 shadow-even-xl border-0 outline-none focus:outline-none focus:border-0 focus:ring-0 focus-visible:ring-0 focus-visible:ring-transparent focus-visible:border-0 focus-visible:outline-none ring-0 mx-0"
                   />
-                  <div className="min-h-[20px]">
-                    {field.state.meta.errors &&
-                      field.state.meta.errors.length > 0 && (
-                        <ErrorMessage errors={field.state.meta.errors} />
-                      )}
-                  </div>
+                  {field.state.meta.errors &&
+                    field.state.meta.errors.length > 0 && (
+                      <ErrorMessage errors={field.state.meta.errors} />
+                    )}
                 </div>
               )}
             />
@@ -724,7 +700,7 @@ export default function SignupForm({ userType, isLogin = false }: props) {
             <button
               type="submit"
               disabled={!canSubmit || isSubmitting || formSubmitting}
-              className="w-full bg-primary-magenta hover:bg-primary-magenta/80 text-white font-medium py-2 px-4 rounded-md transition duration-150 ease-in-out disabled:opacity-70 disabled:cursor-not-allowed"
+              className="w-full mt-6 bg-primary-magenta hover:bg-primary-magenta/80 text-white font-medium py-2 px-4 rounded-md transition duration-150 ease-in-out disabled:opacity-70 disabled:cursor-not-allowed"
             >
               {isSubmitting || formSubmitting ? (
                 <span className="flex items-center justify-center">

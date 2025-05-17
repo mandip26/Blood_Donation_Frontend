@@ -1,8 +1,8 @@
 import { createLazyFileRoute } from '@tanstack/react-router'
-import { Bell, Search } from 'lucide-react'
+import { Bell, Search, MapPin, Calendar, Phone, Mail, CheckCircle, Edit3, Camera, User } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Separator } from '@/components/ui/separator'
 import { useState } from 'react'
+import { Link } from '@tanstack/react-router'
 
 export const Route = createLazyFileRoute(
   '/dashboard/_dashboardLayout/edit-profile',
@@ -10,111 +10,446 @@ export const Route = createLazyFileRoute(
   component: EditProfileComponent,
 })
 
+interface DonationHistory {
+  id: string;
+  date: string;
+  hospital: string;
+  units: number;
+}
+
+interface MedicalDetail {
+  key: string;
+  value: string;
+  lastUpdated: string;
+}
+
 function EditProfileComponent() {
-  const [searchQuery, setSearchQuery] = useState('')
+  const [editingPersonal, setEditingPersonal] = useState(false)
+  const [editingMedical, setEditingMedical] = useState(false)
+  const [personalInfo, setPersonalInfo] = useState({
+    name: 'Ramzey Nassar',
+    phone: '+91 98989 98989',
+    email: 'ramzeynassar@gmail.com',
+    bloodType: 'O+',
+    dob: '1990-04-15',
+    gender: 'Male',
+    address: '123 Main St, Delhi, India',
+    emergencyContact: '+91 87878 87878'
+  })
+  
+  const [medicalDetails, setMedicalDetails] = useState<MedicalDetail[]>([
+    { key: 'Weight', value: '75 kg', lastUpdated: '2025-04-01' },
+    { key: 'Height', value: '178 cm', lastUpdated: '2025-04-01' },
+    { key: 'Blood Pressure', value: '120/80 mmHg', lastUpdated: '2025-04-10' },
+    { key: 'Allergies', value: 'None', lastUpdated: '2025-04-01' },
+    { key: 'Chronic Conditions', value: 'None', lastUpdated: '2025-04-01' },
+    { key: 'Medications', value: 'None', lastUpdated: '2025-04-01' }
+  ])
+  
+  const donationHistory: DonationHistory[] = [
+    { id: '1', date: '2025-03-15', hospital: 'Apollo Hospital', units: 1 },
+    { id: '2', date: '2024-12-10', hospital: 'Fortis Hospital', units: 1 },
+    { id: '3', date: '2024-08-22', hospital: 'City Blood Bank', units: 1 },
+    { id: '4', date: '2024-04-05', hospital: 'University Medical Center', units: 1 },
+    { id: '5', date: '2023-11-18', hospital: 'Community Blood Drive', units: 1 }
+  ]
+  
+  // Format date function
+  const formatDate = (dateString: string) => {
+    const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric' }
+    return new Date(dateString).toLocaleDateString(undefined, options)
+  }
+  
+  const handlePersonalFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    setEditingPersonal(false)
+    // Here you would normally save the data to a server
+  }
+  
+  const handleMedicalFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    setEditingMedical(false)
+    // Here you would normally save the data to a server
+  }
 
   return (
     <div className="container mx-auto py-6 px-4">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Edit Profile</h1>
-        <Button variant="ghost" size="icon" className="relative">
-          <Bell className="h-5 w-5" />
-          <span className="absolute top-0 right-0 h-2 w-2 bg-red-500 rounded-full"></span>
-        </Button>
-      </div>
-
-      {/* Profile Photo Section */}
-      <div className="flex flex-col items-center mb-8">
-        <div className="relative mb-4">
-          <div className="w-32 h-32 rounded-full bg-blue-100 overflow-hidden border-4 border-white shadow-md">
-            <img 
-              src="/placeholder-avatar.svg" 
-              alt="Profile" 
-              className="w-full h-full object-cover"
-              onError={(e) => {
-                e.currentTarget.src = 'https://placehold.co/200x200?text=Avatar'
-              }}
-            />
-          </div>
-        </div>
-        <Button className="bg-primary-magenta text-white hover:bg-primary-magenta/90 mb-2 rounded-md px-6">
-          Upload new photo
-        </Button>
-        <p className="text-sm text-gray-500 text-center">At least 800x800px recommended<br />JPG or PNG is allowed</p>
-      </div>
-
-      <Separator className="my-6" />
-
-      {/* Personal Info Section */}
-      <div className="mb-8 bg-white rounded-lg p-6 shadow-sm">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold">Personal Info</h2>
-          <Button variant="outline" size="sm" className="bg-primary-magenta/10 text-primary-magenta border-primary-magenta/20 hover:bg-primary-magenta/20 rounded-md">
-            Edit
-          </Button>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <h3 className="text-sm text-gray-500 mb-1">Full Name</h3>
-            <p className="font-medium">Ramzey Nassar</p>
-          </div>
-          <div className="text-right md:flex md:justify-end md:items-center">
-            <div>
-              <h3 className="text-sm text-gray-500 mb-1">Phone</h3>
-              <p className="font-medium">+91 98989 98989</p>
-            </div>
-          </div>
-          <div>
-            <h3 className="text-sm text-gray-500 mb-1">Email</h3>
-            <p className="font-medium">ramzeynassar@gmail.com</p>
-          </div>
-          <div className="text-right md:flex md:justify-end md:items-center">
-            <div>
-              <h3 className="text-sm text-gray-500 mb-1">Blood Type</h3>
-              <p className="font-medium">O Positive</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Location Section */}
-      <div className="mb-8 bg-white rounded-lg p-6 shadow-sm">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold">Location</h2>
-          <Button variant="ghost" size="sm" className="text-gray-500 hover:text-gray-700">
-            Cancel
-          </Button>
-        </div>
-
-        <div className="relative mb-4">
-          <div className="flex">
-            <div className="relative flex-1">
-              <input
-                type="text"
-                placeholder="Search"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full py-2 px-4 border rounded-l-md focus:outline-none focus:ring-1 focus:ring-primary-magenta"
-              />
-            </div>
-            <Button className="bg-primary-magenta text-white hover:bg-primary-magenta/90 rounded-l-none">
-              Search
+        <h1 className="text-2xl font-bold">My Profile</h1>
+        <div className="flex gap-2">
+          <Link to="/dashboard/edit-password">
+            <Button variant="outline" className="border-primary-magenta text-primary-magenta hover:bg-primary-magenta/10">
+              Change Password
             </Button>
+          </Link>
+          <Button variant="ghost" size="icon" className="relative">
+            <Bell className="h-5 w-5" />
+            <span className="absolute top-0 right-0 h-2 w-2 bg-red-500 rounded-full"></span>
+          </Button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-1">
+          {/* Profile Photo Section */}
+          <div className="bg-white rounded-xl shadow-sm p-6 flex flex-col items-center">
+            <div className="relative mb-4 group">
+              <div className="w-32 h-32 rounded-full bg-blue-100 overflow-hidden border-4 border-white shadow-md">
+                <img 
+                  src="/placeholder-avatar.svg" 
+                  alt="Profile" 
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    e.currentTarget.src = 'https://placehold.co/200x200?text=Avatar'
+                  }}
+                />
+              </div>
+              <div className="absolute inset-0 bg-black/30 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                <Camera className="text-white" size={24} />
+              </div>
+            </div>
+            <h2 className="text-xl font-semibold mb-1">{personalInfo.name}</h2>
+            <p className="text-gray-500 text-sm mb-4">Donor ID: DON-9876543</p>
+            
+            <div className="w-full">
+              <div className="flex items-center gap-2 text-gray-600 mb-2">
+                <MapPin size={16} />
+                <span className="text-sm">{personalInfo.address}</span>
+              </div>
+              <div className="flex items-center gap-2 text-gray-600 mb-2">
+                <Mail size={16} />
+                <span className="text-sm">{personalInfo.email}</span>
+              </div>
+              <div className="flex items-center gap-2 text-gray-600">
+                <Phone size={16} />
+                <span className="text-sm">{personalInfo.phone}</span>
+              </div>
+            </div>
+            
+            <div className="mt-6 w-full pt-6 border-t border-gray-100">
+              <h3 className="font-medium mb-2">Badge Status</h3>
+              <div className="flex flex-wrap gap-2">
+                <span className="inline-flex items-center px-3 py-1 rounded-full bg-green-100 text-green-800 text-xs font-medium">
+                  <CheckCircle size={12} className="mr-1" /> Regular Donor
+                </span>
+                <span className="inline-flex items-center px-3 py-1 rounded-full bg-blue-100 text-blue-800 text-xs font-medium">
+                  3+ Donations
+                </span>
+                <span className="inline-flex items-center px-3 py-1 rounded-full bg-primary-magenta/10 text-primary-magenta text-xs font-medium">
+                  {personalInfo.bloodType}
+                </span>
+              </div>
+            </div>
+          </div>
+          
+          {/* Next Eligible Donation */}
+          <div className="bg-white rounded-xl shadow-sm p-6 mt-6">
+            <h3 className="font-medium mb-4">Next Eligible Donation</h3>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="bg-primary-magenta/10 p-3 rounded-lg">
+                  <Calendar className="h-6 w-6 text-primary-magenta" />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">You can donate again on</p>
+                  <p className="font-medium">July 15, 2025</p>
+                </div>
+              </div>
+              <span className="px-3 py-1 rounded-full bg-gray-100 text-gray-700 text-xs">
+                In 60 days
+              </span>
+            </div>
+          </div>
+        </div>
+        
+        <div className="lg:col-span-2">
+          {/* Personal Info Section */}
+          <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-semibold">Personal Information</h2>
+              {!editingPersonal ? (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="border-primary-magenta text-primary-magenta hover:bg-primary-magenta/10"
+                  onClick={() => setEditingPersonal(true)}
+                >
+                  <Edit3 size={16} className="mr-1" /> Edit
+                </Button>
+              ) : (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="text-gray-500"
+                  onClick={() => setEditingPersonal(false)}
+                >
+                  Cancel
+                </Button>
+              )}
+            </div>
+            
+            {!editingPersonal ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-10">
+                <div>
+                  <h3 className="text-sm text-gray-500 mb-1">Full Name</h3>
+                  <p className="font-medium">{personalInfo.name}</p>
+                </div>
+                <div>
+                  <h3 className="text-sm text-gray-500 mb-1">Blood Type</h3>
+                  <p className="font-medium">{personalInfo.bloodType}</p>
+                </div>
+                <div>
+                  <h3 className="text-sm text-gray-500 mb-1">Date of Birth</h3>
+                  <p className="font-medium">{formatDate(personalInfo.dob)}</p>
+                </div>
+                <div>
+                  <h3 className="text-sm text-gray-500 mb-1">Gender</h3>
+                  <p className="font-medium">{personalInfo.gender}</p>
+                </div>
+                <div>
+                  <h3 className="text-sm text-gray-500 mb-1">Email</h3>
+                  <p className="font-medium">{personalInfo.email}</p>
+                </div>
+                <div>
+                  <h3 className="text-sm text-gray-500 mb-1">Phone</h3>
+                  <p className="font-medium">{personalInfo.phone}</p>
+                </div>
+                <div className="md:col-span-2">
+                  <h3 className="text-sm text-gray-500 mb-1">Address</h3>
+                  <p className="font-medium">{personalInfo.address}</p>
+                </div>
+                <div className="md:col-span-2">
+                  <h3 className="text-sm text-gray-500 mb-1">Emergency Contact</h3>
+                  <p className="font-medium">{personalInfo.emergencyContact}</p>
+                </div>
+              </div>
+            ) : (
+              <form onSubmit={handlePersonalFormSubmit}>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                  <div>
+                    <label className="block text-sm text-gray-700 mb-1">Full Name</label>
+                    <input
+                      type="text"
+                      value={personalInfo.name}
+                      onChange={(e) => setPersonalInfo({...personalInfo, name: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-magenta focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-700 mb-1">Blood Type</label>
+                    <select
+                      value={personalInfo.bloodType}
+                      onChange={(e) => setPersonalInfo({...personalInfo, bloodType: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-magenta focus:border-transparent"
+                    >
+                      <option value="A+">A+</option>
+                      <option value="A-">A-</option>
+                      <option value="B+">B+</option>
+                      <option value="B-">B-</option>
+                      <option value="AB+">AB+</option>
+                      <option value="AB-">AB-</option>
+                      <option value="O+">O+</option>
+                      <option value="O-">O-</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-700 mb-1">Date of Birth</label>
+                    <input
+                      type="date"
+                      value={personalInfo.dob}
+                      onChange={(e) => setPersonalInfo({...personalInfo, dob: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-magenta focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-700 mb-1">Gender</label>
+                    <select
+                      value={personalInfo.gender}
+                      onChange={(e) => setPersonalInfo({...personalInfo, gender: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-magenta focus:border-transparent"
+                    >
+                      <option value="Male">Male</option>
+                      <option value="Female">Female</option>
+                      <option value="Other">Other</option>
+                      <option value="Prefer not to say">Prefer not to say</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-700 mb-1">Email</label>
+                    <input
+                      type="email"
+                      value={personalInfo.email}
+                      onChange={(e) => setPersonalInfo({...personalInfo, email: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-magenta focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-700 mb-1">Phone</label>
+                    <input
+                      type="tel"
+                      value={personalInfo.phone}
+                      onChange={(e) => setPersonalInfo({...personalInfo, phone: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-magenta focus:border-transparent"
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-sm text-gray-700 mb-1">Address</label>
+                    <input
+                      type="text"
+                      value={personalInfo.address}
+                      onChange={(e) => setPersonalInfo({...personalInfo, address: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-magenta focus:border-transparent"
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-sm text-gray-700 mb-1">Emergency Contact</label>
+                    <input
+                      type="tel"
+                      value={personalInfo.emergencyContact}
+                      onChange={(e) => setPersonalInfo({...personalInfo, emergencyContact: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-magenta focus:border-transparent"
+                    />
+                  </div>
+                </div>
+                <div className="flex justify-end">
+                  <Button 
+                    type="submit"
+                    className="bg-primary-magenta text-white hover:bg-primary-magenta/90"
+                  >
+                    Save Changes
+                  </Button>
+                </div>
+              </form>
+            )}
+          </div>
+          
+          {/* Medical Details Section */}
+          <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-semibold">Medical Details</h2>
+              {!editingMedical ? (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="border-primary-magenta text-primary-magenta hover:bg-primary-magenta/10"
+                  onClick={() => setEditingMedical(true)}
+                >
+                  <Edit3 size={16} className="mr-1" /> Edit
+                </Button>
+              ) : (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="text-gray-500"
+                  onClick={() => setEditingMedical(false)}
+                >
+                  Cancel
+                </Button>
+              )}
+            </div>
+            
+            {!editingMedical ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {medicalDetails.map((detail, index) => (
+                  <div key={index}>
+                    <h3 className="text-sm text-gray-500 mb-1">{detail.key}</h3>
+                    <p className="font-medium">{detail.value}</p>
+                    <p className="text-xs text-gray-400 mt-1">Updated: {formatDate(detail.lastUpdated)}</p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <form onSubmit={handleMedicalFormSubmit}>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                  {medicalDetails.map((detail, index) => (
+                    <div key={index}>
+                      <label className="block text-sm text-gray-700 mb-1">{detail.key}</label>
+                      <input
+                        type="text"
+                        value={detail.value}
+                        onChange={(e) => {
+                          const updatedDetails = [...medicalDetails];
+                          updatedDetails[index].value = e.target.value;
+                          updatedDetails[index].lastUpdated = new Date().toISOString().split('T')[0];
+                          setMedicalDetails(updatedDetails);
+                        }}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-magenta focus:border-transparent"
+                      />
+                    </div>
+                  ))}
+                </div>
+                <div className="flex justify-end">
+                  <Button 
+                    type="submit"
+                    className="bg-primary-magenta text-white hover:bg-primary-magenta/90"
+                  >
+                    Save Changes
+                  </Button>
+                </div>
+              </form>
+            )}
+          </div>
+          
+          {/* Donation History Section */}
+          <div className="bg-white rounded-xl shadow-sm p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-semibold">Donation History</h2>
+              <Link to="/dashboard/hospital-history">
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  className="text-primary-magenta hover:text-primary-magenta/80"
+                >
+                  View All
+                </Button>
+              </Link>
+            </div>
+            
+            <div className="space-y-4">
+              {donationHistory.slice(0, 3).map((donation) => (
+                <div key={donation.id} className="flex items-center justify-between py-3 border-b border-gray-100 last:border-0">
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 bg-primary-magenta/10 rounded-full flex items-center justify-center">
+                      <User className="text-primary-magenta" size={20} />
+                    </div>
+                    <div>
+                      <p className="font-medium">{donation.hospital}</p>
+                      <p className="text-sm text-gray-500">{formatDate(donation.date)}</p>
+                    </div>
+                  </div>
+                  <div>
+                    <span className="px-3 py-1 rounded-full bg-green-100 text-green-800 text-xs font-medium">
+                      {donation.units} Unit
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+            
+            {donationHistory.length > 3 && (
+              <div className="mt-4 pt-4 text-center">
+                <Link to="/dashboard/hospital-history">
+                  <Button variant="outline" className="border-gray-200 text-gray-600 hover:bg-gray-50">
+                    See More History
+                  </Button>
+                </Link>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
-      {/* History Section */}
-      <div className="bg-white rounded-lg p-6 shadow-sm">
-        <h2 className="text-xl font-semibold mb-4">History</h2>
-        <div className="space-y-0">
-          <div className="py-3 border-b border-gray-100">
-            <p className="text-gray-800">Lorem ipsum dolor sit amet, consectetuer adipiscing elit.</p>
-          </div>
-          <div className="py-3">
-            <p className="text-gray-800">Lorem ipsum dolor sit amet, consectetuer adipiscing elit.</p>
-          </div>
+      {/* Location Map Section - Just a placeholder, would normally integrate with Google Maps */}
+      <div className="bg-white rounded-xl shadow-sm p-6 mt-6 relative overflow-hidden">
+        <div className="absolute top-4 right-4 z-10">
+          <Button variant="outline" className="bg-white shadow-sm border-gray-200">
+            <Search size={16} className="mr-2" /> Search Area
+          </Button>
+        </div>
+        
+        <div className="h-64 w-full bg-gray-200 flex items-center justify-center">
+          <MapPin size={24} className="text-primary-magenta" />
+          <p className="ml-2 text-gray-500">Map would be displayed here</p>
         </div>
       </div>
     </div>

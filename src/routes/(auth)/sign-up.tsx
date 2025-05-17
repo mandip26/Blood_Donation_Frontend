@@ -15,10 +15,8 @@ function RouteComponent() {
         className="h-screen w-full object-cover"
       />
       <div className="absolute mx-auto container max-w-7xl inset-0 size-full">
-        <div className="flex items-center size-full justify-center p-4 md:p-8">
-          <div className="w-full max-w-2xl">
-            <AuthLayout />
-          </div>
+        <div className="flex items-center size-full justify-center p-8">
+          <AuthLayout />
         </div>
       </div>
     </main>
