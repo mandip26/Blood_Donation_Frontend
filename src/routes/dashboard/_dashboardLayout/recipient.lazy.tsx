@@ -1,7 +1,7 @@
 import { createLazyFileRoute } from '@tanstack/react-router'
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { Search, Filter, MapPin, Clock, ChevronDown, X, ArrowUpDown, AlertCircle, Loader2, RefreshCw, Droplets } from 'lucide-react'
+import { Search, Filter, MapPin, Clock, ChevronDown, X, ArrowUpDown, AlertCircle, Loader2, RefreshCw, Droplets, Heart, Calendar, Phone, Hospital } from 'lucide-react'
 import { bloodRequestService } from '@/services/apiService'
 import { useAuth } from '@/hooks/useAuth'
 import { useResponsive } from '@/hooks/useResponsive'
@@ -407,41 +407,49 @@ function RecipientComponent() {
       reason: 'Emergency transplant surgery'
     }
   ]
-  
-  // Render loading state
+    // Render loading state
   if (isLoading) {
     return (
-      <div className="p-4 md:p-6">
+      <div className="p-4 md:p-6 bg-gray-50">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-xl md:text-2xl font-semibold">Blood Requests</h1>
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Blood Requests</h1>
+            <p className="text-gray-600 mt-1">Find and respond to blood donation requests in your area</p>
+          </div>
         </div>
-        <div className="flex justify-center items-center h-64">
+        <div className="flex justify-center items-center h-80">
           <div className="flex flex-col items-center">
-            <Loader2 className="h-12 w-12 animate-spin text-primary-magenta mb-4" />
-            <p className="text-gray-500">Loading blood requests...</p>
+            <div className="relative">
+              <div className="h-16 w-16 rounded-full bg-primary-magenta/10 absolute animate-ping"></div>
+              <Loader2 className="h-16 w-16 animate-spin text-primary-magenta relative" />
+            </div>
+            <p className="text-gray-600 mt-6 text-lg">Loading blood requests...</p>
           </div>
         </div>
       </div>
     )
   }
-  
-  // Render error state
+    // Render error state
   if (error && bloodRequests.length === 0) {
     return (
-      <div className="p-4 md:p-6">
+      <div className="p-4 md:p-6 bg-gray-50">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-xl md:text-2xl font-semibold">Blood Requests</h1>
-        </div>
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start">
-          <AlertCircle className="h-5 w-5 text-red-500 mr-3 mt-0.5" />
           <div>
-            <p className="text-red-800 font-medium">Error</p>
-            <p className="text-red-700">{error}</p>
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Blood Requests</h1>
+            <p className="text-gray-600 mt-1">Find and respond to blood donation requests in your area</p>
+          </div>
+        </div>
+        <div className="bg-red-50 border border-red-200 rounded-xl p-6 shadow-sm flex items-start max-w-2xl mx-auto">
+          <div className="h-10 w-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0 mr-4">
+            <AlertCircle className="h-5 w-5 text-red-600" />
+          </div>
+          <div>
+            <p className="text-red-800 font-medium text-lg mb-1">Error Loading Blood Requests</p>
+            <p className="text-red-700 mb-4">{error}</p>
             <Button 
               variant="outline" 
-              size="sm" 
               onClick={fetchBloodRequests} 
-              className="mt-2"
+              className="border-red-300 hover:bg-red-50 text-red-700 transition-all duration-200 shadow-sm"
             >
               <RefreshCw className="mr-2 h-4 w-4" />
               Try Again
@@ -454,10 +462,17 @@ function RecipientComponent() {
   
   // Main component render
   return (
-    <div className="p-4 md:p-6">
+    <div className="p-4 md:p-6 bg-gray-50">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-xl md:text-2xl font-semibold">Blood Requests</h1>
-        <Button onClick={() => setIsNewRequestModalOpen(true)} className="bg-primary-magenta hover:bg-primary-magenta/90">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Blood Requests</h1>
+          <p className="text-gray-600 mt-1">Find and respond to blood donation requests in your area</p>
+        </div>
+        <Button 
+          onClick={() => setIsNewRequestModalOpen(true)} 
+          className="bg-primary-magenta hover:bg-primary-magenta/90 shadow-md transition-all duration-200 flex items-center gap-2 px-5"
+        >
+          <Heart className="h-4 w-4" />
           Create Request
         </Button>
       </div>
@@ -465,39 +480,37 @@ function RecipientComponent() {
       {/* Search and filter bar */}
       <div className={`flex ${isMobile ? 'flex-col' : 'flex-row'} gap-4 mb-6`}>
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-          <input
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />          <input
             type="text"
-            className="w-full rounded-lg border border-gray-200 pl-10 py-2.5"
+            className="w-full rounded-lg border border-gray-200 pl-10 py-2.5 focus:ring-2 focus:ring-primary-magenta/30 focus:border-primary-magenta transition-all duration-200 shadow-sm"
             placeholder="Search by name, hospital, location..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
         
-        <div className="relative">
-          <Button
+        <div className="relative">          <Button
             variant="outline"
-            className="border border-gray-200 flex items-center"
+            className="border border-gray-200 flex items-center shadow-sm hover:bg-gray-50 transition-all duration-200"
             onClick={() => setIsFilterOpen(!isFilterOpen)}
           >
-            <Filter className="h-4 w-4 mr-2" />
+            <Filter className="h-4 w-4 mr-2 text-primary-magenta" />
             Filters
-            <ChevronDown className="h-4 w-4 ml-2" />
+            <ChevronDown className={`h-4 w-4 ml-2 transition-transform duration-200 ${isFilterOpen ? 'rotate-180' : ''}`} />
           </Button>
           
           {isFilterOpen && (
-            <div className="absolute right-0 top-full mt-2 bg-white rounded-lg shadow-lg p-4 border border-gray-100 z-10 w-72">
+            <div className="absolute right-0 top-full mt-2 bg-white rounded-lg shadow-lg p-4 border border-gray-100 z-10 w-72 animate-in fade-in slide-in-from-top-5 duration-200">
               <div className="flex justify-between items-center mb-4">
-                <span className="font-medium">Filters</span>
+                <span className="font-medium text-gray-800">Filters</span>
                 <button
                   onClick={() => {
                     setSelectedBloodType(null)
                     setSelectedUrgency(null)
                   }}
-                  className="text-xs text-primary-magenta hover:underline"
+                  className="text-xs text-primary-magenta hover:underline flex items-center"
                 >
-                  Clear all
+                  <X className="h-3 w-3 mr-1" /> Clear all
                 </button>
               </div>
               
@@ -542,16 +555,16 @@ function RecipientComponent() {
           )}
         </div>
       </div>
-      
-      {/* Active filters */}
+        {/* Active filters */}
       {(selectedBloodType || selectedUrgency) && (
-        <div className="flex flex-wrap gap-2 mb-4">
+        <div className="flex flex-wrap gap-2 mb-5">
           {selectedBloodType && (
-            <div className="bg-gray-100 rounded-full py-1 px-3 text-sm flex items-center">
+            <div className="bg-primary-magenta/10 border border-primary-magenta/20 rounded-full py-1.5 px-3.5 text-sm flex items-center shadow-sm animate-in fade-in slide-in-from-left-5 duration-300">
+              <Droplets className="h-3.5 w-3.5 text-primary-magenta mr-1.5" />
               Blood: {selectedBloodType}
               <button 
                 onClick={() => setSelectedBloodType(null)}
-                className="ml-1.5 text-gray-500 hover:text-gray-700"
+                className="ml-2 text-gray-500 hover:text-gray-700 hover:bg-primary-magenta/10 rounded-full p-0.5 transition-colors duration-200"
               >
                 <X className="h-3.5 w-3.5" />
               </button>
@@ -559,11 +572,12 @@ function RecipientComponent() {
           )}
           
           {selectedUrgency && (
-            <div className="bg-gray-100 rounded-full py-1 px-3 text-sm flex items-center">
+            <div className="bg-primary-magenta/10 border border-primary-magenta/20 rounded-full py-1.5 px-3.5 text-sm flex items-center shadow-sm animate-in fade-in slide-in-from-left-5 duration-300">
+              <AlertCircle className="h-3.5 w-3.5 text-primary-magenta mr-1.5" />
               Urgency: {selectedUrgency}
               <button 
                 onClick={() => setSelectedUrgency(null)}
-                className="ml-1.5 text-gray-500 hover:text-gray-700"
+                className="ml-2 text-gray-500 hover:text-gray-700 hover:bg-primary-magenta/10 rounded-full p-0.5 transition-colors duration-200"
               >
                 <X className="h-3.5 w-3.5" />
               </button>
@@ -571,21 +585,23 @@ function RecipientComponent() {
           )}
         </div>
       )}
-      
-      {/* Blood requests list */}
+        {/* Blood requests list */}
       {sortedRequests.length > 0 ? (
         <div className="space-y-4">
           {/* Table header - only on non-mobile */}
           {!isMobile && (
-            <div className="grid grid-cols-7 py-2 px-4 bg-gray-50 rounded-lg text-sm font-medium">
+            <div className="grid grid-cols-7 py-3 px-5 bg-gray-50 rounded-lg text-sm font-medium border border-gray-100">
               <div className="col-span-1">
                 <button
                   onClick={() => handleSort('bloodType')}
-                  className="flex items-center hover:text-primary-magenta"
+                  className="flex items-center hover:text-primary-magenta transition-colors duration-200"
                 >
-                  Blood Type
+                  <div className="flex items-center gap-1.5">
+                    <Droplets className="h-3.5 w-3.5 text-primary-magenta" />
+                    Blood Type
+                  </div>
                   {sorting.key === 'bloodType' && (
-                    <ArrowUpDown className="ml-1 h-3.5 w-3.5" />
+                    <ArrowUpDown className="ml-1.5 h-3.5 w-3.5" />
                   )}
                 </button>
               </div>
@@ -628,15 +644,14 @@ function RecipientComponent() {
           
           {/* Request cards */}
           {sortedRequests.map(request => (
-            <div key={request.id} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-              {/* Card for mobile */}
+            <div key={request.id} className="bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md hover:border-gray-200 transition-all duration-300 overflow-hidden">              {/* Card for mobile */}
               {isMobile ? (
-                <div className="p-4">
-                  <div className="flex items-center mb-3">
-                    <div className={`h-10 w-10 rounded-full flex items-center justify-center text-white font-medium
-                      ${request.bloodType.includes('A') ? 'bg-green-500' : 
-                        request.bloodType.includes('B') ? 'bg-blue-500' : 
-                        request.bloodType.includes('O') ? 'bg-red-500' : 'bg-purple-500'}`}>
+                <div className="p-5">
+                  <div className="flex items-center mb-4">
+                    <div className={`h-12 w-12 rounded-full flex items-center justify-center text-white font-medium shadow-md
+                      ${request.bloodType.includes('A') ? 'bg-gradient-to-br from-green-400 to-green-600' : 
+                        request.bloodType.includes('B') ? 'bg-gradient-to-br from-blue-400 to-blue-600' : 
+                        request.bloodType.includes('O') ? 'bg-gradient-to-br from-red-400 to-red-600' : 'bg-gradient-to-br from-purple-400 to-purple-600'}`}>
                       {request.bloodType}
                     </div>
                     <div className="ml-3">
@@ -664,32 +679,31 @@ function RecipientComponent() {
                       <span className="text-gray-500">{request.postedTime}</span>
                     </div>
                   </div>
-                  
-                  <div className="flex justify-between">
+                      <div className="flex justify-between gap-3 mt-2">
                     <Button 
                       variant="outline" 
                       size="sm" 
                       onClick={() => setSelectedRequest(request)}
+                      className="flex-1 border-gray-200 hover:bg-gray-50 transition-colors duration-200"
                     >
                       View Details
                     </Button>
                     <Button
                       size="sm"
-                      className="bg-primary-magenta hover:bg-primary-magenta/90"
+                      className="flex-1 bg-primary-magenta hover:bg-primary-magenta/90 shadow-sm transition-all duration-200"
                       onClick={() => handleRespondToRequest(request.id)}
                     >
                       Respond
                     </Button>
                   </div>
                 </div>
-              ) : (
-                /* Card for desktop/tablet */
-                <div className="grid grid-cols-7 items-center py-3 px-4">
+              ) : (              /* Card for desktop/tablet */
+                <div className="grid grid-cols-7 items-center py-4 px-5">
                   <div className="col-span-1">
-                    <div className={`h-10 w-10 rounded-full flex items-center justify-center text-white font-medium
-                      ${request.bloodType.includes('A') ? 'bg-green-500' : 
-                        request.bloodType.includes('B') ? 'bg-blue-500' : 
-                        request.bloodType.includes('O') ? 'bg-red-500' : 'bg-purple-500'}`}>
+                    <div className={`h-12 w-12 rounded-full flex items-center justify-center text-white font-medium shadow-md
+                      ${request.bloodType.includes('A') ? 'bg-gradient-to-br from-green-400 to-green-600' : 
+                        request.bloodType.includes('B') ? 'bg-gradient-to-br from-blue-400 to-blue-600' : 
+                        request.bloodType.includes('O') ? 'bg-gradient-to-br from-red-400 to-red-600' : 'bg-gradient-to-br from-purple-400 to-purple-600'}`}>
                       {request.bloodType}
                     </div>
                   </div>
@@ -715,18 +729,18 @@ function RecipientComponent() {
                       <MapPin className="h-3.5 w-3.5 mr-1" />
                       {request.location}
                     </div>
-                  </div>
-                  <div className="col-span-1 flex justify-end gap-2">
+                  </div>                  <div className="col-span-1 flex justify-end gap-2">
                     <Button 
                       variant="outline" 
                       size="sm" 
                       onClick={() => setSelectedRequest(request)}
+                      className="border-gray-200 hover:bg-gray-50 transition-colors duration-200"
                     >
                       Details
                     </Button>
                     <Button
                       size="sm"
-                      className="bg-primary-magenta hover:bg-primary-magenta/90"
+                      className="bg-primary-magenta hover:bg-primary-magenta/90 shadow-sm transition-all duration-200"
                       onClick={() => handleRespondToRequest(request.id)}
                     >
                       Respond
@@ -737,101 +751,118 @@ function RecipientComponent() {
             </div>
           ))}
         </div>
-      ) : (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-10 text-center">
+      ) : (        <div className="bg-white rounded-xl shadow-md border border-gray-100 p-12 text-center">
           <div className="flex flex-col items-center justify-center">
-            <div className="h-16 w-16 rounded-full bg-gray-100 flex items-center justify-center mb-4">
-              <Droplets className="h-8 w-8 text-gray-400" />
+            <div className="h-20 w-20 rounded-full bg-gray-50 border border-gray-100 flex items-center justify-center mb-5 shadow-inner">
+              <Droplets className="h-10 w-10 text-primary-magenta/70" />
             </div>
-            <h3 className="text-lg font-medium mb-2">No Blood Requests Found</h3>
-            <p className="text-gray-500 mb-6">There are currently no blood requests matching your criteria.</p>
-            <Button onClick={() => setIsNewRequestModalOpen(true)} className="bg-primary-magenta hover:bg-primary-magenta/90">
+            <h3 className="text-xl font-bold mb-3 text-gray-800">No Blood Requests Found</h3>
+            <p className="text-gray-600 mb-8 max-w-md mx-auto">There are currently no blood requests matching your criteria. Create a new request or adjust your filter settings.</p>
+            <Button 
+              onClick={() => setIsNewRequestModalOpen(true)} 
+              className="bg-primary-magenta hover:bg-primary-magenta/90 shadow-md transition-all duration-200 px-6 py-2.5"
+            >
+              <Droplets className="mr-2 h-4 w-4" />
               Create a Request
             </Button>
           </div>
         </div>
       )}
       
-      {/* Selected request modal */}
-      {selectedRequest && (
-        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-lg w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-5 border-b">
+      {/* Selected request modal */}      {selectedRequest && (
+        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-4 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-white rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-xl border border-gray-100">
+            <div className="p-5 border-b bg-gradient-to-r from-primary-magenta/5 to-white">
               <div className="flex justify-between items-center">
-                <h3 className="text-lg font-semibold">Blood Request Details</h3>
+                <h3 className="text-xl font-bold text-gray-800">Blood Request Details</h3>
                 <button 
                   onClick={() => setSelectedRequest(null)} 
-                  className="text-gray-400 hover:text-gray-600"
+                  className="text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 p-1 transition-colors duration-200"
                 >
                   <X className="h-5 w-5" />
                 </button>
               </div>
             </div>
-            
-            <div className="p-5">
-              <div className="flex items-center mb-4">
-                <div className={`h-12 w-12 rounded-full flex items-center justify-center text-white font-medium mr-3
-                  ${selectedRequest.bloodType.includes('A') ? 'bg-green-500' : 
-                    selectedRequest.bloodType.includes('B') ? 'bg-blue-500' : 
-                    selectedRequest.bloodType.includes('O') ? 'bg-red-500' : 'bg-purple-500'}`}>
+              <div className="p-6">
+              <div className="flex items-center mb-5">
+                <div className={`h-16 w-16 rounded-full flex items-center justify-center text-white font-bold text-xl mr-4 shadow-md
+                  ${selectedRequest.bloodType.includes('A') ? 'bg-gradient-to-br from-green-400 to-green-600' : 
+                    selectedRequest.bloodType.includes('B') ? 'bg-gradient-to-br from-blue-400 to-blue-600' : 
+                    selectedRequest.bloodType.includes('O') ? 'bg-gradient-to-br from-red-400 to-red-600' : 'bg-gradient-to-br from-purple-400 to-purple-600'}`}>
                   {selectedRequest.bloodType}
                 </div>
                 <div>
-                  <h3 className="font-semibold text-lg">{selectedRequest.name}</h3>
-                  <p className="text-gray-600">{selectedRequest.postedTime}</p>
+                  <h3 className="font-semibold text-xl text-gray-800">{selectedRequest.name}</h3>
+                  <div className="flex items-center text-gray-500 mt-1">
+                    <Clock className="h-3.5 w-3.5 mr-1.5" />
+                    <p>{selectedRequest.postedTime}</p>
+                  </div>
                 </div>
               </div>
-              
-              <div className="space-y-3 mb-5">
-                <div className="flex">
-                  <span className="font-medium w-28">Hospital:</span>
-                  <span className="flex-1">{selectedRequest.hospital}</span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-5 rounded-lg bg-gray-50 mb-6 border border-gray-100">
+                <div className="flex items-start">
+                  <Hospital className="h-5 w-5 text-primary-magenta mr-2.5 mt-0.5" />
+                  <div>
+                    <span className="text-xs text-gray-500 block">Hospital</span>
+                    <span className="font-medium text-gray-800">{selectedRequest.hospital}</span>
+                  </div>
                 </div>
-                <div className="flex">
-                  <span className="font-medium w-28">Location:</span>
-                  <span className="flex-1">{selectedRequest.location}</span>
+                <div className="flex items-start">
+                  <MapPin className="h-5 w-5 text-primary-magenta mr-2.5 mt-0.5" />
+                  <div>
+                    <span className="text-xs text-gray-500 block">Location</span>
+                    <span className="font-medium text-gray-800">{selectedRequest.location}</span>
+                  </div>
                 </div>
-                <div className="flex">
-                  <span className="font-medium w-28">Units Needed:</span>
-                  <span className="flex-1">{selectedRequest.units}</span>
+                <div className="flex items-start">
+                  <Droplets className="h-5 w-5 text-primary-magenta mr-2.5 mt-0.5" />
+                  <div>
+                    <span className="text-xs text-gray-500 block">Units Needed</span>
+                    <span className="font-medium text-gray-800">{selectedRequest.units}</span>
+                  </div>
                 </div>
-                <div className="flex">
-                  <span className="font-medium w-28">Urgency:</span>
-                  <span className="flex-1">
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                      selectedRequest.urgency === 'high' ? 'bg-red-100 text-red-700' : 
-                      selectedRequest.urgency === 'medium' ? 'bg-yellow-100 text-yellow-700' : 
-                      'bg-green-100 text-green-700'
-                    }`}>
-                      {selectedRequest.urgency.charAt(0).toUpperCase() + selectedRequest.urgency.slice(1)}
+                <div className="flex items-start">
+                  <AlertCircle className="h-5 w-5 text-primary-magenta mr-2.5 mt-0.5" />
+                  <div>
+                    <span className="text-xs text-gray-500 block">Urgency</span>
+                    <span className="flex-1">
+                      <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
+                        selectedRequest.urgency === 'high' ? 'bg-red-100 text-red-700 border border-red-200' : 
+                        selectedRequest.urgency === 'medium' ? 'bg-yellow-100 text-yellow-700 border border-yellow-200' : 
+                        'bg-green-100 text-green-700 border border-green-200'
+                      }`}>
+                        {selectedRequest.urgency.charAt(0).toUpperCase() + selectedRequest.urgency.slice(1)}
+                      </span>
                     </span>
-                  </span>
+                  </div>
                 </div>
-                <div className="flex">
-                  <span className="font-medium w-28">Contact:</span>
-                  <span className="flex-1">{selectedRequest.contactNumber}</span>
+                <div className="flex items-start">
+                  <Phone className="h-5 w-5 text-primary-magenta mr-2.5 mt-0.5" />
+                  <div>
+                    <span className="text-xs text-gray-500 block">Contact</span>
+                    <span className="font-medium text-gray-800">{selectedRequest.contactNumber}</span>
+                  </div>
                 </div>
               </div>
-              
-              <div className="mb-5">
-                <span className="font-medium block mb-1.5">Reason:</span>
-                <p className="text-gray-700 bg-gray-50 p-3 rounded-md">
+                <div className="mb-6">
+                <span className="font-medium block mb-2 text-gray-800">Reason for Request:</span>
+                <p className="text-gray-700 bg-gray-50 p-4 rounded-lg border border-gray-100 leading-relaxed">
                   {selectedRequest.reason}
                 </p>
               </div>
-              
-              <div className="flex gap-3">
+                <div className="flex gap-4 mt-4">
                 <Button 
                   variant="outline" 
-                  className="flex-1" 
+                  className="flex-1 border-gray-200 hover:bg-gray-50 transition-all duration-200" 
                   onClick={() => setSelectedRequest(null)}
                 >
                   Close
                 </Button>
                 <Button
-                  className="flex-1 bg-primary-magenta hover:bg-primary-magenta/90"
+                  className="flex-1 bg-primary-magenta hover:bg-primary-magenta/90 shadow-md transition-all duration-200"
                   onClick={() => handleRespondToRequest(selectedRequest.id)}
                 >
+                  <Heart className="mr-2 h-4 w-4" />
                   Respond to Request
                 </Button>
               </div>
@@ -840,16 +871,15 @@ function RecipientComponent() {
         </div>
       )}
       
-      {/* New request modal */}
-      {isNewRequestModalOpen && (
-        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-lg w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-5 border-b">
+      {/* New request modal */}      {isNewRequestModalOpen && (
+        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-4 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-white rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-xl border border-gray-100">
+            <div className="p-5 border-b bg-gradient-to-r from-primary-magenta/5 to-white">
               <div className="flex justify-between items-center">
-                <h3 className="text-lg font-semibold">Create Blood Request</h3>
+                <h3 className="text-xl font-bold text-gray-800">Create Blood Request</h3>
                 <button 
                   onClick={() => setIsNewRequestModalOpen(false)} 
-                  className="text-gray-400 hover:text-gray-600"
+                  className="text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 p-1 transition-colors duration-200"
                 >
                   <X className="h-5 w-5" />
                 </button>
@@ -865,23 +895,21 @@ function RecipientComponent() {
               
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1.5">Patient/Recipient Name*</label>
-                  <input
+                  <label className="block text-sm font-medium mb-1.5">Patient/Recipient Name*</label>                  <input
                     type="text"
                     value={newRequestForm.name}
                     onChange={(e) => setNewRequestForm({...newRequestForm, name: e.target.value})}
-                    className={`w-full rounded-md border ${formErrors.name ? 'border-red-300' : 'border-gray-300'} p-2.5`}
+                    className={`w-full rounded-md border ${formErrors.name ? 'border-red-300 ring-1 ring-red-300' : 'border-gray-300'} p-2.5 focus:ring-2 focus:ring-primary-magenta/30 focus:border-primary-magenta transition-all duration-200 shadow-sm`}
                     placeholder="Enter name"
                   />
                   {formErrors.name && <p className="text-red-600 text-xs mt-1">{formErrors.name}</p>}
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium mb-1.5">Blood Type*</label>
-                  <select
+                  <label className="block text-sm font-medium mb-1.5">Blood Type*</label>                  <select
                     value={newRequestForm.bloodType}
                     onChange={(e) => setNewRequestForm({...newRequestForm, bloodType: e.target.value})}
-                    className={`w-full rounded-md border ${formErrors.bloodType ? 'border-red-300' : 'border-gray-300'} p-2.5`}
+                    className={`w-full rounded-md border ${formErrors.bloodType ? 'border-red-300 ring-1 ring-red-300' : 'border-gray-300'} p-2.5 focus:ring-2 focus:ring-primary-magenta/30 focus:border-primary-magenta transition-all duration-200 shadow-sm`}
                   >
                     <option value="">Select blood type</option>
                     {bloodTypes.map(type => (
@@ -960,23 +988,21 @@ function RecipientComponent() {
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium mb-1.5">Reason*</label>
-                  <textarea
+                  <label className="block text-sm font-medium mb-1.5">Reason*</label>                  <textarea
                     value={newRequestForm.reason}
                     onChange={(e) => setNewRequestForm({...newRequestForm, reason: e.target.value})}
-                    className={`w-full rounded-md border ${formErrors.reason ? 'border-red-300' : 'border-gray-300'} p-2.5`}
+                    className={`w-full rounded-md border ${formErrors.reason ? 'border-red-300 ring-1 ring-red-300' : 'border-gray-300'} p-2.5 focus:ring-2 focus:ring-primary-magenta/30 focus:border-primary-magenta transition-all duration-200 shadow-sm`}
                     placeholder="Provide details about why blood is needed"
                     rows={4}
                   ></textarea>
                   {formErrors.reason && <p className="text-red-600 text-xs mt-1">{formErrors.reason}</p>}
                 </div>
               </div>
-              
-              <div className="flex gap-3 mt-6">
+                <div className="flex gap-4 mt-8">
                 <Button 
                   type="button"
                   variant="outline" 
-                  className="flex-1" 
+                  className="flex-1 border-gray-200 hover:bg-gray-50 transition-all duration-200" 
                   onClick={() => setIsNewRequestModalOpen(false)}
                 >
                   Cancel
@@ -984,7 +1010,7 @@ function RecipientComponent() {
                 <Button
                   type="submit"
                   disabled={isSubmitting}
-                  className="flex-1 bg-primary-magenta hover:bg-primary-magenta/90"
+                  className="flex-1 bg-primary-magenta hover:bg-primary-magenta/90 shadow-md transition-all duration-200 py-2.5"
                 >
                   {isSubmitting ? (
                     <>
@@ -992,7 +1018,10 @@ function RecipientComponent() {
                       Creating...
                     </>
                   ) : (
-                    'Create Request'
+                    <>
+                      <Droplets className="mr-2 h-4 w-4" />
+                      Create Request
+                    </>
                   )}
                 </Button>
               </div>
