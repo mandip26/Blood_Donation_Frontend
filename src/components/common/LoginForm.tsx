@@ -55,13 +55,14 @@ export default function LoginForm() {
             headers: {
               "Content-Type": "application/json",
             },
+            withCredentials: true,
           }
         );
 
         if (response.data) {
           toast.success("Login successful!");
           // Handle login success (e.g. save token, redirect)
-          console.log("Login successful!", response);   
+          console.log("Login successful!", response);          
         }
 
         console.log("Form submitted", value);
