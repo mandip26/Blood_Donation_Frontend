@@ -29,39 +29,40 @@ export function useAuth() {
     error: null,
   });
 
-  // Load user on mount
-  useEffect(() => {
-    const loadUser = async () => {
-      try {
-        setAuthState(prev => ({ ...prev, isLoading: true, error: null }));
-        const userData = await authService.getCurrentUser();
+  // Define loadUser function outside of useEffect for reuse
+  const loadUser = useCallback(async () => {
+    try {
+      setAuthState(prev => ({ ...prev, isLoading: true, error: null }));
+      const userData = await authService.getCurrentUser();
+      setAuthState({
+        user: userData,
+        isLoading: false,
+        error: null,
+      });
+      return userData;
+    } catch (error: any) {
+      // Only set error if it's not a 401 (unauthorized)
+      // 401 is expected if user is not logged in
+      if (error.response && error.response.status !== 401) {
         setAuthState({
-          user: userData,
+          user: null,
+          isLoading: false,
+          error: 'Failed to load user data',
+        });
+      } else {
+        setAuthState({
+          user: null,
           isLoading: false,
           error: null,
         });
-      } catch (error) {
-        // Only set error if it's not a 401 (unauthorized)
-        // 401 is expected if user is not logged in
-        if (error.response && error.response.status !== 401) {
-          setAuthState({
-            user: null,
-            isLoading: false,
-            error: 'Failed to load user data',
-          });
-        } else {
-          setAuthState({
-            user: null,
-            isLoading: false,
-            error: null,
-          });
-        }
       }
-    };
-
-    loadUser();
+    }
   }, []);
 
+  // Load user on mount
+  useEffect(() => {
+    loadUser();
+  }, [loadUser]);
   // Login function
   const login = useCallback(async (email: string, password: string) => {
     try {
@@ -73,7 +74,7 @@ export function useAuth() {
         error: null,
       });
       return userData;
-    } catch (error) {
+    } catch (error: any) {
       let errorMessage = 'Login failed. Please try again.';
       if (error.response && error.response.data && error.response.data.message) {
         errorMessage = error.response.data.message;
@@ -87,7 +88,6 @@ export function useAuth() {
       throw error;
     }
   }, []);
-
   // Register function
   const register = useCallback(async (userData: FormData) => {
     try {
@@ -99,7 +99,7 @@ export function useAuth() {
         error: null,
       });
       return newUser;
-    } catch (error) {
+    } catch (error: any) {
       let errorMessage = 'Registration failed. Please try again.';
       if (error.response && error.response.data && error.response.data.message) {
         errorMessage = error.response.data.message;
@@ -124,7 +124,7 @@ export function useAuth() {
         isLoading: false,
         error: null,
       });
-    } catch (error) {
+    } catch (error: any) {
       setAuthState(prev => ({
         ...prev,
         isLoading: false,
@@ -144,7 +144,7 @@ export function useAuth() {
         isLoading: false,
       }));
       return updatedUser;
-    } catch (error) {
+    } catch (error: any) {
       let errorMessage = 'Failed to update profile. Please try again.';
       if (error.response && error.response.data && error.response.data.message) {
         errorMessage = error.response.data.message;
@@ -158,10 +158,14 @@ export function useAuth() {
       throw error;
     }
   }, []);
-
   // Clear authentication errors
   const clearError = useCallback(() => {
     setAuthState(prev => ({ ...prev, error: null }));
+  }, []);
+
+  // Reload user data
+  const reloadUser = useCallback(async () => {
+    return await loadUser();
   }, []);
 
   return {
@@ -174,6 +178,7 @@ export function useAuth() {
     logout,
     updateUser,
     clearError,
+    reloadUser,
   };
 }
 

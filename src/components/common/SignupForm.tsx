@@ -113,20 +113,25 @@ export default function SignupForm({ userType, isLogin = false }: props) {
     "addharImage" | "organisationIdImage" | "hospitalIdImage"
   >("addharImage");
   const [nameBasedOnUser, setNameBasedOnUser] = useState<string>("name");
+  const [idBasedOnUser, setIdBasedOnUser] = useState<string>("addhar");
 
   useEffect(() => {
     if (userType === "user") {
       setIdName("addharImage");
       setNameBasedOnUser("Full Name");
+      setIdBasedOnUser("Aadhar ID");
     } else if (userType === "organization") {
       setIdName("organisationIdImage");
       setNameBasedOnUser("Organization Name");
+      setIdBasedOnUser("Organization ID");
     } else if (userType === "hospital") {
       setIdName("hospitalIdImage");
       setNameBasedOnUser("Hospital Name");
+      setIdBasedOnUser("Hospital ID");
     } else if (userType === "admin") {
       setIdName("addharImage");
       setNameBasedOnUser("Full Name");
+      setIdBasedOnUser("Aadhar ID");
     }
   }, [userType]);
 
@@ -355,7 +360,7 @@ export default function SignupForm({ userType, isLogin = false }: props) {
   });
 
   return (
-    <div className="my-4 min-w-2xl w-fit">
+    <div className="my-4 w-fit">
       <Toaster position="top-center" />
       <form
         onSubmit={(e) => {
@@ -363,7 +368,7 @@ export default function SignupForm({ userType, isLogin = false }: props) {
           e.stopPropagation();
           void form.handleSubmit();
         }}
-        className="space-y-10"
+        className="space-y-5"
       >
         {apiError && (
           <div
@@ -549,7 +554,7 @@ export default function SignupForm({ userType, isLogin = false }: props) {
                           <ErrorMessage errors={field.state.meta.errors} />
                         )}
                       <p className="text-xs text-white/60 ml-2">
-                        Upload Aadhar card image (JPG, PNG or WEBP, max 5MB)
+                        Upload {idBasedOnUser ?? "Aadhar card"} image (JPG, PNG or WEBP, max 5MB)
                       </p>
                     </div>
                   );
@@ -567,7 +572,7 @@ export default function SignupForm({ userType, isLogin = false }: props) {
                       </label> */}
                       <Input
                         type="text"
-                        placeholder="12-digit Aadhar Number"
+                        placeholder={idBasedOnUser ?? "12-digit Aadhar Number"}
                         name={field.name}
                         value={field.state.value || ""}
                         onBlur={field.handleBlur}
@@ -582,7 +587,7 @@ export default function SignupForm({ userType, isLogin = false }: props) {
                           <ErrorMessage errors={field.state.meta.errors} />
                         )}
                       <p className="text-xs text-white/60 ml-2">
-                        Enter your 12-digit Aadhar number
+                        Enter your {idBasedOnUser}
                       </p>
                     </div>
                   );

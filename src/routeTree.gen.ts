@@ -14,40 +14,24 @@ import { createFileRoute } from '@tanstack/react-router'
 
 import { Route as rootRoute } from './routes/__root'
 import { Route as IndexImport } from './routes/index'
+import { Route as DashboardIndexImport } from './routes/dashboard/index'
 import { Route as DashboardDashboardLayoutImport } from './routes/dashboard/_dashboardLayout'
 import { Route as authSignUpImport } from './routes/(auth)/sign-up'
 import { Route as authLoginImport } from './routes/(auth)/login'
+import { Route as DashboardDashboardLayoutVisualizationImport } from './routes/dashboard/_dashboardLayout/visualization'
+import { Route as DashboardDashboardLayoutRecipientImport } from './routes/dashboard/_dashboardLayout/recipient'
+import { Route as DashboardDashboardLayoutProfileImport } from './routes/dashboard/_dashboardLayout/profile'
+import { Route as DashboardDashboardLayoutHospitalHistoryImport } from './routes/dashboard/_dashboardLayout/hospital-history'
+import { Route as DashboardDashboardLayoutEventsImport } from './routes/dashboard/_dashboardLayout/events'
+import { Route as DashboardDashboardLayoutEditProfileImport } from './routes/dashboard/_dashboardLayout/edit-profile'
+import { Route as DashboardDashboardLayoutEditPasswordImport } from './routes/dashboard/_dashboardLayout/edit-password'
+import { Route as DashboardDashboardLayoutDonateImport } from './routes/dashboard/_dashboardLayout/donate'
 
 // Create Virtual Routes
 
 const DashboardImport = createFileRoute('/dashboard')()
-const DashboardIndexLazyImport = createFileRoute('/dashboard/')()
 const DashboardDashboardLayoutIndexLazyImport = createFileRoute(
   '/dashboard/_dashboardLayout/',
-)()
-const DashboardDashboardLayoutVisualizationLazyImport = createFileRoute(
-  '/dashboard/_dashboardLayout/visualization',
-)()
-const DashboardDashboardLayoutRecipientLazyImport = createFileRoute(
-  '/dashboard/_dashboardLayout/recipient',
-)()
-const DashboardDashboardLayoutProfileLazyImport = createFileRoute(
-  '/dashboard/_dashboardLayout/profile',
-)()
-const DashboardDashboardLayoutHospitalHistoryLazyImport = createFileRoute(
-  '/dashboard/_dashboardLayout/hospital-history',
-)()
-const DashboardDashboardLayoutEventsLazyImport = createFileRoute(
-  '/dashboard/_dashboardLayout/events',
-)()
-const DashboardDashboardLayoutEditProfileLazyImport = createFileRoute(
-  '/dashboard/_dashboardLayout/edit-profile',
-)()
-const DashboardDashboardLayoutEditPasswordLazyImport = createFileRoute(
-  '/dashboard/_dashboardLayout/edit-password',
-)()
-const DashboardDashboardLayoutDonateLazyImport = createFileRoute(
-  '/dashboard/_dashboardLayout/donate',
 )()
 const DashboardDashboardLayoutCreateLazyImport = createFileRoute(
   '/dashboard/_dashboardLayout/create',
@@ -73,7 +57,7 @@ const IndexRoute = IndexImport.update({
   getParentRoute: () => rootRoute,
 } as any)
 
-const DashboardIndexLazyRoute = DashboardIndexLazyImport.update({
+const DashboardIndexRoute = DashboardIndexImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => DashboardRoute,
@@ -109,94 +93,6 @@ const DashboardDashboardLayoutIndexLazyRoute =
     ),
   )
 
-const DashboardDashboardLayoutVisualizationLazyRoute =
-  DashboardDashboardLayoutVisualizationLazyImport.update({
-    id: '/visualization',
-    path: '/visualization',
-    getParentRoute: () => DashboardDashboardLayoutRoute,
-  } as any).lazy(() =>
-    import('./routes/dashboard/_dashboardLayout/visualization.lazy').then(
-      (d) => d.Route,
-    ),
-  )
-
-const DashboardDashboardLayoutRecipientLazyRoute =
-  DashboardDashboardLayoutRecipientLazyImport.update({
-    id: '/recipient',
-    path: '/recipient',
-    getParentRoute: () => DashboardDashboardLayoutRoute,
-  } as any).lazy(() =>
-    import('./routes/dashboard/_dashboardLayout/recipient.lazy').then(
-      (d) => d.Route,
-    ),
-  )
-
-const DashboardDashboardLayoutProfileLazyRoute =
-  DashboardDashboardLayoutProfileLazyImport.update({
-    id: '/profile',
-    path: '/profile',
-    getParentRoute: () => DashboardDashboardLayoutRoute,
-  } as any).lazy(() =>
-    import('./routes/dashboard/_dashboardLayout/profile.lazy').then(
-      (d) => d.Route,
-    ),
-  )
-
-const DashboardDashboardLayoutHospitalHistoryLazyRoute =
-  DashboardDashboardLayoutHospitalHistoryLazyImport.update({
-    id: '/hospital-history',
-    path: '/hospital-history',
-    getParentRoute: () => DashboardDashboardLayoutRoute,
-  } as any).lazy(() =>
-    import('./routes/dashboard/_dashboardLayout/hospital-history.lazy').then(
-      (d) => d.Route,
-    ),
-  )
-
-const DashboardDashboardLayoutEventsLazyRoute =
-  DashboardDashboardLayoutEventsLazyImport.update({
-    id: '/events',
-    path: '/events',
-    getParentRoute: () => DashboardDashboardLayoutRoute,
-  } as any).lazy(() =>
-    import('./routes/dashboard/_dashboardLayout/events.lazy').then(
-      (d) => d.Route,
-    ),
-  )
-
-const DashboardDashboardLayoutEditProfileLazyRoute =
-  DashboardDashboardLayoutEditProfileLazyImport.update({
-    id: '/edit-profile',
-    path: '/edit-profile',
-    getParentRoute: () => DashboardDashboardLayoutRoute,
-  } as any).lazy(() =>
-    import('./routes/dashboard/_dashboardLayout/edit-profile.lazy').then(
-      (d) => d.Route,
-    ),
-  )
-
-const DashboardDashboardLayoutEditPasswordLazyRoute =
-  DashboardDashboardLayoutEditPasswordLazyImport.update({
-    id: '/edit-password',
-    path: '/edit-password',
-    getParentRoute: () => DashboardDashboardLayoutRoute,
-  } as any).lazy(() =>
-    import('./routes/dashboard/_dashboardLayout/edit-password.lazy').then(
-      (d) => d.Route,
-    ),
-  )
-
-const DashboardDashboardLayoutDonateLazyRoute =
-  DashboardDashboardLayoutDonateLazyImport.update({
-    id: '/donate',
-    path: '/donate',
-    getParentRoute: () => DashboardDashboardLayoutRoute,
-  } as any).lazy(() =>
-    import('./routes/dashboard/_dashboardLayout/donate.lazy').then(
-      (d) => d.Route,
-    ),
-  )
-
 const DashboardDashboardLayoutCreateLazyRoute =
   DashboardDashboardLayoutCreateLazyImport.update({
     id: '/create',
@@ -226,6 +122,94 @@ const DashboardDashboardLayoutAnalyticsLazyRoute =
     getParentRoute: () => DashboardDashboardLayoutRoute,
   } as any).lazy(() =>
     import('./routes/dashboard/_dashboardLayout/analytics.lazy').then(
+      (d) => d.Route,
+    ),
+  )
+
+const DashboardDashboardLayoutVisualizationRoute =
+  DashboardDashboardLayoutVisualizationImport.update({
+    id: '/visualization',
+    path: '/visualization',
+    getParentRoute: () => DashboardDashboardLayoutRoute,
+  } as any).lazy(() =>
+    import('./routes/dashboard/_dashboardLayout/visualization.lazy').then(
+      (d) => d.Route,
+    ),
+  )
+
+const DashboardDashboardLayoutRecipientRoute =
+  DashboardDashboardLayoutRecipientImport.update({
+    id: '/recipient',
+    path: '/recipient',
+    getParentRoute: () => DashboardDashboardLayoutRoute,
+  } as any).lazy(() =>
+    import('./routes/dashboard/_dashboardLayout/recipient.lazy').then(
+      (d) => d.Route,
+    ),
+  )
+
+const DashboardDashboardLayoutProfileRoute =
+  DashboardDashboardLayoutProfileImport.update({
+    id: '/profile',
+    path: '/profile',
+    getParentRoute: () => DashboardDashboardLayoutRoute,
+  } as any).lazy(() =>
+    import('./routes/dashboard/_dashboardLayout/profile.lazy').then(
+      (d) => d.Route,
+    ),
+  )
+
+const DashboardDashboardLayoutHospitalHistoryRoute =
+  DashboardDashboardLayoutHospitalHistoryImport.update({
+    id: '/hospital-history',
+    path: '/hospital-history',
+    getParentRoute: () => DashboardDashboardLayoutRoute,
+  } as any).lazy(() =>
+    import('./routes/dashboard/_dashboardLayout/hospital-history.lazy').then(
+      (d) => d.Route,
+    ),
+  )
+
+const DashboardDashboardLayoutEventsRoute =
+  DashboardDashboardLayoutEventsImport.update({
+    id: '/events',
+    path: '/events',
+    getParentRoute: () => DashboardDashboardLayoutRoute,
+  } as any).lazy(() =>
+    import('./routes/dashboard/_dashboardLayout/events.lazy').then(
+      (d) => d.Route,
+    ),
+  )
+
+const DashboardDashboardLayoutEditProfileRoute =
+  DashboardDashboardLayoutEditProfileImport.update({
+    id: '/edit-profile',
+    path: '/edit-profile',
+    getParentRoute: () => DashboardDashboardLayoutRoute,
+  } as any).lazy(() =>
+    import('./routes/dashboard/_dashboardLayout/edit-profile.lazy').then(
+      (d) => d.Route,
+    ),
+  )
+
+const DashboardDashboardLayoutEditPasswordRoute =
+  DashboardDashboardLayoutEditPasswordImport.update({
+    id: '/edit-password',
+    path: '/edit-password',
+    getParentRoute: () => DashboardDashboardLayoutRoute,
+  } as any).lazy(() =>
+    import('./routes/dashboard/_dashboardLayout/edit-password.lazy').then(
+      (d) => d.Route,
+    ),
+  )
+
+const DashboardDashboardLayoutDonateRoute =
+  DashboardDashboardLayoutDonateImport.update({
+    id: '/donate',
+    path: '/donate',
+    getParentRoute: () => DashboardDashboardLayoutRoute,
+  } as any).lazy(() =>
+    import('./routes/dashboard/_dashboardLayout/donate.lazy').then(
       (d) => d.Route,
     ),
   )
@@ -273,8 +257,64 @@ declare module '@tanstack/react-router' {
       id: '/dashboard/'
       path: '/'
       fullPath: '/dashboard/'
-      preLoaderRoute: typeof DashboardIndexLazyImport
+      preLoaderRoute: typeof DashboardIndexImport
       parentRoute: typeof DashboardImport
+    }
+    '/dashboard/_dashboardLayout/donate': {
+      id: '/dashboard/_dashboardLayout/donate'
+      path: '/donate'
+      fullPath: '/dashboard/donate'
+      preLoaderRoute: typeof DashboardDashboardLayoutDonateImport
+      parentRoute: typeof DashboardDashboardLayoutImport
+    }
+    '/dashboard/_dashboardLayout/edit-password': {
+      id: '/dashboard/_dashboardLayout/edit-password'
+      path: '/edit-password'
+      fullPath: '/dashboard/edit-password'
+      preLoaderRoute: typeof DashboardDashboardLayoutEditPasswordImport
+      parentRoute: typeof DashboardDashboardLayoutImport
+    }
+    '/dashboard/_dashboardLayout/edit-profile': {
+      id: '/dashboard/_dashboardLayout/edit-profile'
+      path: '/edit-profile'
+      fullPath: '/dashboard/edit-profile'
+      preLoaderRoute: typeof DashboardDashboardLayoutEditProfileImport
+      parentRoute: typeof DashboardDashboardLayoutImport
+    }
+    '/dashboard/_dashboardLayout/events': {
+      id: '/dashboard/_dashboardLayout/events'
+      path: '/events'
+      fullPath: '/dashboard/events'
+      preLoaderRoute: typeof DashboardDashboardLayoutEventsImport
+      parentRoute: typeof DashboardDashboardLayoutImport
+    }
+    '/dashboard/_dashboardLayout/hospital-history': {
+      id: '/dashboard/_dashboardLayout/hospital-history'
+      path: '/hospital-history'
+      fullPath: '/dashboard/hospital-history'
+      preLoaderRoute: typeof DashboardDashboardLayoutHospitalHistoryImport
+      parentRoute: typeof DashboardDashboardLayoutImport
+    }
+    '/dashboard/_dashboardLayout/profile': {
+      id: '/dashboard/_dashboardLayout/profile'
+      path: '/profile'
+      fullPath: '/dashboard/profile'
+      preLoaderRoute: typeof DashboardDashboardLayoutProfileImport
+      parentRoute: typeof DashboardDashboardLayoutImport
+    }
+    '/dashboard/_dashboardLayout/recipient': {
+      id: '/dashboard/_dashboardLayout/recipient'
+      path: '/recipient'
+      fullPath: '/dashboard/recipient'
+      preLoaderRoute: typeof DashboardDashboardLayoutRecipientImport
+      parentRoute: typeof DashboardDashboardLayoutImport
+    }
+    '/dashboard/_dashboardLayout/visualization': {
+      id: '/dashboard/_dashboardLayout/visualization'
+      path: '/visualization'
+      fullPath: '/dashboard/visualization'
+      preLoaderRoute: typeof DashboardDashboardLayoutVisualizationImport
+      parentRoute: typeof DashboardDashboardLayoutImport
     }
     '/dashboard/_dashboardLayout/analytics': {
       id: '/dashboard/_dashboardLayout/analytics'
@@ -297,62 +337,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardDashboardLayoutCreateLazyImport
       parentRoute: typeof DashboardDashboardLayoutImport
     }
-    '/dashboard/_dashboardLayout/donate': {
-      id: '/dashboard/_dashboardLayout/donate'
-      path: '/donate'
-      fullPath: '/dashboard/donate'
-      preLoaderRoute: typeof DashboardDashboardLayoutDonateLazyImport
-      parentRoute: typeof DashboardDashboardLayoutImport
-    }
-    '/dashboard/_dashboardLayout/edit-password': {
-      id: '/dashboard/_dashboardLayout/edit-password'
-      path: '/edit-password'
-      fullPath: '/dashboard/edit-password'
-      preLoaderRoute: typeof DashboardDashboardLayoutEditPasswordLazyImport
-      parentRoute: typeof DashboardDashboardLayoutImport
-    }
-    '/dashboard/_dashboardLayout/edit-profile': {
-      id: '/dashboard/_dashboardLayout/edit-profile'
-      path: '/edit-profile'
-      fullPath: '/dashboard/edit-profile'
-      preLoaderRoute: typeof DashboardDashboardLayoutEditProfileLazyImport
-      parentRoute: typeof DashboardDashboardLayoutImport
-    }
-    '/dashboard/_dashboardLayout/events': {
-      id: '/dashboard/_dashboardLayout/events'
-      path: '/events'
-      fullPath: '/dashboard/events'
-      preLoaderRoute: typeof DashboardDashboardLayoutEventsLazyImport
-      parentRoute: typeof DashboardDashboardLayoutImport
-    }
-    '/dashboard/_dashboardLayout/hospital-history': {
-      id: '/dashboard/_dashboardLayout/hospital-history'
-      path: '/hospital-history'
-      fullPath: '/dashboard/hospital-history'
-      preLoaderRoute: typeof DashboardDashboardLayoutHospitalHistoryLazyImport
-      parentRoute: typeof DashboardDashboardLayoutImport
-    }
-    '/dashboard/_dashboardLayout/profile': {
-      id: '/dashboard/_dashboardLayout/profile'
-      path: '/profile'
-      fullPath: '/dashboard/profile'
-      preLoaderRoute: typeof DashboardDashboardLayoutProfileLazyImport
-      parentRoute: typeof DashboardDashboardLayoutImport
-    }
-    '/dashboard/_dashboardLayout/recipient': {
-      id: '/dashboard/_dashboardLayout/recipient'
-      path: '/recipient'
-      fullPath: '/dashboard/recipient'
-      preLoaderRoute: typeof DashboardDashboardLayoutRecipientLazyImport
-      parentRoute: typeof DashboardDashboardLayoutImport
-    }
-    '/dashboard/_dashboardLayout/visualization': {
-      id: '/dashboard/_dashboardLayout/visualization'
-      path: '/visualization'
-      fullPath: '/dashboard/visualization'
-      preLoaderRoute: typeof DashboardDashboardLayoutVisualizationLazyImport
-      parentRoute: typeof DashboardDashboardLayoutImport
-    }
     '/dashboard/_dashboardLayout/': {
       id: '/dashboard/_dashboardLayout/'
       path: '/'
@@ -366,44 +350,41 @@ declare module '@tanstack/react-router' {
 // Create and export the route tree
 
 interface DashboardDashboardLayoutRouteChildren {
+  DashboardDashboardLayoutDonateRoute: typeof DashboardDashboardLayoutDonateRoute
+  DashboardDashboardLayoutEditPasswordRoute: typeof DashboardDashboardLayoutEditPasswordRoute
+  DashboardDashboardLayoutEditProfileRoute: typeof DashboardDashboardLayoutEditProfileRoute
+  DashboardDashboardLayoutEventsRoute: typeof DashboardDashboardLayoutEventsRoute
+  DashboardDashboardLayoutHospitalHistoryRoute: typeof DashboardDashboardLayoutHospitalHistoryRoute
+  DashboardDashboardLayoutProfileRoute: typeof DashboardDashboardLayoutProfileRoute
+  DashboardDashboardLayoutRecipientRoute: typeof DashboardDashboardLayoutRecipientRoute
+  DashboardDashboardLayoutVisualizationRoute: typeof DashboardDashboardLayoutVisualizationRoute
   DashboardDashboardLayoutAnalyticsLazyRoute: typeof DashboardDashboardLayoutAnalyticsLazyRoute
   DashboardDashboardLayoutBloodtestsLazyRoute: typeof DashboardDashboardLayoutBloodtestsLazyRoute
   DashboardDashboardLayoutCreateLazyRoute: typeof DashboardDashboardLayoutCreateLazyRoute
-  DashboardDashboardLayoutDonateLazyRoute: typeof DashboardDashboardLayoutDonateLazyRoute
-  DashboardDashboardLayoutEditPasswordLazyRoute: typeof DashboardDashboardLayoutEditPasswordLazyRoute
-  DashboardDashboardLayoutEditProfileLazyRoute: typeof DashboardDashboardLayoutEditProfileLazyRoute
-  DashboardDashboardLayoutEventsLazyRoute: typeof DashboardDashboardLayoutEventsLazyRoute
-  DashboardDashboardLayoutHospitalHistoryLazyRoute: typeof DashboardDashboardLayoutHospitalHistoryLazyRoute
-  DashboardDashboardLayoutProfileLazyRoute: typeof DashboardDashboardLayoutProfileLazyRoute
-  DashboardDashboardLayoutRecipientLazyRoute: typeof DashboardDashboardLayoutRecipientLazyRoute
-  DashboardDashboardLayoutVisualizationLazyRoute: typeof DashboardDashboardLayoutVisualizationLazyRoute
   DashboardDashboardLayoutIndexLazyRoute: typeof DashboardDashboardLayoutIndexLazyRoute
 }
 
 const DashboardDashboardLayoutRouteChildren: DashboardDashboardLayoutRouteChildren =
   {
+    DashboardDashboardLayoutDonateRoute: DashboardDashboardLayoutDonateRoute,
+    DashboardDashboardLayoutEditPasswordRoute:
+      DashboardDashboardLayoutEditPasswordRoute,
+    DashboardDashboardLayoutEditProfileRoute:
+      DashboardDashboardLayoutEditProfileRoute,
+    DashboardDashboardLayoutEventsRoute: DashboardDashboardLayoutEventsRoute,
+    DashboardDashboardLayoutHospitalHistoryRoute:
+      DashboardDashboardLayoutHospitalHistoryRoute,
+    DashboardDashboardLayoutProfileRoute: DashboardDashboardLayoutProfileRoute,
+    DashboardDashboardLayoutRecipientRoute:
+      DashboardDashboardLayoutRecipientRoute,
+    DashboardDashboardLayoutVisualizationRoute:
+      DashboardDashboardLayoutVisualizationRoute,
     DashboardDashboardLayoutAnalyticsLazyRoute:
       DashboardDashboardLayoutAnalyticsLazyRoute,
     DashboardDashboardLayoutBloodtestsLazyRoute:
       DashboardDashboardLayoutBloodtestsLazyRoute,
     DashboardDashboardLayoutCreateLazyRoute:
       DashboardDashboardLayoutCreateLazyRoute,
-    DashboardDashboardLayoutDonateLazyRoute:
-      DashboardDashboardLayoutDonateLazyRoute,
-    DashboardDashboardLayoutEditPasswordLazyRoute:
-      DashboardDashboardLayoutEditPasswordLazyRoute,
-    DashboardDashboardLayoutEditProfileLazyRoute:
-      DashboardDashboardLayoutEditProfileLazyRoute,
-    DashboardDashboardLayoutEventsLazyRoute:
-      DashboardDashboardLayoutEventsLazyRoute,
-    DashboardDashboardLayoutHospitalHistoryLazyRoute:
-      DashboardDashboardLayoutHospitalHistoryLazyRoute,
-    DashboardDashboardLayoutProfileLazyRoute:
-      DashboardDashboardLayoutProfileLazyRoute,
-    DashboardDashboardLayoutRecipientLazyRoute:
-      DashboardDashboardLayoutRecipientLazyRoute,
-    DashboardDashboardLayoutVisualizationLazyRoute:
-      DashboardDashboardLayoutVisualizationLazyRoute,
     DashboardDashboardLayoutIndexLazyRoute:
       DashboardDashboardLayoutIndexLazyRoute,
   }
@@ -415,12 +396,12 @@ const DashboardDashboardLayoutRouteWithChildren =
 
 interface DashboardRouteChildren {
   DashboardDashboardLayoutRoute: typeof DashboardDashboardLayoutRouteWithChildren
-  DashboardIndexLazyRoute: typeof DashboardIndexLazyRoute
+  DashboardIndexRoute: typeof DashboardIndexRoute
 }
 
 const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardDashboardLayoutRoute: DashboardDashboardLayoutRouteWithChildren,
-  DashboardIndexLazyRoute: DashboardIndexLazyRoute,
+  DashboardIndexRoute: DashboardIndexRoute,
 }
 
 const DashboardRouteWithChildren = DashboardRoute._addFileChildren(
@@ -433,17 +414,17 @@ export interface FileRoutesByFullPath {
   '/sign-up': typeof authSignUpRoute
   '/dashboard': typeof DashboardDashboardLayoutRouteWithChildren
   '/dashboard/': typeof DashboardDashboardLayoutIndexLazyRoute
+  '/dashboard/donate': typeof DashboardDashboardLayoutDonateRoute
+  '/dashboard/edit-password': typeof DashboardDashboardLayoutEditPasswordRoute
+  '/dashboard/edit-profile': typeof DashboardDashboardLayoutEditProfileRoute
+  '/dashboard/events': typeof DashboardDashboardLayoutEventsRoute
+  '/dashboard/hospital-history': typeof DashboardDashboardLayoutHospitalHistoryRoute
+  '/dashboard/profile': typeof DashboardDashboardLayoutProfileRoute
+  '/dashboard/recipient': typeof DashboardDashboardLayoutRecipientRoute
+  '/dashboard/visualization': typeof DashboardDashboardLayoutVisualizationRoute
   '/dashboard/analytics': typeof DashboardDashboardLayoutAnalyticsLazyRoute
   '/dashboard/bloodtests': typeof DashboardDashboardLayoutBloodtestsLazyRoute
   '/dashboard/create': typeof DashboardDashboardLayoutCreateLazyRoute
-  '/dashboard/donate': typeof DashboardDashboardLayoutDonateLazyRoute
-  '/dashboard/edit-password': typeof DashboardDashboardLayoutEditPasswordLazyRoute
-  '/dashboard/edit-profile': typeof DashboardDashboardLayoutEditProfileLazyRoute
-  '/dashboard/events': typeof DashboardDashboardLayoutEventsLazyRoute
-  '/dashboard/hospital-history': typeof DashboardDashboardLayoutHospitalHistoryLazyRoute
-  '/dashboard/profile': typeof DashboardDashboardLayoutProfileLazyRoute
-  '/dashboard/recipient': typeof DashboardDashboardLayoutRecipientLazyRoute
-  '/dashboard/visualization': typeof DashboardDashboardLayoutVisualizationLazyRoute
 }
 
 export interface FileRoutesByTo {
@@ -451,17 +432,17 @@ export interface FileRoutesByTo {
   '/login': typeof authLoginRoute
   '/sign-up': typeof authSignUpRoute
   '/dashboard': typeof DashboardDashboardLayoutIndexLazyRoute
+  '/dashboard/donate': typeof DashboardDashboardLayoutDonateRoute
+  '/dashboard/edit-password': typeof DashboardDashboardLayoutEditPasswordRoute
+  '/dashboard/edit-profile': typeof DashboardDashboardLayoutEditProfileRoute
+  '/dashboard/events': typeof DashboardDashboardLayoutEventsRoute
+  '/dashboard/hospital-history': typeof DashboardDashboardLayoutHospitalHistoryRoute
+  '/dashboard/profile': typeof DashboardDashboardLayoutProfileRoute
+  '/dashboard/recipient': typeof DashboardDashboardLayoutRecipientRoute
+  '/dashboard/visualization': typeof DashboardDashboardLayoutVisualizationRoute
   '/dashboard/analytics': typeof DashboardDashboardLayoutAnalyticsLazyRoute
   '/dashboard/bloodtests': typeof DashboardDashboardLayoutBloodtestsLazyRoute
   '/dashboard/create': typeof DashboardDashboardLayoutCreateLazyRoute
-  '/dashboard/donate': typeof DashboardDashboardLayoutDonateLazyRoute
-  '/dashboard/edit-password': typeof DashboardDashboardLayoutEditPasswordLazyRoute
-  '/dashboard/edit-profile': typeof DashboardDashboardLayoutEditProfileLazyRoute
-  '/dashboard/events': typeof DashboardDashboardLayoutEventsLazyRoute
-  '/dashboard/hospital-history': typeof DashboardDashboardLayoutHospitalHistoryLazyRoute
-  '/dashboard/profile': typeof DashboardDashboardLayoutProfileLazyRoute
-  '/dashboard/recipient': typeof DashboardDashboardLayoutRecipientLazyRoute
-  '/dashboard/visualization': typeof DashboardDashboardLayoutVisualizationLazyRoute
 }
 
 export interface FileRoutesById {
@@ -471,18 +452,18 @@ export interface FileRoutesById {
   '/(auth)/sign-up': typeof authSignUpRoute
   '/dashboard': typeof DashboardRouteWithChildren
   '/dashboard/_dashboardLayout': typeof DashboardDashboardLayoutRouteWithChildren
-  '/dashboard/': typeof DashboardIndexLazyRoute
+  '/dashboard/': typeof DashboardIndexRoute
+  '/dashboard/_dashboardLayout/donate': typeof DashboardDashboardLayoutDonateRoute
+  '/dashboard/_dashboardLayout/edit-password': typeof DashboardDashboardLayoutEditPasswordRoute
+  '/dashboard/_dashboardLayout/edit-profile': typeof DashboardDashboardLayoutEditProfileRoute
+  '/dashboard/_dashboardLayout/events': typeof DashboardDashboardLayoutEventsRoute
+  '/dashboard/_dashboardLayout/hospital-history': typeof DashboardDashboardLayoutHospitalHistoryRoute
+  '/dashboard/_dashboardLayout/profile': typeof DashboardDashboardLayoutProfileRoute
+  '/dashboard/_dashboardLayout/recipient': typeof DashboardDashboardLayoutRecipientRoute
+  '/dashboard/_dashboardLayout/visualization': typeof DashboardDashboardLayoutVisualizationRoute
   '/dashboard/_dashboardLayout/analytics': typeof DashboardDashboardLayoutAnalyticsLazyRoute
   '/dashboard/_dashboardLayout/bloodtests': typeof DashboardDashboardLayoutBloodtestsLazyRoute
   '/dashboard/_dashboardLayout/create': typeof DashboardDashboardLayoutCreateLazyRoute
-  '/dashboard/_dashboardLayout/donate': typeof DashboardDashboardLayoutDonateLazyRoute
-  '/dashboard/_dashboardLayout/edit-password': typeof DashboardDashboardLayoutEditPasswordLazyRoute
-  '/dashboard/_dashboardLayout/edit-profile': typeof DashboardDashboardLayoutEditProfileLazyRoute
-  '/dashboard/_dashboardLayout/events': typeof DashboardDashboardLayoutEventsLazyRoute
-  '/dashboard/_dashboardLayout/hospital-history': typeof DashboardDashboardLayoutHospitalHistoryLazyRoute
-  '/dashboard/_dashboardLayout/profile': typeof DashboardDashboardLayoutProfileLazyRoute
-  '/dashboard/_dashboardLayout/recipient': typeof DashboardDashboardLayoutRecipientLazyRoute
-  '/dashboard/_dashboardLayout/visualization': typeof DashboardDashboardLayoutVisualizationLazyRoute
   '/dashboard/_dashboardLayout/': typeof DashboardDashboardLayoutIndexLazyRoute
 }
 
@@ -494,9 +475,6 @@ export interface FileRouteTypes {
     | '/sign-up'
     | '/dashboard'
     | '/dashboard/'
-    | '/dashboard/analytics'
-    | '/dashboard/bloodtests'
-    | '/dashboard/create'
     | '/dashboard/donate'
     | '/dashboard/edit-password'
     | '/dashboard/edit-profile'
@@ -505,15 +483,15 @@ export interface FileRouteTypes {
     | '/dashboard/profile'
     | '/dashboard/recipient'
     | '/dashboard/visualization'
+    | '/dashboard/analytics'
+    | '/dashboard/bloodtests'
+    | '/dashboard/create'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/login'
     | '/sign-up'
     | '/dashboard'
-    | '/dashboard/analytics'
-    | '/dashboard/bloodtests'
-    | '/dashboard/create'
     | '/dashboard/donate'
     | '/dashboard/edit-password'
     | '/dashboard/edit-profile'
@@ -522,6 +500,9 @@ export interface FileRouteTypes {
     | '/dashboard/profile'
     | '/dashboard/recipient'
     | '/dashboard/visualization'
+    | '/dashboard/analytics'
+    | '/dashboard/bloodtests'
+    | '/dashboard/create'
   id:
     | '__root__'
     | '/'
@@ -530,9 +511,6 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/dashboard/_dashboardLayout'
     | '/dashboard/'
-    | '/dashboard/_dashboardLayout/analytics'
-    | '/dashboard/_dashboardLayout/bloodtests'
-    | '/dashboard/_dashboardLayout/create'
     | '/dashboard/_dashboardLayout/donate'
     | '/dashboard/_dashboardLayout/edit-password'
     | '/dashboard/_dashboardLayout/edit-profile'
@@ -541,6 +519,9 @@ export interface FileRouteTypes {
     | '/dashboard/_dashboardLayout/profile'
     | '/dashboard/_dashboardLayout/recipient'
     | '/dashboard/_dashboardLayout/visualization'
+    | '/dashboard/_dashboardLayout/analytics'
+    | '/dashboard/_dashboardLayout/bloodtests'
+    | '/dashboard/_dashboardLayout/create'
     | '/dashboard/_dashboardLayout/'
   fileRoutesById: FileRoutesById
 }
@@ -595,9 +576,6 @@ export const routeTree = rootRoute
       "filePath": "dashboard/_dashboardLayout.tsx",
       "parent": "/dashboard",
       "children": [
-        "/dashboard/_dashboardLayout/analytics",
-        "/dashboard/_dashboardLayout/bloodtests",
-        "/dashboard/_dashboardLayout/create",
         "/dashboard/_dashboardLayout/donate",
         "/dashboard/_dashboardLayout/edit-password",
         "/dashboard/_dashboardLayout/edit-profile",
@@ -606,12 +584,47 @@ export const routeTree = rootRoute
         "/dashboard/_dashboardLayout/profile",
         "/dashboard/_dashboardLayout/recipient",
         "/dashboard/_dashboardLayout/visualization",
+        "/dashboard/_dashboardLayout/analytics",
+        "/dashboard/_dashboardLayout/bloodtests",
+        "/dashboard/_dashboardLayout/create",
         "/dashboard/_dashboardLayout/"
       ]
     },
     "/dashboard/": {
-      "filePath": "dashboard/index.lazy.tsx",
+      "filePath": "dashboard/index.tsx",
       "parent": "/dashboard"
+    },
+    "/dashboard/_dashboardLayout/donate": {
+      "filePath": "dashboard/_dashboardLayout/donate.tsx",
+      "parent": "/dashboard/_dashboardLayout"
+    },
+    "/dashboard/_dashboardLayout/edit-password": {
+      "filePath": "dashboard/_dashboardLayout/edit-password.tsx",
+      "parent": "/dashboard/_dashboardLayout"
+    },
+    "/dashboard/_dashboardLayout/edit-profile": {
+      "filePath": "dashboard/_dashboardLayout/edit-profile.tsx",
+      "parent": "/dashboard/_dashboardLayout"
+    },
+    "/dashboard/_dashboardLayout/events": {
+      "filePath": "dashboard/_dashboardLayout/events.tsx",
+      "parent": "/dashboard/_dashboardLayout"
+    },
+    "/dashboard/_dashboardLayout/hospital-history": {
+      "filePath": "dashboard/_dashboardLayout/hospital-history.tsx",
+      "parent": "/dashboard/_dashboardLayout"
+    },
+    "/dashboard/_dashboardLayout/profile": {
+      "filePath": "dashboard/_dashboardLayout/profile.tsx",
+      "parent": "/dashboard/_dashboardLayout"
+    },
+    "/dashboard/_dashboardLayout/recipient": {
+      "filePath": "dashboard/_dashboardLayout/recipient.tsx",
+      "parent": "/dashboard/_dashboardLayout"
+    },
+    "/dashboard/_dashboardLayout/visualization": {
+      "filePath": "dashboard/_dashboardLayout/visualization.tsx",
+      "parent": "/dashboard/_dashboardLayout"
     },
     "/dashboard/_dashboardLayout/analytics": {
       "filePath": "dashboard/_dashboardLayout/analytics.lazy.tsx",
@@ -623,38 +636,6 @@ export const routeTree = rootRoute
     },
     "/dashboard/_dashboardLayout/create": {
       "filePath": "dashboard/_dashboardLayout/create.lazy.tsx",
-      "parent": "/dashboard/_dashboardLayout"
-    },
-    "/dashboard/_dashboardLayout/donate": {
-      "filePath": "dashboard/_dashboardLayout/donate.lazy.tsx",
-      "parent": "/dashboard/_dashboardLayout"
-    },
-    "/dashboard/_dashboardLayout/edit-password": {
-      "filePath": "dashboard/_dashboardLayout/edit-password.lazy.tsx",
-      "parent": "/dashboard/_dashboardLayout"
-    },
-    "/dashboard/_dashboardLayout/edit-profile": {
-      "filePath": "dashboard/_dashboardLayout/edit-profile.lazy.tsx",
-      "parent": "/dashboard/_dashboardLayout"
-    },
-    "/dashboard/_dashboardLayout/events": {
-      "filePath": "dashboard/_dashboardLayout/events.lazy.tsx",
-      "parent": "/dashboard/_dashboardLayout"
-    },
-    "/dashboard/_dashboardLayout/hospital-history": {
-      "filePath": "dashboard/_dashboardLayout/hospital-history.lazy.tsx",
-      "parent": "/dashboard/_dashboardLayout"
-    },
-    "/dashboard/_dashboardLayout/profile": {
-      "filePath": "dashboard/_dashboardLayout/profile.lazy.tsx",
-      "parent": "/dashboard/_dashboardLayout"
-    },
-    "/dashboard/_dashboardLayout/recipient": {
-      "filePath": "dashboard/_dashboardLayout/recipient.lazy.tsx",
-      "parent": "/dashboard/_dashboardLayout"
-    },
-    "/dashboard/_dashboardLayout/visualization": {
-      "filePath": "dashboard/_dashboardLayout/visualization.lazy.tsx",
       "parent": "/dashboard/_dashboardLayout"
     },
     "/dashboard/_dashboardLayout/": {
