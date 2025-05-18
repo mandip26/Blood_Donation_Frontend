@@ -1,7 +1,7 @@
 import { createLazyFileRoute } from '@tanstack/react-router'
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { Check, AlertCircle, Loader2 } from 'lucide-react'
+import { Check, AlertCircle, Loader2, BellRing } from 'lucide-react'
 import { donationService } from '@/services/apiService'
 import { useAuth } from '@/hooks/useAuth'
 import { useResponsive } from '@/hooks/useResponsive'
@@ -13,9 +13,8 @@ export const Route = createLazyFileRoute('/dashboard/_dashboardLayout/donate')({
 function RouteComponent() {
   // Get auth context
   const { user, isLoading: authLoading } = useAuth()
-  
-  // Get responsive design hooks
-  const { isMobile } = useResponsive()
+    // Get responsive design hooks
+  const { isMobile: _ } = useResponsive() // Using underscore to indicate intentionally unused variable
   
   // Form state
   const [formData, setFormData] = useState({
@@ -254,16 +253,13 @@ function RouteComponent() {
   
   // Main form render
   return (
-    <div className="max-w-3xl mx-auto p-4 md:p-6">
-      <div className="mb-6">
-        <h1 className="text-xl md:text-2xl font-semibold mb-2">Blood Donation Registration</h1>
-        <p className="text-gray-600">
-          Please fill in the details below to register your blood donation.
-        </p>
+    <div className="mx-auto w-full">
+      <div className="p-4 md:p-6 flex justify-between items-center rounded-t-xl">
+        <h1 className="text-xl md:text-2xl font-semibold">Blood Donors Registration Form</h1>
       </div>
       
       {apiError && (
-        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start">
+        <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex items-start">
           <AlertCircle className="h-5 w-5 text-red-500 mr-3 mt-0.5" />
           <div>
             <p className="text-red-800 font-medium">Error</p>
@@ -272,293 +268,371 @@ function RouteComponent() {
         </div>
       )}
       
-      <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-sm p-4 md:p-6">
-        <div className={`grid grid-cols-1 ${isMobile ? '' : 'md:grid-cols-2'} gap-x-6 gap-y-4`}>
-          {/* Personal Information */}
-          <div className="col-span-1 md:col-span-2">
-            <h2 className="text-lg font-medium mb-4">Personal Information</h2>
-          </div>
-          
-          <div className="space-y-1.5">
-            <label className="block text-sm font-medium">Full Name*</label>
+      <form onSubmit={handleSubmit} className="p-6 md:p-8 md:pt-0 pt-0">
+        <div className="bg-white rounded-xl shadow-sm p-6 md:p-8 mb-6">
+          {/* Donor Name */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium mb-2">
+              Donor's Name<span className="text-red-500">*</span>
+            </label>
             <input
               type="text"
               name="fullName"
               value={formData.fullName}
               onChange={handleChange}
-              className={`w-full rounded-lg border ${errors.fullName ? 'border-red-300' : 'border-gray-300'} p-2.5`}
-              placeholder="Enter your full name"
+              className={`w-full rounded-full border ${errors.fullName ? 'border-red-300' : 'border-gray-300'} p-2.5 px-4`}
+              placeholder="Enter Full Name"
             />
-            {errors.fullName && <p className="text-red-500 text-xs">{errors.fullName}</p>}
+            {errors.fullName && <p className="text-red-500 text-xs mt-1">{errors.fullName}</p>}
           </div>
-          
-          <div className="space-y-1.5">
-            <label className="block text-sm font-medium">Date of Birth*</label>
-            <input
-              type="date"
-              name="dateOfBirth"
-              value={formData.dateOfBirth}
-              onChange={handleChange}
-              max={new Date().toISOString().split('T')[0]}
-              className={`w-full rounded-lg border ${errors.dateOfBirth ? 'border-red-300' : 'border-gray-300'} p-2.5`}
-            />
-            {errors.dateOfBirth && <p className="text-red-500 text-xs">{errors.dateOfBirth}</p>}
-          </div>
-          
-          <div className="space-y-1.5">
-            <label className="block text-sm font-medium">Gender*</label>
-            <div className="flex gap-4 mt-1.5">
-              <label className="flex items-center">
-                <input
-                  type="radio"
-                  name="gender"
-                  value="male"
-                  checked={formData.gender === 'male'}
-                  onChange={handleChange}
-                  className="mr-2"
-                />
-                Male
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            {/* Date of Birth */}
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                Date of Birth<span className="text-red-500">*</span>
               </label>
-              <label className="flex items-center">
-                <input
-                  type="radio"
-                  name="gender"
-                  value="female"
-                  checked={formData.gender === 'female'}
-                  onChange={handleChange}
-                  className="mr-2"
-                />
-                Female
+              <input
+                type="text"
+                name="dateOfBirth"
+                value={formData.dateOfBirth}
+                onChange={handleChange}
+                onFocus={(e) => e.target.type = 'date'}
+                max={new Date().toISOString().split('T')[0]}
+                className={`w-full rounded-full border ${errors.dateOfBirth ? 'border-red-300' : 'border-gray-300'} p-2.5 px-4`}
+                placeholder="DD/MM/YYYY"
+              />
+              {errors.dateOfBirth && <p className="text-red-500 text-xs mt-1">{errors.dateOfBirth}</p>}
+            </div>
+            
+            {/* Gender */}
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                Gender<span className="text-red-500">*</span>
               </label>
-              <label className="flex items-center">
-                <input
-                  type="radio"
-                  name="gender"
-                  value="other"
-                  checked={formData.gender === 'other'}
-                  onChange={handleChange}
-                  className="mr-2"
-                />
-                Other
-              </label>
+              <div className="flex flex-wrap gap-4">
+                <label className="flex items-center">
+                  <div className={`w-5 h-5 rounded-full border ${formData.gender === 'male' ? 'bg-[#c14351] border-[#c14351]' : 'border-gray-300'} flex items-center justify-center mr-2`}>
+                    {formData.gender === 'male' && <div className="w-2 h-2 bg-white rounded-full"></div>}
+                  </div>
+                  <input
+                    type="radio"
+                    name="gender"
+                    value="male"
+                    checked={formData.gender === 'male'}
+                    onChange={handleChange}
+                    className="sr-only"
+                  />
+                  Male
+                </label>
+                <label className="flex items-center">
+                  <div className={`w-5 h-5 rounded-full border ${formData.gender === 'female' ? 'bg-[#c14351] border-[#c14351]' : 'border-gray-300'} flex items-center justify-center mr-2`}>
+                    {formData.gender === 'female' && <div className="w-2 h-2 bg-white rounded-full"></div>}
+                  </div>
+                  <input
+                    type="radio"
+                    name="gender"
+                    value="female"
+                    checked={formData.gender === 'female'}
+                    onChange={handleChange}
+                    className="sr-only"
+                  />
+                  Female
+                </label>
+                <label className="flex items-center">
+                  <div className={`w-5 h-5 rounded-full border ${formData.gender === 'other' ? 'bg-[#c14351] border-[#c14351]' : 'border-gray-300'} flex items-center justify-center mr-2`}>
+                    {formData.gender === 'other' && <div className="w-2 h-2 bg-white rounded-full"></div>}
+                  </div>
+                  <input
+                    type="radio"
+                    name="gender"
+                    value="other"
+                    checked={formData.gender === 'other'}
+                    onChange={handleChange}
+                    className="sr-only"
+                  />
+                  Other
+                </label>
+              </div>
             </div>
           </div>
           
-          <div className="space-y-1.5">
-            <label className="block text-sm font-medium">Blood Type*</label>
-            <select
-              name="bloodType"
-              value={formData.bloodType}
-              onChange={handleChange}
-              className={`w-full rounded-lg border ${errors.bloodType ? 'border-red-300' : 'border-gray-300'} p-2.5`}
-            >
-              <option value="">Select Blood Type</option>
-              <option value="A+">A+</option>
-              <option value="A-">A-</option>
-              <option value="B+">B+</option>
-              <option value="B-">B-</option>
-              <option value="AB+">AB+</option>
-              <option value="AB-">AB-</option>
-              <option value="O+">O+</option>
-              <option value="O-">O-</option>
-            </select>
-            {errors.bloodType && <p className="text-red-500 text-xs">{errors.bloodType}</p>}
-          </div>
-          
-          {/* Contact Information */}
-          <div className="col-span-1 md:col-span-2 mt-4">
-            <h2 className="text-lg font-medium mb-4">Contact Information</h2>
-          </div>
-          
-          <div className="space-y-1.5">
-            <label className="block text-sm font-medium">Email Address*</label>
-            <input
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              className={`w-full rounded-lg border ${errors.email ? 'border-red-300' : 'border-gray-300'} p-2.5`}
-              placeholder="Enter your email"
-            />
-            {errors.email && <p className="text-red-500 text-xs">{errors.email}</p>}
-          </div>
-          
-          <div className="space-y-1.5">
-            <label className="block text-sm font-medium">Phone Number*</label>
-            <input
-              type="tel"
-              name="phoneNo"
-              value={formData.phoneNo}
-              onChange={handleChange}
-              className={`w-full rounded-lg border ${errors.phoneNo ? 'border-red-300' : 'border-gray-300'} p-2.5`}
-              placeholder="Enter your phone number"
-            />
-            {errors.phoneNo && <p className="text-red-500 text-xs">{errors.phoneNo}</p>}
-          </div>
-          
-          {/* Health Information */}
-          <div className="col-span-1 md:col-span-2 mt-4">
-            <h2 className="text-lg font-medium mb-4">Health Information</h2>
-          </div>
-          
-          <div className="space-y-1.5">
-            <label className="block text-sm font-medium">Weight (kg)</label>
-            <input
-              type="number"
-              name="weight"
-              value={formData.weight}
-              onChange={handleChange}
-              className={`w-full rounded-lg border ${errors.weight ? 'border-red-300' : 'border-gray-300'} p-2.5`}
-              placeholder="Enter your weight in kg"
-            />
-            {errors.weight && <p className="text-red-500 text-xs">{errors.weight}</p>}
-          </div>
-          
-          <div className="space-y-1.5">
-            <label className="block text-sm font-medium">Hemoglobin Count (g/dL)</label>
-            <input
-              type="number"
-              step="0.1"
-              name="hemoglobinCount"
-              value={formData.hemoglobinCount}
-              onChange={handleChange}
-              className={`w-full rounded-lg border ${errors.hemoglobinCount ? 'border-red-300' : 'border-gray-300'} p-2.5`}
-              placeholder="Enter hemoglobin count if known"
-            />
-            {errors.hemoglobinCount && <p className="text-red-500 text-xs">{errors.hemoglobinCount}</p>}
-          </div>
-          
-          <div className="space-y-1.5">
-            <label className="block text-sm font-medium">Do you have any disability?*</label>
-            <div className="flex gap-4 mt-1.5">
-              <label className="flex items-center">
-                <input
-                  type="radio"
-                  name="disability"
-                  value="yes"
-                  checked={formData.disability === 'yes'}
-                  onChange={handleChange}
-                  className="mr-2"
-                />
-                Yes
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            {/* Phone Number */}
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                Phone No<span className="text-red-500">*</span>
               </label>
-              <label className="flex items-center">
-                <input
-                  type="radio"
-                  name="disability"
-                  value="no"
-                  checked={formData.disability === 'no'}
-                  onChange={handleChange}
-                  className="mr-2"
-                />
-                No
+              <input
+                type="tel"
+                name="phoneNo"
+                value={formData.phoneNo}
+                onChange={handleChange}
+                className={`w-full rounded-full border ${errors.phoneNo ? 'border-red-300' : 'border-gray-300'} p-2.5 px-4`}
+                placeholder="00000 00000"
+              />
+              {errors.phoneNo && <p className="text-red-500 text-xs mt-1">{errors.phoneNo}</p>}
+            </div>
+            
+            {/* Email */}
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                Email<span className="text-red-500">*</span>
               </label>
+              <input
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                className={`w-full rounded-full border ${errors.email ? 'border-red-300' : 'border-gray-300'} p-2.5 px-4`}
+                placeholder="Enter your email"
+              />
+              {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
             </div>
           </div>
           
-          <div className="space-y-1.5">
-            <label className="block text-sm font-medium">Are you currently healthy?*</label>
-            <div className="flex gap-4 mt-1.5">
-              <label className="flex items-center">
-                <input
-                  type="radio"
-                  name="healthy"
-                  value="yes"
-                  checked={formData.healthy === 'yes'}
-                  onChange={handleChange}
-                  className="mr-2"
-                />
-                Yes
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            {/* Blood Type */}
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                Blood Type<span className="text-red-500">*</span>
               </label>
-              <label className="flex items-center">
-                <input
-                  type="radio"
-                  name="healthy"
-                  value="no"
-                  checked={formData.healthy === 'no'}
+              <div className="relative">
+                <select
+                  name="bloodType"
+                  value={formData.bloodType}
                   onChange={handleChange}
-                  className="mr-2"
-                />
-                No
+                  className={`w-full rounded-full border ${errors.bloodType ? 'border-red-300' : 'border-gray-300'} p-2.5 px-4 appearance-none`}
+                >
+                  <option value="">-select-</option>
+                  <option value="A+">A+</option>
+                  <option value="A-">A-</option>
+                  <option value="B+">B+</option>
+                  <option value="B-">B-</option>
+                  <option value="AB+">AB+</option>
+                  <option value="AB-">AB-</option>
+                  <option value="O+">O+</option>
+                  <option value="O-">O-</option>
+                </select>
+                <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="8" cy="8" r="8" fill="#E6E6E6"/>
+                    <path d="M11 7L8 10L5 7" stroke="#666" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </div>
+              </div>
+              {errors.bloodType && <p className="text-red-500 text-xs mt-1">{errors.bloodType}</p>}
+            </div>
+            
+            {/* ID Proof */}
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                ID Proof<span className="text-red-500">*</span>
               </label>
+              <div className="flex flex-wrap gap-4">
+                <label className="flex items-center">
+                  <div className={`w-5 h-5 rounded-full border ${formData.idProofType === 'PAN' ? 'bg-[#c14351] border-[#c14351]' : 'border-gray-300'} flex items-center justify-center mr-2`}>
+                    {formData.idProofType === 'PAN' && <div className="w-2 h-2 bg-white rounded-full"></div>}
+                  </div>
+                  <input
+                    type="radio"
+                    name="idProofType"
+                    value="PAN"
+                    checked={formData.idProofType === 'PAN'}
+                    onChange={handleChange}
+                    className="sr-only"
+                  />
+                  PAN
+                </label>
+                <label className="flex items-center">
+                  <div className={`w-5 h-5 rounded-full border ${formData.idProofType === 'Aadhaar' ? 'bg-[#c14351] border-[#c14351]' : 'border-gray-300'} flex items-center justify-center mr-2`}>
+                    {formData.idProofType === 'Aadhaar' && <div className="w-2 h-2 bg-white rounded-full"></div>}
+                  </div>
+                  <input
+                    type="radio"
+                    name="idProofType"
+                    value="Aadhaar"
+                    checked={formData.idProofType === 'Aadhaar'}
+                    onChange={handleChange}
+                    className="sr-only"
+                  />
+                  Aadhaar
+                </label>
+                <label className="flex items-center">
+                  <div className={`w-5 h-5 rounded-full border ${formData.idProofType === 'VoterID' ? 'bg-[#c14351] border-[#c14351]' : 'border-gray-300'} flex items-center justify-center mr-2`}>
+                    {formData.idProofType === 'VoterID' && <div className="w-2 h-2 bg-white rounded-full"></div>}
+                  </div>
+                  <input
+                    type="radio"
+                    name="idProofType"
+                    value="VoterID"
+                    checked={formData.idProofType === 'VoterID'}
+                    onChange={handleChange}
+                    className="sr-only"
+                  />
+                  Vote ID
+                </label>
+              </div>
+              <div className="mt-2">
+                <input
+                  type="text"
+                  name="idProofNumber"
+                  value={formData.idProofNumber}
+                  onChange={handleChange}
+                  className={`w-full rounded-full border ${errors.idProofNumber ? 'border-red-300' : 'border-gray-300'} p-2.5 px-4`}
+                  placeholder="Enter ID Number"
+                />
+                {errors.idProofNumber && <p className="text-red-500 text-xs mt-1">{errors.idProofNumber}</p>}
+              </div>
             </div>
           </div>
           
-          {/* ID Verification */}
-          <div className="col-span-1 md:col-span-2 mt-4">
-            <h2 className="text-lg font-medium mb-4">ID Verification</h2>
-          </div>
-          
-          <div className="space-y-1.5">
-            <label className="block text-sm font-medium">ID Proof Type*</label>
-            <select
-              name="idProofType"
-              value={formData.idProofType}
-              onChange={handleChange}
-              className={`w-full rounded-lg border border-gray-300 p-2.5`}
-            >
-              <option value="PAN">PAN Card</option>
-              <option value="Aadhaar">Aadhaar Card</option>
-              <option value="VoterID">Voter ID</option>
-            </select>
-          </div>
-          
-          <div className="space-y-1.5">
-            <label className="block text-sm font-medium">ID Proof Number*</label>
-            <input
-              type="text"
-              name="idProofNumber"
-              value={formData.idProofNumber}
-              onChange={handleChange}
-              className={`w-full rounded-lg border ${errors.idProofNumber ? 'border-red-300' : 'border-gray-300'} p-2.5`}
-              placeholder="Enter ID number"
-            />
-            {errors.idProofNumber && <p className="text-red-500 text-xs">{errors.idProofNumber}</p>}
-          </div>
-          
-          {/* Consent */}
-          <div className="col-span-1 md:col-span-2 mt-4">
-            <div className={`p-4 rounded-lg bg-gray-50 ${errors.declaration ? 'border border-red-300' : ''}`}>
-              <label className="flex items-start cursor-pointer">
-                <input
-                  type="checkbox"
-                  name="declaration"
-                  checked={formData.declaration}
-                  onChange={handleChange}
-                  className="mt-1 mr-3"
-                />
-                <span className="text-sm">
-                  I hereby declare that all the information provided by me is true and correct to the best of my knowledge. 
-                  I understand that providing false information may disqualify me from donating blood and may have legal consequences.
-                </span>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            {/* Any Disability */}
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                Any Disability<span className="text-red-500">*</span>
               </label>
-              {errors.declaration && <p className="text-red-500 text-xs mt-1">{errors.declaration}</p>}
+              <div className="flex flex-wrap gap-4">
+                <label className="flex items-center">
+                  <div className={`w-5 h-5 rounded-full border ${formData.disability === 'no' ? 'bg-[#c14351] border-[#c14351]' : 'border-gray-300'} flex items-center justify-center mr-2`}>
+                    {formData.disability === 'no' && <div className="w-2 h-2 bg-white rounded-full"></div>}
+                  </div>
+                  <input
+                    type="radio"
+                    name="disability"
+                    value="no"
+                    checked={formData.disability === 'no'}
+                    onChange={handleChange}
+                    className="sr-only"
+                  />
+                  No
+                </label>
+                <label className="flex items-center">
+                  <div className={`w-5 h-5 rounded-full border ${formData.disability === 'yes' ? 'bg-[#c14351] border-[#c14351]' : 'border-gray-300'} flex items-center justify-center mr-2`}>
+                    {formData.disability === 'yes' && <div className="w-2 h-2 bg-white rounded-full"></div>}
+                  </div>
+                  <input
+                    type="radio"
+                    name="disability"
+                    value="yes"
+                    checked={formData.disability === 'yes'}
+                    onChange={handleChange}
+                    className="sr-only"
+                  />
+                  Yes
+                </label>
+              </div>
             </div>
+            
+            {/* Weight */}
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                Weight
+              </label>
+              <input
+                type="text"
+                name="weight"
+                value={formData.weight}
+                onChange={handleChange}
+                className={`w-full rounded-full border ${errors.weight ? 'border-red-300' : 'border-gray-300'} p-2.5 px-4`}
+                placeholder="weight in Kg's"
+              />
+              {errors.weight && <p className="text-red-500 text-xs mt-1">{errors.weight}</p>}
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            {/* Hemoglobin Count */}
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                Hemoglobin Count
+              </label>
+              <input
+                type="text"
+                name="hemoglobinCount"
+                value={formData.hemoglobinCount}
+                onChange={handleChange}
+                className={`w-full rounded-full border ${errors.hemoglobinCount ? 'border-red-300' : 'border-gray-300'} p-2.5 px-4`}
+                placeholder="Enter your count"
+              />
+              {errors.hemoglobinCount && <p className="text-red-500 text-xs mt-1">{errors.hemoglobinCount}</p>}
+            </div>
+            
+            {/* Are you Healthy */}
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                Are you Healthy
+              </label>
+              <div className="flex flex-wrap gap-4">
+                <label className="flex items-center">
+                  <div className={`w-5 h-5 rounded-full border ${formData.healthy === 'no' ? 'bg-[#c14351] border-[#c14351]' : 'border-gray-300'} flex items-center justify-center mr-2`}>
+                    {formData.healthy === 'no' && <div className="w-2 h-2 bg-white rounded-full"></div>}
+                  </div>
+                  <input
+                    type="radio"
+                    name="healthy"
+                    value="no"
+                    checked={formData.healthy === 'no'}
+                    onChange={handleChange}
+                    className="sr-only"
+                  />
+                  No
+                </label>
+                <label className="flex items-center">
+                  <div className={`w-5 h-5 rounded-full border ${formData.healthy === 'yes' ? 'bg-[#c14351] border-[#c14351]' : 'border-gray-300'} flex items-center justify-center mr-2`}>
+                    {formData.healthy === 'yes' && <div className="w-2 h-2 bg-white rounded-full"></div>}
+                  </div>
+                  <input
+                    type="radio"
+                    name="healthy"
+                    value="yes"
+                    checked={formData.healthy === 'yes'}
+                    onChange={handleChange}
+                    className="sr-only"
+                  />
+                  Yes
+                </label>
+              </div>
+            </div>
+          </div>
+          
+          {/* Declaration */}
+          <div className="mb-6">
+            <label className="flex items-start">
+              <div className={`w-5 h-5 border rounded flex items-center justify-center mt-0.5 ${errors.declaration ? 'border-red-300' : formData.declaration ? 'bg-[#c14351] border-[#c14351]' : 'border-gray-300'}`}>
+                {formData.declaration && <Check className="h-3 w-3 text-white" />}
+              </div>
+              <input
+                type="checkbox"
+                name="declaration"
+                checked={formData.declaration}
+                onChange={handleChange}
+                className="sr-only"
+              />
+              <span className="ml-3 text-sm">
+                I have read and understood all the information presented above and answered all the questions to the best of my knowledge, and hereby declare that<span className="text-red-500">*</span>
+              </span>
+            </label>
+            {errors.declaration && <p className="text-red-500 text-xs mt-1 ml-8">{errors.declaration}</p>}
           </div>
         </div>
         
-        <div className="mt-8 flex gap-4 justify-end">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => window.history.back()}
-          >
-            Cancel
-          </Button>
-          <Button
+        <div className="flex justify-center">
+          <button
             type="submit"
-            className="bg-primary-magenta hover:bg-primary-magenta/90"
+            className={`rounded-full bg-[#c14351] text-white py-2.5 px-6 ${isSubmitting ? 'opacity-75' : 'hover:bg-[#a23543]'}`}
             disabled={isSubmitting}
           >
             {isSubmitting ? (
               <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                <Loader2 className="h-4 w-4 mr-2 inline animate-spin" />
                 Submitting...
               </>
             ) : (
-              'Submit'
+              'Save & Continue'
             )}
-          </Button>
+          </button>
         </div>
       </form>
     </div>
