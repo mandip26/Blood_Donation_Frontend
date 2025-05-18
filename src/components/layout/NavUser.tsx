@@ -1,4 +1,4 @@
-import { ChevronsUpDown } from "lucide-react";
+import { ChevronsUpDown, LogOutIcon } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -18,8 +18,8 @@ import {
 } from "@/components/ui/sidebar";
 import ProfileIcon from "@/components/icons/ProfileIcon.tsx";
 import { Link, useLocation } from "@tanstack/react-router";
-import PasswordIcon from "@/components/icons/PasswordIcon.tsx";
 import HospitalIcon from "@/components/icons/HospitalIcon.tsx";
+import useAuth from "@/hooks/useAuth";
 
 export function NavUser({
   user,
@@ -31,6 +31,7 @@ export function NavUser({
   };
 }) {
   const { isMobile } = useSidebar();
+  const { logout } = useAuth();
 
   const options = [
     {
@@ -38,15 +39,16 @@ export function NavUser({
       icon: <ProfileIcon />,
       link: "/dashboard/edit-profile",
     },
-    {
-      name: "Edit Password",
-      icon: <PasswordIcon />,
-      link: "/dashboard/edit-password",
-    },
+
     {
       name: "Hospital History",
       icon: <HospitalIcon />,
       link: "/dashboard/hospital-history",
+    },
+    {
+      name: "Logout",
+      icon: <LogOutIcon color="#fff" />,
+      link: "/dashboard",
     },
   ];
 
@@ -102,10 +104,23 @@ export function NavUser({
                   key={i}
                   className={`focus:bg-white/15 focus:text-white rounded-lg h-9 ${currentRoute === item.link ? "bg-white/20" : "bg-transparent"}`}
                 >
-                  <Link to={item.link} className="flex gap-3 items-center px-3">
-                    {item.icon}
-                    {item.name}
-                  </Link>
+                  {item.name === "Logout" ? (
+                    <button
+                      className="flex gap-3 items-center px-3"
+                      onClick={() => logout()}
+                    >
+                      {item.icon}
+                      {item.name}
+                    </button>
+                  ) : (
+                    <Link
+                      to={item.link}
+                      className="flex gap-3 items-center px-3"
+                    >
+                      {item.icon}
+                      {item.name}
+                    </Link>
+                  )}
                 </DropdownMenuItem>
               ))}
             </DropdownMenuGroup>

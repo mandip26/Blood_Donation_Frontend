@@ -682,9 +682,6 @@ function VisualizationComponent() {
             </div>
           </div>
         </>
-      )}
-    </div>
-  )
-}
+      )}    </div>
   )
 }
