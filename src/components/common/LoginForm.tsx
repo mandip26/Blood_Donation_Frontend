@@ -1,10 +1,10 @@
 import { useForm } from "@tanstack/react-form";
 import { z } from "zod";
 import { Input } from "@/components/ui/input.tsx";
-import axios from "axios";
 import { useState } from "react";
 import { Toaster, toast } from "react-hot-toast";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
+import useAuth from "@/hooks/useAuth";
 
 // Login schema
 const loginSchema = z.object({
@@ -15,6 +15,8 @@ const loginSchema = z.object({
 export default function LoginForm() {
   const [apiError, setApiError] = useState<string | null>(null);
   const [formSubmitting, setFormSubmitting] = useState(false);
+  const { login } = useAuth();
+  const navigate = useNavigate();
 
   // Helper function to format and display error messages properly
   const ErrorMessage = ({ errors }: { errors: any[] }) => {
@@ -30,7 +32,7 @@ export default function LoginForm() {
       <div className="text-red-400 text-xs ml-2 mt-1">{formattedErrors}</div>
     );
   };
-
+  
   const form = useForm({
     defaultValues: {
       email: "",
@@ -43,65 +45,37 @@ export default function LoginForm() {
       try {
         setFormSubmitting(true);
         setApiError(null);
-
-        // For login functionality
-        const response = await axios.post(
-          import.meta.env.VITE_BASE_API_URL + "/login",
-          {
-            email: value.email,
-            password: value.password,
-          },
-          {
-            headers: {
-              "Content-Type": "application/json",
-            },
-            withCredentials: true,
-          }
-        );
-
-        if (response.data) {
-          toast.success("Login successful!");
-          // Handle login success (e.g. save token, redirect)
-          console.log("Login successful!", response);          
-        }
-
-        console.log("Form submitted", value);
+        
+        console.log("Submitting login form with:", value.email); // Debug email
+        
+        // Call login function from auth hook
+        const response = await login(value.email, value.password);
+        
+        console.log("Login function returned:", response); // Debug response
+        
+        // Show success message
+        toast.success("Login successful!");
+        
+        // Give toast time to display before navigating
+        setTimeout(() => {
+          console.log("Navigating to dashboard...");
+          navigate({ to: "/dashboard" });
+        }, 300);
+        
       } catch (error: any) {
-        console.error("Form submission error:", error);
-        if (axios.isAxiosError(error) && error.response) {
-          // Handle structured error responses
-          const responseData = error.response.data;
-          let errorMessage = "An error occurred during submission";
-
-          if (typeof responseData === "string") {
-            errorMessage = responseData;
-          } else if (responseData.message) {
-            errorMessage = responseData.message;
-          } else if (responseData.error) {
-            errorMessage =
-              typeof responseData.error === "string"
-                ? responseData.error
-                : responseData.error.message ||
-                  JSON.stringify(responseData.error);
-          } else if (
-            responseData.errors &&
-            Array.isArray(responseData.errors)
-          ) {
-            // Handle validation errors array
-            errorMessage = responseData.errors
-              .map((e: any) =>
-                typeof e === "string" ? e : e.message || JSON.stringify(e)
-              )
-              .join(", ");
-          }
-
-          setApiError(errorMessage);
-          toast.error(errorMessage);
-        } else {
-          const errorMessage = "Network error. Please try again later.";
-          setApiError(errorMessage);
-          toast.error(errorMessage);
+        console.error("Login error:", error);
+        
+        // Extract and display error message
+        let errorMessage = "An error occurred during login";
+        
+        if (error.response?.data?.message) {
+          errorMessage = error.response.data.message;
+        } else if (error.message) {
+          errorMessage = error.message;
         }
+        
+        setApiError(errorMessage);
+        toast.error(errorMessage);
       } finally {
         setFormSubmitting(false);
       }

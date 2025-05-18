@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Base API configuration
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+const API_BASE_URL = import.meta.env.VITE_BASE_API_URL || 'http://localhost:8001/api/v1/user';
 
 // Create axios instance with default config
 const api = axios.create({
@@ -9,7 +9,7 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  withCredentials: true, // To handle cookies/sessions
+  withCredentials: true, // Critical for handling cookies/sessions
 });
 
 // Request interceptor - useful for adding auth tokens to requests
@@ -31,27 +31,50 @@ api.interceptors.response.use(
   (error) => {
     // Handle unauthorized errors (401)
     if (error.response && error.response.status === 401) {
-      // Logout user or redirect to login page
-      window.location.href = '/login';
+      // Clear localStorage on 401
+      localStorage.removeItem('bloodDonationUser');
+      
+      // Only redirect if not already on login page to prevent redirect loops
+      if (!window.location.href.includes('/login')) {
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }
 );
 
 // Auth services
-export const authService = {
-  login: async (email: string, password: string) => {
+export const authService = {  login: async (email: string, password: string) => {
     try {
-      const response = await api.post('/users/login', { email, password });
+      // Direct axios call with explicit withCredentials to ensure cookies are handled
+      const response = await axios.post(`${API_BASE_URL}/login`, 
+        { email, password },
+        { 
+          withCredentials: true,
+          headers: { 'Content-Type': 'application/json' }
+        }
+      );
+      
+      // Debug cookie reception
+      console.log('Login response headers:', response.headers);
+      console.log('Login response data:', response.data);
+      
+      if (response.data && response.data.user) {
+        // Store user data in localStorage for quick access
+        localStorage.setItem('bloodDonationUser', JSON.stringify(response.data.user));
+      } else {
+        console.error('Missing user data in login response');
+      }
+      
       return response.data;
     } catch (error) {
+      console.error('Login error details:', error);
       throw error;
     }
   },
-
   register: async (userData: FormData) => {
     try {
-      const response = await api.post('/users/register', userData, {
+      const response = await api.post('/register', userData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -64,19 +87,46 @@ export const authService = {
 
   logout: async () => {
     try {
-      const response = await api.post('/users/logout');
+      // Direct axios call with explicit withCredentials to ensure cookies are handled
+      const response = await axios.post(`${API_BASE_URL}/logout`, {}, {
+        withCredentials: true
+      });
+      
+      // Always remove from localStorage regardless of API response
+      localStorage.removeItem('bloodDonationUser');
+      
       return response.data;
     } catch (error) {
+      // Even on error, remove from localStorage
+      localStorage.removeItem('bloodDonationUser');
       throw error;
     }
   },
-
   getCurrentUser: async () => {
     try {
-      const response = await api.get('/users/me');
-      return response.data;
+      // Try to get user from localStorage first for speed
+      const cachedUser = localStorage.getItem('bloodDonationUser');
+      if (cachedUser) {
+        return JSON.parse(cachedUser);
+      }
+      
+      // Fallback - try API call with a short timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 1500);
+      
+      try {
+        const response = await api.get('/users/me', { 
+          signal: controller.signal 
+        });
+        clearTimeout(timeoutId);
+        return response.data;
+      } catch (err) {
+        clearTimeout(timeoutId);
+        // If we can't reach the endpoint, consider user not authenticated
+        return null;
+      }
     } catch (error) {
-      throw error;
+      return null;
     }
   },
 
@@ -339,6 +389,62 @@ export const reportService = {
       throw error;
     }
   },
+};
+
+// Post services
+export const postService = {
+  getAllPosts: async () => {
+    try {
+      const response = await api.get('/post/all');
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  getPostById: async (id: string) => {
+    try {
+      const response = await api.get(`/post/${id}`);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  createPost: async (postData: FormData) => {
+    try {
+      const response = await api.post('/post/create', postData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+  
+  updatePost: async (id: string, postData: FormData) => {
+    try {
+      const response = await api.put(`/post/${id}`, postData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+  
+  deletePost: async (id: string) => {
+    try {
+      const response = await api.delete(`/post/${id}`);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  }
 };
 
 export default api;

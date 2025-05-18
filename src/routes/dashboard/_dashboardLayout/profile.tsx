@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/useAuth";
-import { LoadingState } from "@/components/common/LoadingState";
+import  LoadingState from "@/components/common/LoadingState";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Link } from "@tanstack/react-router";
@@ -141,10 +141,10 @@ function ProfilePage() {
             
             <div className="mt-6 flex flex-wrap gap-3 justify-center sm:justify-start">
               <Button asChild className="bg-primary-magenta hover:bg-primary-magenta/90">
-                <Link to="/dashboard/_dashboardLayout/edit-profile">Edit Profile</Link>
+                <Link to="/dashboard/edit-profile">Edit Profile</Link>
               </Button>
               <Button asChild variant="outline">
-                <Link to="/dashboard/_dashboardLayout/edit-password">Change Password</Link>
+                <Link to="/dashboard/edit-password">Change Password</Link>
               </Button>
             </div>
           </div>
@@ -223,7 +223,7 @@ function ProfilePage() {
               </div>
             )}
             <Button className="mt-2" asChild>
-              <Link to="/dashboard/_dashboardLayout/edit-profile">Update Details</Link>
+              <Link to="/dashboard/edit-profile">Update Details</Link>
             </Button>
           </div>
         </div>

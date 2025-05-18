@@ -3,6 +3,7 @@ import { Bell, Search, MapPin, Calendar, Phone, Mail, CheckCircle, Edit3, Camera
 import { Button } from '@/components/ui/button'
 import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
+import useAuth from '@/hooks/useAuth'
 
 export const Route = createLazyFileRoute(
   '/dashboard/_dashboardLayout/edit-profile',
@@ -26,16 +27,18 @@ interface MedicalDetail {
 function EditProfileComponent() {
   const [editingPersonal, setEditingPersonal] = useState(false)
   const [editingMedical, setEditingMedical] = useState(false)
+  const { user: loggedInUser } = useAuth();
   const [personalInfo, setPersonalInfo] = useState({
-    name: 'Ramzey Nassar',
-    phone: '+91 98989 98989',
-    email: 'ramzeynassar@gmail.com',
-    bloodType: 'O+',
-    dob: '1990-04-15',
-    gender: 'Male',
-    address: '123 Main St, Delhi, India',
-    emergencyContact: '+91 87878 87878'
+    name: loggedInUser ? loggedInUser.name : 'Ramzey Nassar',
+    phone: loggedInUser ? loggedInUser.phone : '+91 98989 98989',
+    email: loggedInUser ? loggedInUser.email : 'ramzeynassar@gmail.com',
+    bloodType: loggedInUser ? loggedInUser.bloodType : 'O+',
+    dob: loggedInUser ? loggedInUser.dob : '1990-04-15',
+    gender: loggedInUser ? loggedInUser.gender : 'Male',
+    address: loggedInUser ? loggedInUser.address : '123 Main St, Delhi, India',
+    emergencyContact: loggedInUser ? loggedInUser.emergencyContact : '+91 87878 87878'
   })
+  
   
   const [medicalDetails, setMedicalDetails] = useState<MedicalDetail[]>([
     { key: 'Weight', value: '75 kg', lastUpdated: '2025-04-01' },

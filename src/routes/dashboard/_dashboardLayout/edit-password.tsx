@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/useAuth";
-import { LoadingState } from "@/components/common/LoadingState";
+import LoadingState from "@/components/common/LoadingState";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -97,7 +97,7 @@ function EditPasswordPage() {
       
       // Navigate back to profile page after delay
       setTimeout(() => {
-        navigate({ to: "/dashboard/_dashboardLayout/profile" });
+        navigate({ to: "/dashboard/profile" });
       }, 1500);
     } catch (error) {
       console.error("Error updating password:", error);
@@ -203,7 +203,7 @@ function EditPasswordPage() {
             <Button 
               variant="link" 
               className="text-gray-500 text-sm"
-              onClick={() => navigate({ to: "/dashboard/_dashboardLayout/profile" })}
+              onClick={() => navigate({ to: "/dashboard/profile" })}
             >
               Cancel and return to profile
             </Button>

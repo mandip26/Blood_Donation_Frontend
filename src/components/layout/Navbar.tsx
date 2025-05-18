@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button.tsx";
-import { Heart, Menu, User, HelpCircle, BookOpen } from "lucide-react";
+import { Heart, Menu, User, HelpCircle, BookOpen, LogOut } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { Link } from "@tanstack/react-router";
 import gsap from "gsap";
@@ -11,6 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu.tsx";
+import useAuth from "@/hooks/useAuth";
 
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -18,6 +19,7 @@ export default function Navbar() {
   const mobileMenuRef = useRef<HTMLDivElement>(null);
   const profileButtonRef = useRef<HTMLButtonElement>(null);
   const dropdownContentRef = useRef<HTMLDivElement>(null);
+  const { user, isLoggedIn, logout } = useAuth();
 
   // Enhanced GSAP animation for mobile menu with more poppy animation
   useEffect(() => {
@@ -302,24 +304,47 @@ export default function Navbar() {
           >
             <DropdownMenuContent className="w-56 shadow-lg mr-36">
               <DropdownMenuGroup>
-                <DropdownMenuItem asChild className="dropdown-item">
-                  <Link
-                    to="/sign-up"
-                    className="flex items-center cursor-pointer w-full"
-                  >
-                    <User className="mr-2 h-4 w-4" />
-                    <span>Register</span>
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild className="dropdown-item">
-                  <Link
-                    to="/login"
-                    className="flex items-center cursor-pointer w-full"
-                  >
-                    <User className="mr-2 h-4 w-4" />
-                    <span>Login</span>
-                  </Link>
-                </DropdownMenuItem>
+                {isLoggedIn ? (
+                  <>
+                    <DropdownMenuItem asChild className="dropdown-item">
+                      <Link
+                        to="/dashboard"
+                        className="flex items-center cursor-pointer w-full"
+                      >
+                        <User className="mr-2 h-4 w-4" />
+                        <span>Dashboard</span>
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      className="dropdown-item"
+                      onClick={() => logout()}
+                    >
+                      <LogOut className="mr-2 h-4 w-4" />
+                      <span>Logout</span>
+                    </DropdownMenuItem>
+                  </>
+                ) : (
+                  <>
+                    <DropdownMenuItem asChild className="dropdown-item">
+                      <Link
+                        to="/sign-up"
+                        className="flex items-center cursor-pointer w-full"
+                      >
+                        <User className="mr-2 h-4 w-4" />
+                        <span>Register</span>
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild className="dropdown-item">
+                      <Link
+                        to="/login"
+                        className="flex items-center cursor-pointer w-full"
+                      >
+                        <User className="mr-2 h-4 w-4" />
+                        <span>Login</span>
+                      </Link>
+                    </DropdownMenuItem>
+                  </>
+                )}
               </DropdownMenuGroup>
               <DropdownMenuSeparator />
               <DropdownMenuGroup>
@@ -360,24 +385,49 @@ export default function Navbar() {
               News
             </li>
             <li className="h-px bg-gray-200 my-2"></li>
-            <li>
-              <Link
-                to="/sign-up"
-                className="flex items-center gap-2 hover:text-primary-magenta transition-colors duration-200 w-full"
-              >
-                <User className="w-4 h-4" />
-                Register
-              </Link>
-            </li>
-            <li>
-              <Link
-                to="/login"
-                className="flex items-center gap-2 hover:text-primary-magenta transition-colors duration-200 w-full"
-              >
-                <User className="w-4 h-4" />
-                Login
-              </Link>
-            </li>
+            
+            {isLoggedIn ? (
+              <>
+                <li>
+                  <Link
+                    to="/dashboard"
+                    className="flex items-center gap-2 hover:text-primary-magenta transition-colors duration-200 w-full"
+                  >
+                    <User className="w-4 h-4" />
+                    Dashboard
+                  </Link>
+                </li>
+                <li 
+                  className="flex items-center gap-2 hover:text-primary-magenta transition-colors duration-200 w-full cursor-pointer"
+                  onClick={() => logout()}
+                >
+                  <LogOut className="w-4 h-4" />
+                  Logout
+                </li>
+              </>
+            ) : (
+              <>
+                <li>
+                  <Link
+                    to="/sign-up"
+                    className="flex items-center gap-2 hover:text-primary-magenta transition-colors duration-200 w-full"
+                  >
+                    <User className="w-4 h-4" />
+                    Register
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    to="/login"
+                    className="flex items-center gap-2 hover:text-primary-magenta transition-colors duration-200 w-full"
+                  >
+                    <User className="w-4 h-4" />
+                    Login
+                  </Link>
+                </li>
+              </>
+            )}
+            
             <li className="h-px bg-gray-200 my-2"></li>
             <li className="flex items-center gap-2 hover:text-primary-magenta cursor-pointer transition-colors duration-200">
               <HelpCircle className="w-4 h-4" />
