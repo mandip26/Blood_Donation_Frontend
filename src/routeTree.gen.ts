@@ -17,6 +17,18 @@ import { Route as IndexImport } from './routes/index'
 import { Route as DashboardDashboardLayoutImport } from './routes/dashboard/_dashboardLayout'
 import { Route as authSignUpImport } from './routes/(auth)/sign-up'
 import { Route as authLoginImport } from './routes/(auth)/login'
+<<<<<<< Updated upstream
+=======
+import { Route as DashboardDashboardLayoutVisualizationApiImport } from './routes/dashboard/_dashboardLayout/visualization-api'
+import { Route as DashboardDashboardLayoutVisualizationImport } from './routes/dashboard/_dashboardLayout/visualization'
+import { Route as DashboardDashboardLayoutRecipientImport } from './routes/dashboard/_dashboardLayout/recipient'
+import { Route as DashboardDashboardLayoutProfileImport } from './routes/dashboard/_dashboardLayout/profile'
+import { Route as DashboardDashboardLayoutHospitalHistoryImport } from './routes/dashboard/_dashboardLayout/hospital-history'
+import { Route as DashboardDashboardLayoutEventsImport } from './routes/dashboard/_dashboardLayout/events'
+import { Route as DashboardDashboardLayoutEditProfileImport } from './routes/dashboard/_dashboardLayout/edit-profile'
+import { Route as DashboardDashboardLayoutEditPasswordImport } from './routes/dashboard/_dashboardLayout/edit-password'
+import { Route as DashboardDashboardLayoutDonateImport } from './routes/dashboard/_dashboardLayout/donate'
+>>>>>>> Stashed changes
 
 // Create Virtual Routes
 
@@ -230,6 +242,104 @@ const DashboardDashboardLayoutAnalyticsLazyRoute =
     ),
   )
 
+<<<<<<< Updated upstream
+=======
+const DashboardDashboardLayoutVisualizationApiRoute =
+  DashboardDashboardLayoutVisualizationApiImport.update({
+    id: '/visualization-api',
+    path: '/visualization-api',
+    getParentRoute: () => DashboardDashboardLayoutRoute,
+  } as any)
+
+const DashboardDashboardLayoutVisualizationRoute =
+  DashboardDashboardLayoutVisualizationImport.update({
+    id: '/visualization',
+    path: '/visualization',
+    getParentRoute: () => DashboardDashboardLayoutRoute,
+  } as any).lazy(() =>
+    import('./routes/dashboard/_dashboardLayout/visualization.lazy').then(
+      (d) => d.Route,
+    ),
+  )
+
+const DashboardDashboardLayoutRecipientRoute =
+  DashboardDashboardLayoutRecipientImport.update({
+    id: '/recipient',
+    path: '/recipient',
+    getParentRoute: () => DashboardDashboardLayoutRoute,
+  } as any).lazy(() =>
+    import('./routes/dashboard/_dashboardLayout/recipient.lazy').then(
+      (d) => d.Route,
+    ),
+  )
+
+const DashboardDashboardLayoutProfileRoute =
+  DashboardDashboardLayoutProfileImport.update({
+    id: '/profile',
+    path: '/profile',
+    getParentRoute: () => DashboardDashboardLayoutRoute,
+  } as any).lazy(() =>
+    import('./routes/dashboard/_dashboardLayout/profile.lazy').then(
+      (d) => d.Route,
+    ),
+  )
+
+const DashboardDashboardLayoutHospitalHistoryRoute =
+  DashboardDashboardLayoutHospitalHistoryImport.update({
+    id: '/hospital-history',
+    path: '/hospital-history',
+    getParentRoute: () => DashboardDashboardLayoutRoute,
+  } as any).lazy(() =>
+    import('./routes/dashboard/_dashboardLayout/hospital-history.lazy').then(
+      (d) => d.Route,
+    ),
+  )
+
+const DashboardDashboardLayoutEventsRoute =
+  DashboardDashboardLayoutEventsImport.update({
+    id: '/events',
+    path: '/events',
+    getParentRoute: () => DashboardDashboardLayoutRoute,
+  } as any).lazy(() =>
+    import('./routes/dashboard/_dashboardLayout/events.lazy').then(
+      (d) => d.Route,
+    ),
+  )
+
+const DashboardDashboardLayoutEditProfileRoute =
+  DashboardDashboardLayoutEditProfileImport.update({
+    id: '/edit-profile',
+    path: '/edit-profile',
+    getParentRoute: () => DashboardDashboardLayoutRoute,
+  } as any).lazy(() =>
+    import('./routes/dashboard/_dashboardLayout/edit-profile.lazy').then(
+      (d) => d.Route,
+    ),
+  )
+
+const DashboardDashboardLayoutEditPasswordRoute =
+  DashboardDashboardLayoutEditPasswordImport.update({
+    id: '/edit-password',
+    path: '/edit-password',
+    getParentRoute: () => DashboardDashboardLayoutRoute,
+  } as any).lazy(() =>
+    import('./routes/dashboard/_dashboardLayout/edit-password.lazy').then(
+      (d) => d.Route,
+    ),
+  )
+
+const DashboardDashboardLayoutDonateRoute =
+  DashboardDashboardLayoutDonateImport.update({
+    id: '/donate',
+    path: '/donate',
+    getParentRoute: () => DashboardDashboardLayoutRoute,
+  } as any).lazy(() =>
+    import('./routes/dashboard/_dashboardLayout/donate.lazy').then(
+      (d) => d.Route,
+    ),
+  )
+
+>>>>>>> Stashed changes
 // Populate the FileRoutesByPath interface
 
 declare module '@tanstack/react-router' {
@@ -276,6 +386,72 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardIndexLazyImport
       parentRoute: typeof DashboardImport
     }
+<<<<<<< Updated upstream
+=======
+    '/dashboard/_dashboardLayout/donate': {
+      id: '/dashboard/_dashboardLayout/donate'
+      path: '/donate'
+      fullPath: '/dashboard/donate'
+      preLoaderRoute: typeof DashboardDashboardLayoutDonateImport
+      parentRoute: typeof DashboardDashboardLayoutImport
+    }
+    '/dashboard/_dashboardLayout/edit-password': {
+      id: '/dashboard/_dashboardLayout/edit-password'
+      path: '/edit-password'
+      fullPath: '/dashboard/edit-password'
+      preLoaderRoute: typeof DashboardDashboardLayoutEditPasswordImport
+      parentRoute: typeof DashboardDashboardLayoutImport
+    }
+    '/dashboard/_dashboardLayout/edit-profile': {
+      id: '/dashboard/_dashboardLayout/edit-profile'
+      path: '/edit-profile'
+      fullPath: '/dashboard/edit-profile'
+      preLoaderRoute: typeof DashboardDashboardLayoutEditProfileImport
+      parentRoute: typeof DashboardDashboardLayoutImport
+    }
+    '/dashboard/_dashboardLayout/events': {
+      id: '/dashboard/_dashboardLayout/events'
+      path: '/events'
+      fullPath: '/dashboard/events'
+      preLoaderRoute: typeof DashboardDashboardLayoutEventsImport
+      parentRoute: typeof DashboardDashboardLayoutImport
+    }
+    '/dashboard/_dashboardLayout/hospital-history': {
+      id: '/dashboard/_dashboardLayout/hospital-history'
+      path: '/hospital-history'
+      fullPath: '/dashboard/hospital-history'
+      preLoaderRoute: typeof DashboardDashboardLayoutHospitalHistoryImport
+      parentRoute: typeof DashboardDashboardLayoutImport
+    }
+    '/dashboard/_dashboardLayout/profile': {
+      id: '/dashboard/_dashboardLayout/profile'
+      path: '/profile'
+      fullPath: '/dashboard/profile'
+      preLoaderRoute: typeof DashboardDashboardLayoutProfileImport
+      parentRoute: typeof DashboardDashboardLayoutImport
+    }
+    '/dashboard/_dashboardLayout/recipient': {
+      id: '/dashboard/_dashboardLayout/recipient'
+      path: '/recipient'
+      fullPath: '/dashboard/recipient'
+      preLoaderRoute: typeof DashboardDashboardLayoutRecipientImport
+      parentRoute: typeof DashboardDashboardLayoutImport
+    }
+    '/dashboard/_dashboardLayout/visualization': {
+      id: '/dashboard/_dashboardLayout/visualization'
+      path: '/visualization'
+      fullPath: '/dashboard/visualization'
+      preLoaderRoute: typeof DashboardDashboardLayoutVisualizationImport
+      parentRoute: typeof DashboardDashboardLayoutImport
+    }
+    '/dashboard/_dashboardLayout/visualization-api': {
+      id: '/dashboard/_dashboardLayout/visualization-api'
+      path: '/visualization-api'
+      fullPath: '/dashboard/visualization-api'
+      preLoaderRoute: typeof DashboardDashboardLayoutVisualizationApiImport
+      parentRoute: typeof DashboardDashboardLayoutImport
+    }
+>>>>>>> Stashed changes
     '/dashboard/_dashboardLayout/analytics': {
       id: '/dashboard/_dashboardLayout/analytics'
       path: '/analytics'
@@ -366,6 +542,18 @@ declare module '@tanstack/react-router' {
 // Create and export the route tree
 
 interface DashboardDashboardLayoutRouteChildren {
+<<<<<<< Updated upstream
+=======
+  DashboardDashboardLayoutDonateRoute: typeof DashboardDashboardLayoutDonateRoute
+  DashboardDashboardLayoutEditPasswordRoute: typeof DashboardDashboardLayoutEditPasswordRoute
+  DashboardDashboardLayoutEditProfileRoute: typeof DashboardDashboardLayoutEditProfileRoute
+  DashboardDashboardLayoutEventsRoute: typeof DashboardDashboardLayoutEventsRoute
+  DashboardDashboardLayoutHospitalHistoryRoute: typeof DashboardDashboardLayoutHospitalHistoryRoute
+  DashboardDashboardLayoutProfileRoute: typeof DashboardDashboardLayoutProfileRoute
+  DashboardDashboardLayoutRecipientRoute: typeof DashboardDashboardLayoutRecipientRoute
+  DashboardDashboardLayoutVisualizationRoute: typeof DashboardDashboardLayoutVisualizationRoute
+  DashboardDashboardLayoutVisualizationApiRoute: typeof DashboardDashboardLayoutVisualizationApiRoute
+>>>>>>> Stashed changes
   DashboardDashboardLayoutAnalyticsLazyRoute: typeof DashboardDashboardLayoutAnalyticsLazyRoute
   DashboardDashboardLayoutBloodtestsLazyRoute: typeof DashboardDashboardLayoutBloodtestsLazyRoute
   DashboardDashboardLayoutCreateLazyRoute: typeof DashboardDashboardLayoutCreateLazyRoute
@@ -382,6 +570,24 @@ interface DashboardDashboardLayoutRouteChildren {
 
 const DashboardDashboardLayoutRouteChildren: DashboardDashboardLayoutRouteChildren =
   {
+<<<<<<< Updated upstream
+=======
+    DashboardDashboardLayoutDonateRoute: DashboardDashboardLayoutDonateRoute,
+    DashboardDashboardLayoutEditPasswordRoute:
+      DashboardDashboardLayoutEditPasswordRoute,
+    DashboardDashboardLayoutEditProfileRoute:
+      DashboardDashboardLayoutEditProfileRoute,
+    DashboardDashboardLayoutEventsRoute: DashboardDashboardLayoutEventsRoute,
+    DashboardDashboardLayoutHospitalHistoryRoute:
+      DashboardDashboardLayoutHospitalHistoryRoute,
+    DashboardDashboardLayoutProfileRoute: DashboardDashboardLayoutProfileRoute,
+    DashboardDashboardLayoutRecipientRoute:
+      DashboardDashboardLayoutRecipientRoute,
+    DashboardDashboardLayoutVisualizationRoute:
+      DashboardDashboardLayoutVisualizationRoute,
+    DashboardDashboardLayoutVisualizationApiRoute:
+      DashboardDashboardLayoutVisualizationApiRoute,
+>>>>>>> Stashed changes
     DashboardDashboardLayoutAnalyticsLazyRoute:
       DashboardDashboardLayoutAnalyticsLazyRoute,
     DashboardDashboardLayoutBloodtestsLazyRoute:
@@ -433,6 +639,18 @@ export interface FileRoutesByFullPath {
   '/sign-up': typeof authSignUpRoute
   '/dashboard': typeof DashboardDashboardLayoutRouteWithChildren
   '/dashboard/': typeof DashboardDashboardLayoutIndexLazyRoute
+<<<<<<< Updated upstream
+=======
+  '/dashboard/donate': typeof DashboardDashboardLayoutDonateRoute
+  '/dashboard/edit-password': typeof DashboardDashboardLayoutEditPasswordRoute
+  '/dashboard/edit-profile': typeof DashboardDashboardLayoutEditProfileRoute
+  '/dashboard/events': typeof DashboardDashboardLayoutEventsRoute
+  '/dashboard/hospital-history': typeof DashboardDashboardLayoutHospitalHistoryRoute
+  '/dashboard/profile': typeof DashboardDashboardLayoutProfileRoute
+  '/dashboard/recipient': typeof DashboardDashboardLayoutRecipientRoute
+  '/dashboard/visualization': typeof DashboardDashboardLayoutVisualizationRoute
+  '/dashboard/visualization-api': typeof DashboardDashboardLayoutVisualizationApiRoute
+>>>>>>> Stashed changes
   '/dashboard/analytics': typeof DashboardDashboardLayoutAnalyticsLazyRoute
   '/dashboard/bloodtests': typeof DashboardDashboardLayoutBloodtestsLazyRoute
   '/dashboard/create': typeof DashboardDashboardLayoutCreateLazyRoute
@@ -451,6 +669,18 @@ export interface FileRoutesByTo {
   '/login': typeof authLoginRoute
   '/sign-up': typeof authSignUpRoute
   '/dashboard': typeof DashboardDashboardLayoutIndexLazyRoute
+<<<<<<< Updated upstream
+=======
+  '/dashboard/donate': typeof DashboardDashboardLayoutDonateRoute
+  '/dashboard/edit-password': typeof DashboardDashboardLayoutEditPasswordRoute
+  '/dashboard/edit-profile': typeof DashboardDashboardLayoutEditProfileRoute
+  '/dashboard/events': typeof DashboardDashboardLayoutEventsRoute
+  '/dashboard/hospital-history': typeof DashboardDashboardLayoutHospitalHistoryRoute
+  '/dashboard/profile': typeof DashboardDashboardLayoutProfileRoute
+  '/dashboard/recipient': typeof DashboardDashboardLayoutRecipientRoute
+  '/dashboard/visualization': typeof DashboardDashboardLayoutVisualizationRoute
+  '/dashboard/visualization-api': typeof DashboardDashboardLayoutVisualizationApiRoute
+>>>>>>> Stashed changes
   '/dashboard/analytics': typeof DashboardDashboardLayoutAnalyticsLazyRoute
   '/dashboard/bloodtests': typeof DashboardDashboardLayoutBloodtestsLazyRoute
   '/dashboard/create': typeof DashboardDashboardLayoutCreateLazyRoute
@@ -471,7 +701,21 @@ export interface FileRoutesById {
   '/(auth)/sign-up': typeof authSignUpRoute
   '/dashboard': typeof DashboardRouteWithChildren
   '/dashboard/_dashboardLayout': typeof DashboardDashboardLayoutRouteWithChildren
+<<<<<<< Updated upstream
   '/dashboard/': typeof DashboardIndexLazyRoute
+=======
+  '/dashboard/create': typeof DashboardCreateRoute
+  '/dashboard/': typeof DashboardIndexRoute
+  '/dashboard/_dashboardLayout/donate': typeof DashboardDashboardLayoutDonateRoute
+  '/dashboard/_dashboardLayout/edit-password': typeof DashboardDashboardLayoutEditPasswordRoute
+  '/dashboard/_dashboardLayout/edit-profile': typeof DashboardDashboardLayoutEditProfileRoute
+  '/dashboard/_dashboardLayout/events': typeof DashboardDashboardLayoutEventsRoute
+  '/dashboard/_dashboardLayout/hospital-history': typeof DashboardDashboardLayoutHospitalHistoryRoute
+  '/dashboard/_dashboardLayout/profile': typeof DashboardDashboardLayoutProfileRoute
+  '/dashboard/_dashboardLayout/recipient': typeof DashboardDashboardLayoutRecipientRoute
+  '/dashboard/_dashboardLayout/visualization': typeof DashboardDashboardLayoutVisualizationRoute
+  '/dashboard/_dashboardLayout/visualization-api': typeof DashboardDashboardLayoutVisualizationApiRoute
+>>>>>>> Stashed changes
   '/dashboard/_dashboardLayout/analytics': typeof DashboardDashboardLayoutAnalyticsLazyRoute
   '/dashboard/_dashboardLayout/bloodtests': typeof DashboardDashboardLayoutBloodtestsLazyRoute
   '/dashboard/_dashboardLayout/create': typeof DashboardDashboardLayoutCreateLazyRoute
@@ -505,6 +749,12 @@ export interface FileRouteTypes {
     | '/dashboard/profile'
     | '/dashboard/recipient'
     | '/dashboard/visualization'
+<<<<<<< Updated upstream
+=======
+    | '/dashboard/visualization-api'
+    | '/dashboard/analytics'
+    | '/dashboard/bloodtests'
+>>>>>>> Stashed changes
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -522,6 +772,12 @@ export interface FileRouteTypes {
     | '/dashboard/profile'
     | '/dashboard/recipient'
     | '/dashboard/visualization'
+<<<<<<< Updated upstream
+=======
+    | '/dashboard/visualization-api'
+    | '/dashboard/analytics'
+    | '/dashboard/bloodtests'
+>>>>>>> Stashed changes
   id:
     | '__root__'
     | '/'
@@ -541,6 +797,13 @@ export interface FileRouteTypes {
     | '/dashboard/_dashboardLayout/profile'
     | '/dashboard/_dashboardLayout/recipient'
     | '/dashboard/_dashboardLayout/visualization'
+<<<<<<< Updated upstream
+=======
+    | '/dashboard/_dashboardLayout/visualization-api'
+    | '/dashboard/_dashboardLayout/analytics'
+    | '/dashboard/_dashboardLayout/bloodtests'
+    | '/dashboard/_dashboardLayout/create'
+>>>>>>> Stashed changes
     | '/dashboard/_dashboardLayout/'
   fileRoutesById: FileRoutesById
 }
@@ -606,6 +869,13 @@ export const routeTree = rootRoute
         "/dashboard/_dashboardLayout/profile",
         "/dashboard/_dashboardLayout/recipient",
         "/dashboard/_dashboardLayout/visualization",
+<<<<<<< Updated upstream
+=======
+        "/dashboard/_dashboardLayout/visualization-api",
+        "/dashboard/_dashboardLayout/analytics",
+        "/dashboard/_dashboardLayout/bloodtests",
+        "/dashboard/_dashboardLayout/create",
+>>>>>>> Stashed changes
         "/dashboard/_dashboardLayout/"
       ]
     },
@@ -613,6 +883,45 @@ export const routeTree = rootRoute
       "filePath": "dashboard/index.lazy.tsx",
       "parent": "/dashboard"
     },
+<<<<<<< Updated upstream
+=======
+    "/dashboard/_dashboardLayout/donate": {
+      "filePath": "dashboard/_dashboardLayout/donate.tsx",
+      "parent": "/dashboard/_dashboardLayout"
+    },
+    "/dashboard/_dashboardLayout/edit-password": {
+      "filePath": "dashboard/_dashboardLayout/edit-password.tsx",
+      "parent": "/dashboard/_dashboardLayout"
+    },
+    "/dashboard/_dashboardLayout/edit-profile": {
+      "filePath": "dashboard/_dashboardLayout/edit-profile.tsx",
+      "parent": "/dashboard/_dashboardLayout"
+    },
+    "/dashboard/_dashboardLayout/events": {
+      "filePath": "dashboard/_dashboardLayout/events.tsx",
+      "parent": "/dashboard/_dashboardLayout"
+    },
+    "/dashboard/_dashboardLayout/hospital-history": {
+      "filePath": "dashboard/_dashboardLayout/hospital-history.tsx",
+      "parent": "/dashboard/_dashboardLayout"
+    },
+    "/dashboard/_dashboardLayout/profile": {
+      "filePath": "dashboard/_dashboardLayout/profile.tsx",
+      "parent": "/dashboard/_dashboardLayout"
+    },
+    "/dashboard/_dashboardLayout/recipient": {
+      "filePath": "dashboard/_dashboardLayout/recipient.tsx",
+      "parent": "/dashboard/_dashboardLayout"
+    },
+    "/dashboard/_dashboardLayout/visualization": {
+      "filePath": "dashboard/_dashboardLayout/visualization.tsx",
+      "parent": "/dashboard/_dashboardLayout"
+    },
+    "/dashboard/_dashboardLayout/visualization-api": {
+      "filePath": "dashboard/_dashboardLayout/visualization-api.tsx",
+      "parent": "/dashboard/_dashboardLayout"
+    },
+>>>>>>> Stashed changes
     "/dashboard/_dashboardLayout/analytics": {
       "filePath": "dashboard/_dashboardLayout/analytics.lazy.tsx",
       "parent": "/dashboard/_dashboardLayout"

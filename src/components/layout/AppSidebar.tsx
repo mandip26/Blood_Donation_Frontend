@@ -19,6 +19,7 @@ import VisualizationIcon from "@/components/icons/VisualizationIcon.tsx";
 import { CirclePlus } from "lucide-react";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+<<<<<<< Updated upstream
 	const sideNavData = [
 		{
 			name: "Home",
@@ -50,6 +51,44 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 			icon: <CirclePlus />,
 			link: "/dashboard/create",
 		},
+=======
+  const sideNavData = [
+    {
+      name: "Home",
+      icon: <HomeIcon />,
+      link: "/dashboard",
+    },
+    {
+      name: "Donate",
+      icon: <DonateIcon />,
+      link: "/dashboard/donate",
+    },
+    {
+      name: "Recipient",
+      icon: <RecipeIcon />,
+      link: "/dashboard/recipient",
+    },
+    {
+      name: "Events",
+      icon: <CalendarIcon />,
+      link: "/dashboard/events",
+    },
+    {
+      name: "Visualization",
+      icon: <VisualizationIcon />,
+      link: "/dashboard/visualization",
+    },
+    {
+      name: "Medical Reports",
+      icon: <VisualizationIcon />,
+      link: "/dashboard/visualization-api",
+    },
+    {
+      name: "Create",
+      icon: <CirclePlus />,
+      link: "/dashboard/create",
+    },
+>>>>>>> Stashed changes
   ];
   
 	const location = useLocation();
