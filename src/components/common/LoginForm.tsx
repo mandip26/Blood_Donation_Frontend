@@ -152,12 +152,12 @@ export default function LoginForm() {
             >
               Password
             </label>
-            <Link
+            {/* <Link
               to="/"
               className="text-sm text-right text-white font-medium"
             >
               Forgot Password
-            </Link>
+            </Link> */}
           </div>
           <form.Field
             name="password"
