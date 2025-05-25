@@ -196,7 +196,6 @@ function VisualizationComponent() {
       }
 
       const result = await response.text();
-      console.log(result);
 
       try {
         const parsedData: ExtractedData = JSON.parse(result);
@@ -752,13 +751,6 @@ function VisualizationComponent() {
                               </p>
                             </div>
                           </div>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="text-gray-600 text-xs border-gray-300"
-                          >
-                            View
-                          </Button>
                         </div>
                       ))}
                     </div>
@@ -957,22 +949,6 @@ function VisualizationComponent() {
                               {formatDate(report.date)}
                             </p>
                           </div>
-                        </div>
-                        <div className="flex items-center space-x-3">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="border-gray-300 text-gray-700"
-                          >
-                            <Download size={16} className="mr-1" />
-                            Download
-                          </Button>
-                          <Button
-                            size="sm"
-                            className="bg-primary-magenta text-white hover:bg-primary-magenta/90"
-                          >
-                            View
-                          </Button>
                         </div>
                       </div>
                     ))}
