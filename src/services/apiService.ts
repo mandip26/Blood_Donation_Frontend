@@ -479,4 +479,39 @@ export const postService = {
   },
 };
 
+// Testimonial services
+export const testimonialService = {
+  getAllTestimonials: async () => {
+    try {
+      // Using direct axios call to ensure we're using the correct endpoint
+      const response = await axios.get(
+        "http://localhost:8001/api/v1/testimonials/"
+      );
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching testimonials:", error);
+      throw error;
+    }
+  },
+
+  createTestimonial: async (testimonialData: {
+    authorName: string;
+    authorRole: string;
+    avatar?: string;
+    quote: string;
+    detailedFeedback?: string;
+  }) => {
+    try {
+      const response = await axios.post(
+        "http://localhost:8001/api/v1/testimonials/create",
+        testimonialData
+      );
+      return response.data;
+    } catch (error) {
+      console.error("Error creating testimonial:", error);
+      throw error;
+    }
+  },
+};
+
 export default api;
