@@ -1,4 +1,4 @@
-import { createLazyFileRoute } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,8 +18,8 @@ import {
 } from "lucide-react";
 import useAuth from "@/hooks/useAuth";
 
-export const Route = createLazyFileRoute(
-  "/dashboard/_dashboardLayout/visualization"
+export const Route = createFileRoute(
+  "/dashboard/_dashboardLayout/visualization/lazy/fixed"
 )({
   component: VisualizationComponent,
 });

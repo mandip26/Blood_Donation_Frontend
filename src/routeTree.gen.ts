@@ -28,6 +28,7 @@ import { Route as DashboardDashboardLayoutEventsImport } from './routes/dashboar
 import { Route as DashboardDashboardLayoutEditProfileImport } from './routes/dashboard/_dashboardLayout/edit-profile'
 import { Route as DashboardDashboardLayoutEditPasswordImport } from './routes/dashboard/_dashboardLayout/edit-password'
 import { Route as DashboardDashboardLayoutDonateImport } from './routes/dashboard/_dashboardLayout/donate'
+import { Route as DashboardDashboardLayoutVisualizationLazyFixedImport } from './routes/dashboard/_dashboardLayout/visualization.lazy.fixed'
 
 // Create Virtual Routes
 
@@ -231,6 +232,13 @@ const DashboardDashboardLayoutDonateRoute =
     ),
   )
 
+const DashboardDashboardLayoutVisualizationLazyFixedRoute =
+  DashboardDashboardLayoutVisualizationLazyFixedImport.update({
+    id: '/lazy/fixed',
+    path: '/lazy/fixed',
+    getParentRoute: () => DashboardDashboardLayoutVisualizationRoute,
+  } as any)
+
 // Populate the FileRoutesByPath interface
 
 declare module '@tanstack/react-router' {
@@ -375,10 +383,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardDashboardLayoutIndexLazyImport
       parentRoute: typeof DashboardDashboardLayoutImport
     }
+    '/dashboard/_dashboardLayout/visualization/lazy/fixed': {
+      id: '/dashboard/_dashboardLayout/visualization/lazy/fixed'
+      path: '/lazy/fixed'
+      fullPath: '/dashboard/visualization/lazy/fixed'
+      preLoaderRoute: typeof DashboardDashboardLayoutVisualizationLazyFixedImport
+      parentRoute: typeof DashboardDashboardLayoutVisualizationImport
+    }
   }
 }
 
 // Create and export the route tree
+
+interface DashboardDashboardLayoutVisualizationRouteChildren {
+  DashboardDashboardLayoutVisualizationLazyFixedRoute: typeof DashboardDashboardLayoutVisualizationLazyFixedRoute
+}
+
+const DashboardDashboardLayoutVisualizationRouteChildren: DashboardDashboardLayoutVisualizationRouteChildren =
+  {
+    DashboardDashboardLayoutVisualizationLazyFixedRoute:
+      DashboardDashboardLayoutVisualizationLazyFixedRoute,
+  }
+
+const DashboardDashboardLayoutVisualizationRouteWithChildren =
+  DashboardDashboardLayoutVisualizationRoute._addFileChildren(
+    DashboardDashboardLayoutVisualizationRouteChildren,
+  )
 
 interface DashboardDashboardLayoutRouteChildren {
   DashboardDashboardLayoutDonateRoute: typeof DashboardDashboardLayoutDonateRoute
@@ -388,7 +418,7 @@ interface DashboardDashboardLayoutRouteChildren {
   DashboardDashboardLayoutHospitalHistoryRoute: typeof DashboardDashboardLayoutHospitalHistoryRoute
   DashboardDashboardLayoutProfileRoute: typeof DashboardDashboardLayoutProfileRoute
   DashboardDashboardLayoutRecipientRoute: typeof DashboardDashboardLayoutRecipientRoute
-  DashboardDashboardLayoutVisualizationRoute: typeof DashboardDashboardLayoutVisualizationRoute
+  DashboardDashboardLayoutVisualizationRoute: typeof DashboardDashboardLayoutVisualizationRouteWithChildren
   DashboardDashboardLayoutVisualizationApiRoute: typeof DashboardDashboardLayoutVisualizationApiRoute
   DashboardDashboardLayoutAnalyticsLazyRoute: typeof DashboardDashboardLayoutAnalyticsLazyRoute
   DashboardDashboardLayoutBloodtestsLazyRoute: typeof DashboardDashboardLayoutBloodtestsLazyRoute
@@ -410,7 +440,7 @@ const DashboardDashboardLayoutRouteChildren: DashboardDashboardLayoutRouteChildr
     DashboardDashboardLayoutRecipientRoute:
       DashboardDashboardLayoutRecipientRoute,
     DashboardDashboardLayoutVisualizationRoute:
-      DashboardDashboardLayoutVisualizationRoute,
+      DashboardDashboardLayoutVisualizationRouteWithChildren,
     DashboardDashboardLayoutVisualizationApiRoute:
       DashboardDashboardLayoutVisualizationApiRoute,
     DashboardDashboardLayoutAnalyticsLazyRoute:
@@ -458,10 +488,11 @@ export interface FileRoutesByFullPath {
   '/dashboard/hospital-history': typeof DashboardDashboardLayoutHospitalHistoryRoute
   '/dashboard/profile': typeof DashboardDashboardLayoutProfileRoute
   '/dashboard/recipient': typeof DashboardDashboardLayoutRecipientRoute
-  '/dashboard/visualization': typeof DashboardDashboardLayoutVisualizationRoute
+  '/dashboard/visualization': typeof DashboardDashboardLayoutVisualizationRouteWithChildren
   '/dashboard/visualization-api': typeof DashboardDashboardLayoutVisualizationApiRoute
   '/dashboard/analytics': typeof DashboardDashboardLayoutAnalyticsLazyRoute
   '/dashboard/bloodtests': typeof DashboardDashboardLayoutBloodtestsLazyRoute
+  '/dashboard/visualization/lazy/fixed': typeof DashboardDashboardLayoutVisualizationLazyFixedRoute
 }
 
 export interface FileRoutesByTo {
@@ -477,10 +508,11 @@ export interface FileRoutesByTo {
   '/dashboard/hospital-history': typeof DashboardDashboardLayoutHospitalHistoryRoute
   '/dashboard/profile': typeof DashboardDashboardLayoutProfileRoute
   '/dashboard/recipient': typeof DashboardDashboardLayoutRecipientRoute
-  '/dashboard/visualization': typeof DashboardDashboardLayoutVisualizationRoute
+  '/dashboard/visualization': typeof DashboardDashboardLayoutVisualizationRouteWithChildren
   '/dashboard/visualization-api': typeof DashboardDashboardLayoutVisualizationApiRoute
   '/dashboard/analytics': typeof DashboardDashboardLayoutAnalyticsLazyRoute
   '/dashboard/bloodtests': typeof DashboardDashboardLayoutBloodtestsLazyRoute
+  '/dashboard/visualization/lazy/fixed': typeof DashboardDashboardLayoutVisualizationLazyFixedRoute
 }
 
 export interface FileRoutesById {
@@ -499,12 +531,13 @@ export interface FileRoutesById {
   '/dashboard/_dashboardLayout/hospital-history': typeof DashboardDashboardLayoutHospitalHistoryRoute
   '/dashboard/_dashboardLayout/profile': typeof DashboardDashboardLayoutProfileRoute
   '/dashboard/_dashboardLayout/recipient': typeof DashboardDashboardLayoutRecipientRoute
-  '/dashboard/_dashboardLayout/visualization': typeof DashboardDashboardLayoutVisualizationRoute
+  '/dashboard/_dashboardLayout/visualization': typeof DashboardDashboardLayoutVisualizationRouteWithChildren
   '/dashboard/_dashboardLayout/visualization-api': typeof DashboardDashboardLayoutVisualizationApiRoute
   '/dashboard/_dashboardLayout/analytics': typeof DashboardDashboardLayoutAnalyticsLazyRoute
   '/dashboard/_dashboardLayout/bloodtests': typeof DashboardDashboardLayoutBloodtestsLazyRoute
   '/dashboard/_dashboardLayout/create': typeof DashboardDashboardLayoutCreateLazyRoute
   '/dashboard/_dashboardLayout/': typeof DashboardDashboardLayoutIndexLazyRoute
+  '/dashboard/_dashboardLayout/visualization/lazy/fixed': typeof DashboardDashboardLayoutVisualizationLazyFixedRoute
 }
 
 export interface FileRouteTypes {
@@ -527,6 +560,7 @@ export interface FileRouteTypes {
     | '/dashboard/visualization-api'
     | '/dashboard/analytics'
     | '/dashboard/bloodtests'
+    | '/dashboard/visualization/lazy/fixed'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -545,6 +579,7 @@ export interface FileRouteTypes {
     | '/dashboard/visualization-api'
     | '/dashboard/analytics'
     | '/dashboard/bloodtests'
+    | '/dashboard/visualization/lazy/fixed'
   id:
     | '__root__'
     | '/'
@@ -567,6 +602,7 @@ export interface FileRouteTypes {
     | '/dashboard/_dashboardLayout/bloodtests'
     | '/dashboard/_dashboardLayout/create'
     | '/dashboard/_dashboardLayout/'
+    | '/dashboard/_dashboardLayout/visualization/lazy/fixed'
   fileRoutesById: FileRoutesById
 }
 
@@ -674,7 +710,10 @@ export const routeTree = rootRoute
     },
     "/dashboard/_dashboardLayout/visualization": {
       "filePath": "dashboard/_dashboardLayout/visualization.tsx",
-      "parent": "/dashboard/_dashboardLayout"
+      "parent": "/dashboard/_dashboardLayout",
+      "children": [
+        "/dashboard/_dashboardLayout/visualization/lazy/fixed"
+      ]
     },
     "/dashboard/_dashboardLayout/visualization-api": {
       "filePath": "dashboard/_dashboardLayout/visualization-api.tsx",
@@ -695,6 +734,10 @@ export const routeTree = rootRoute
     "/dashboard/_dashboardLayout/": {
       "filePath": "dashboard/_dashboardLayout/index.lazy.jsx",
       "parent": "/dashboard/_dashboardLayout"
+    },
+    "/dashboard/_dashboardLayout/visualization/lazy/fixed": {
+      "filePath": "dashboard/_dashboardLayout/visualization.lazy.fixed.tsx",
+      "parent": "/dashboard/_dashboardLayout/visualization"
     }
   }
 }

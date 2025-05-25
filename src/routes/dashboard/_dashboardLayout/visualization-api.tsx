@@ -32,6 +32,7 @@ interface ReportData {
 interface ExtractedData {
   patient: PatientData;
   reports: ReportData[];
+  _id: string;
 }
 
 export const Route = createFileRoute(
