@@ -39,7 +39,7 @@ interface DonorStats {
 
 function DashboardComponent() {
   // Auth context
-  const { user, isLoading: authLoading } = useAuth()
+  const { user, isLoading: authLoading } = useAuth()  
   
   // Responsive design hook
   const { isMobile } = useResponsive()

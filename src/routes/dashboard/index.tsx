@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/useAuth";
 import { useEffect, useState } from "react";
-import { LoadingState } from "@/components/common/LoadingState";
+import LoadingState from "@/components/common/LoadingState";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { postService } from "@/services/apiService";
@@ -47,6 +47,7 @@ function DashboardIndex() {
   const [stats, setStats] = useState<DashboardStats>({});
   const [statsLoading, setStatsLoading] = useState(true);
   const [posts, setPosts] = useState<Post[]>([]);
+  
   useEffect(() => {
     // Function to fetch dashboard stats
     const fetchDashboardStats = async () => {
