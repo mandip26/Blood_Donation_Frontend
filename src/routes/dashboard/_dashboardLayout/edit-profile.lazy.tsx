@@ -79,17 +79,6 @@ function EditProfileComponent() {
     <div className="container mx-auto py-6 px-4">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">My Profile</h1>
-        <div className="flex gap-2">
-          <Link to="/dashboard/edit-password">
-            <Button variant="outline" className="border-primary-magenta text-primary-magenta hover:bg-primary-magenta/10">
-              Change Password
-            </Button>
-          </Link>
-          <Button variant="ghost" size="icon" className="relative">
-            <Bell className="h-5 w-5" />
-            <span className="absolute top-0 right-0 h-2 w-2 bg-red-500 rounded-full"></span>
-          </Button>
-        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -392,67 +381,6 @@ function EditProfileComponent() {
               </form>
             )}
           </div>
-          
-          {/* Donation History Section */}
-          <div className="bg-white rounded-xl shadow-sm p-6">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-semibold">Donation History</h2>
-              <Link to="/dashboard/hospital-history">
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  className="text-primary-magenta hover:text-primary-magenta/80"
-                >
-                  View All
-                </Button>
-              </Link>
-            </div>
-            
-            <div className="space-y-4">
-              {donationHistory.slice(0, 3).map((donation) => (
-                <div key={donation.id} className="flex items-center justify-between py-3 border-b border-gray-100 last:border-0">
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 bg-primary-magenta/10 rounded-full flex items-center justify-center">
-                      <User className="text-primary-magenta" size={20} />
-                    </div>
-                    <div>
-                      <p className="font-medium">{donation.hospital}</p>
-                      <p className="text-sm text-gray-500">{formatDate(donation.date)}</p>
-                    </div>
-                  </div>
-                  <div>
-                    <span className="px-3 py-1 rounded-full bg-green-100 text-green-800 text-xs font-medium">
-                      {donation.units} Unit
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-            
-            {donationHistory.length > 3 && (
-              <div className="mt-4 pt-4 text-center">
-                <Link to="/dashboard/hospital-history">
-                  <Button variant="outline" className="border-gray-200 text-gray-600 hover:bg-gray-50">
-                    See More History
-                  </Button>
-                </Link>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Location Map Section - Just a placeholder, would normally integrate with Google Maps */}
-      <div className="bg-white rounded-xl shadow-sm p-6 mt-6 relative overflow-hidden">
-        <div className="absolute top-4 right-4 z-10">
-          <Button variant="outline" className="bg-white shadow-sm border-gray-200">
-            <Search size={16} className="mr-2" /> Search Area
-          </Button>
-        </div>
-        
-        <div className="h-64 w-full bg-gray-200 flex items-center justify-center">
-          <MapPin size={24} className="text-primary-magenta" />
-          <p className="ml-2 text-gray-500">Map would be displayed here</p>
         </div>
       </div>
     </div>
