@@ -1,6 +1,7 @@
-import { Clock, MapPin } from "lucide-react";
+import { Clock, MapPin, Calendar } from "lucide-react";
 import { useEffect, useState } from "react";
 import axios from "axios";
+import { format, parseISO, isValid } from "date-fns";
 
 // Define the event interface based on API response
 interface Event {
@@ -25,8 +26,11 @@ export default function BloodDonationEvents() {
         const response = await axios.get(
           "http://localhost:8001/api/v1/events/"
         );
-        if (response.data.success) {
+        if (response.data.success && Array.isArray(response.data.events)) {
           setEvents(response.data.events);
+        } else if (response.data.success && Array.isArray(response.data)) {
+          // Fallback in case the events are returned directly as an array
+          setEvents(response.data);
         } else {
           setError("Failed to fetch events");
         }
@@ -41,11 +45,32 @@ export default function BloodDonationEvents() {
     fetchEvents();
   }, []);
 
+  // Format date to be more readable
+  const formatDate = (dateString: string) => {
+    try {
+      const parsedDate = parseISO(dateString);
+      if (isValid(parsedDate)) {
+        return format(parsedDate, "MMMM d, yyyy");
+      }
+      // Fallback to simple formatting if date-fns can't parse
+      const date = new Date(dateString);
+      return date.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+    } catch {
+      return dateString; // Return the original string if all parsing fails
+    }
+  };
+
   if (loading) {
     return (
       <section className="container max-w-7xl mx-auto py-16 px-4 text-center">
         <h2 className="text-4xl font-bold mb-12">Blood Donation Events</h2>
-        <p>Loading events...</p>
+        <div className="flex justify-center items-center">
+          <div className="w-12 h-12 border-4 border-primary-magenta border-t-transparent rounded-full animate-spin"></div>
+        </div>
       </section>
     );
   }
@@ -93,11 +118,20 @@ export default function BloodDonationEvents() {
                 </div>
               </div>
               <h3 className="font-bold text-lg mb-2">{event.title}</h3>
-              <p className="text-gray-600 mb-2 text-sm">{event.description}</p>
-              <div className="flex items-center gap-1 text-gray-500 text-sm mt-auto">
+              <p className="text-gray-600 mb-2 text-sm line-clamp-2">
+                {event.description}
+              </p>
+              <div className="flex items-center gap-1 text-gray-500 text-sm">
+                <Calendar size={14} />
+                <span>{formatDate(event.date)}</span>
+              </div>
+              <div className="flex items-center gap-1 text-gray-500 text-sm mt-1">
                 <MapPin size={14} />
                 <span>{event.venue}</span>
               </div>
+              <button className="mt-3 w-full py-2 text-sm bg-primary-magenta text-white rounded-md hover:bg-primary-magenta/90 transition">
+                View Details
+              </button>
             </div>
           ))}
         </div>
