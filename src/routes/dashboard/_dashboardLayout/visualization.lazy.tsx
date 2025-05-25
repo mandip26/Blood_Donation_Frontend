@@ -294,7 +294,7 @@ function VisualizationComponent() {
     }
   };
 
-  const handleReportDelete = async (reportId) => {
+  const handleReportDelete = async (reportId: string) => {
     console.log("Deleting report with ID:", reportId);
 
     try {
