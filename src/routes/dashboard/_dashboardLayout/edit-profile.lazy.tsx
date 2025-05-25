@@ -1,8 +1,7 @@
 import { createLazyFileRoute } from '@tanstack/react-router'
-import { Bell, Search, MapPin, Calendar, Phone, Mail, CheckCircle, Edit3, Camera, User } from 'lucide-react'
+import { MapPin, Calendar, Phone, Mail, CheckCircle, Edit3, Camera } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useState } from 'react'
-import { Link } from '@tanstack/react-router'
 import useAuth from '@/hooks/useAuth'
 
 export const Route = createLazyFileRoute(
@@ -10,13 +9,6 @@ export const Route = createLazyFileRoute(
 )({  
   component: EditProfileComponent,
 })
-
-interface DonationHistory {
-  id: string;
-  date: string;
-  hospital: string;
-  units: number;
-}
 
 interface MedicalDetail {
   key: string;
@@ -48,14 +40,6 @@ function EditProfileComponent() {
     { key: 'Chronic Conditions', value: 'None', lastUpdated: '2025-04-01' },
     { key: 'Medications', value: 'None', lastUpdated: '2025-04-01' }
   ])
-  
-  const donationHistory: DonationHistory[] = [
-    { id: '1', date: '2025-03-15', hospital: 'Apollo Hospital', units: 1 },
-    { id: '2', date: '2024-12-10', hospital: 'Fortis Hospital', units: 1 },
-    { id: '3', date: '2024-08-22', hospital: 'City Blood Bank', units: 1 },
-    { id: '4', date: '2024-04-05', hospital: 'University Medical Center', units: 1 },
-    { id: '5', date: '2023-11-18', hospital: 'Community Blood Drive', units: 1 }
-  ]
   
   // Format date function
   const formatDate = (dateString: string) => {
