@@ -19,7 +19,7 @@ export default function Navbar() {
   const mobileMenuRef = useRef<HTMLDivElement>(null);
   const profileButtonRef = useRef<HTMLButtonElement>(null);
   const dropdownContentRef = useRef<HTMLDivElement>(null);
-  const { user, isLoggedIn, logout } = useAuth();
+  const { isLoggedIn, logout } = useAuth();
 
   // Enhanced GSAP animation for mobile menu with more poppy animation
   useEffect(() => {

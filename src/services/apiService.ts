@@ -1,13 +1,14 @@
-import axios from 'axios';
+import axios from "axios";
 
 // Base API configuration
-const API_BASE_URL = import.meta.env.VITE_BASE_API_URL || 'http://localhost:8001/api/v1/user';
+const API_BASE_URL =
+  import.meta.env.VITE_BASE_API_URL || "http://localhost:8001/api/v1/user";
 
 // Create axios instance with default config
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
   withCredentials: true, // Critical for handling cookies/sessions
 });
@@ -32,11 +33,11 @@ api.interceptors.response.use(
     // Handle unauthorized errors (401)
     if (error.response && error.response.status === 401) {
       // Clear localStorage on 401
-      localStorage.removeItem('bloodDonationUser');
-      
+      localStorage.removeItem("bloodDonationUser");
+
       // Only redirect if not already on login page to prevent redirect loops
-      if (!window.location.href.includes('/login')) {
-        window.location.href = '/login';
+      if (!window.location.href.includes("/login")) {
+        window.location.href = "/login";
       }
     }
     return Promise.reject(error);
@@ -44,39 +45,44 @@ api.interceptors.response.use(
 );
 
 // Auth services
-export const authService = {  login: async (email: string, password: string) => {
+export const authService = {
+  login: async (email: string, password: string) => {
     try {
       // Direct axios call with explicit withCredentials to ensure cookies are handled
-      const response = await axios.post(`${API_BASE_URL}/login`, 
+      const response = await axios.post(
+        `${API_BASE_URL}/login`,
         { email, password },
-        { 
+        {
           withCredentials: true,
-          headers: { 'Content-Type': 'application/json' }
+          headers: { "Content-Type": "application/json" },
         }
       );
-      
+
       // Debug cookie reception
-      console.log('Login response headers:', response.headers);
-      console.log('Login response data:', response.data);
-      
+      console.log("Login response headers:", response.headers);
+      console.log("Login response data:", response.data);
+
       if (response.data && response.data.user) {
         // Store user data in localStorage for quick access
-        localStorage.setItem('bloodDonationUser', JSON.stringify(response.data.user));
+        localStorage.setItem(
+          "bloodDonationUser",
+          JSON.stringify(response.data.user)
+        );
       } else {
-        console.error('Missing user data in login response');
+        console.error("Missing user data in login response");
       }
-      
+
       return response.data;
     } catch (error) {
-      console.error('Login error details:', error);
+      console.error("Login error details:", error);
       throw error;
     }
   },
   register: async (userData: FormData) => {
     try {
-      const response = await api.post('/register', userData, {
+      const response = await api.post("/register", userData, {
         headers: {
-          'Content-Type': 'multipart/form-data',
+          "Content-Type": "multipart/form-data",
         },
       });
       return response.data;
@@ -84,39 +90,46 @@ export const authService = {  login: async (email: string, password: string) => 
       throw error;
     }
   },
-
   logout: async () => {
     try {
       // Direct axios call with explicit withCredentials to ensure cookies are handled
-      const response = await axios.post(`${API_BASE_URL}/logout`, {}, {
-        withCredentials: true
-      });
-      
+      const response = await axios.post(
+        `${API_BASE_URL}/logout`,
+        {},
+        {
+          withCredentials: true,
+        }
+      );
+
+      console.log("Logout response:", response.data);
+
       // Always remove from localStorage regardless of API response
-      localStorage.removeItem('bloodDonationUser');
-      
+      localStorage.removeItem("bloodDonationUser");
+
       return response.data;
     } catch (error) {
+      console.error("Logout error:", error);
       // Even on error, remove from localStorage
-      localStorage.removeItem('bloodDonationUser');
-      throw error;
+      localStorage.removeItem("bloodDonationUser");
+      // Don't throw error as we want logout to succeed locally even if API fails
+      return { success: true, message: "Logged out locally" };
     }
   },
   getCurrentUser: async () => {
     try {
       // Try to get user from localStorage first for speed
-      const cachedUser = localStorage.getItem('bloodDonationUser');
+      const cachedUser = localStorage.getItem("bloodDonationUser");
       if (cachedUser) {
         return JSON.parse(cachedUser);
       }
-      
+
       // Fallback - try API call with a short timeout
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 1500);
-      
+
       try {
-        const response = await api.get('/users/me', { 
-          signal: controller.signal 
+        const response = await api.get("/users/me", {
+          signal: controller.signal,
         });
         clearTimeout(timeoutId);
         return response.data;
@@ -132,9 +145,9 @@ export const authService = {  login: async (email: string, password: string) => 
 
   updateProfile: async (userData: FormData) => {
     try {
-      const response = await api.put('/users/update', userData, {
+      const response = await api.put("/users/update", userData, {
         headers: {
-          'Content-Type': 'multipart/form-data',
+          "Content-Type": "multipart/form-data",
         },
       });
       return response.data;
@@ -148,7 +161,7 @@ export const authService = {  login: async (email: string, password: string) => 
 export const eventService = {
   getAllEvents: async () => {
     try {
-      const response = await api.get('/events');
+      const response = await api.get("/events");
       return response.data;
     } catch (error) {
       throw error;
@@ -166,9 +179,9 @@ export const eventService = {
 
   createEvent: async (eventData: FormData) => {
     try {
-      const response = await api.post('/events', eventData, {
+      const response = await api.post("/events", eventData, {
         headers: {
-          'Content-Type': 'multipart/form-data',
+          "Content-Type": "multipart/form-data",
         },
       });
       return response.data;
@@ -182,15 +195,15 @@ export const eventService = {
 export interface DonorRegistrationData {
   fullName: string;
   dateOfBirth: string;
-  gender: 'male' | 'female' | 'other';
+  gender: "male" | "female" | "other";
   bloodType: string;
   weight: number;
   hemoglobinCount?: number;
-  disability: 'yes' | 'no';
-  healthy: 'yes' | 'no';
+  disability: "yes" | "no";
+  healthy: "yes" | "no";
   phoneNo: string;
   email: string;
-  idProofType: 'PAN' | 'Aadhaar' | 'VoterID';
+  idProofType: "PAN" | "Aadhaar" | "VoterID";
   idProofNumber: string;
   address?: string;
   city?: string;
@@ -216,7 +229,7 @@ export interface DonationRecord {
 export const donationService = {
   registerDonor: async (donorData: DonorRegistrationData) => {
     try {
-      const response = await api.post('/donations/register', donorData);
+      const response = await api.post("/donations/register", donorData);
       return response.data;
     } catch (error) {
       throw error;
@@ -225,22 +238,22 @@ export const donationService = {
 
   getUserDonations: async () => {
     try {
-      const response = await api.get('/donations/user');
+      const response = await api.get("/donations/user");
       return response.data;
     } catch (error) {
       throw error;
     }
   },
-  
+
   recordDonation: async (donationData: Partial<DonationRecord>) => {
     try {
-      const response = await api.post('/donations/record', donationData);
+      const response = await api.post("/donations/record", donationData);
       return response.data;
     } catch (error) {
       throw error;
     }
   },
-  
+
   getDonationById: async (donationId: string) => {
     try {
       const response = await api.get(`/donations/${donationId}`);
@@ -249,56 +262,69 @@ export const donationService = {
       throw error;
     }
   },
-  
-  uploadDonationCertificate: async (donationId: string, certificateFile: File) => {
+
+  uploadDonationCertificate: async (
+    donationId: string,
+    certificateFile: File
+  ) => {
     try {
       const formData = new FormData();
-      formData.append('certificate', certificateFile);
-      
-      const response = await api.post(`/donations/${donationId}/certificate`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
+      formData.append("certificate", certificateFile);
+
+      const response = await api.post(
+        `/donations/${donationId}/certificate`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
       return response.data;
     } catch (error) {
       throw error;
     }
   },
-  
+
   getDonorStatus: async () => {
     try {
-      const response = await api.get('/donations/status');
+      const response = await api.get("/donations/status");
       return response.data;
     } catch (error) {
       throw error;
     }
   },
-  
+
   getNextDonationDate: async () => {
     try {
-      const response = await api.get('/donations/next-eligible');
+      const response = await api.get("/donations/next-eligible");
       return response.data;
     } catch (error) {
       throw error;
     }
-  }
+  },
 };
 
 // Blood request services
 export const bloodRequestService = {
-  getActiveRequests: async (filters?: { bloodType?: string, urgency?: string, location?: string }) => {
+  getActiveRequests: async (filters?: {
+    bloodType?: string;
+    urgency?: string;
+    location?: string;
+  }) => {
     try {
       const params = new URLSearchParams();
       if (filters) {
-        if (filters.bloodType) params.append('bloodType', filters.bloodType);
-        if (filters.urgency) params.append('urgency', filters.urgency);
-        if (filters.location) params.append('location', filters.location);
+        if (filters.bloodType) params.append("bloodType", filters.bloodType);
+        if (filters.urgency) params.append("urgency", filters.urgency);
+        if (filters.location) params.append("location", filters.location);
       }
-      
+
       const queryString = params.toString();
-      const url = queryString ? `/blood-requests?${queryString}` : '/blood-requests';
-      
+      const url = queryString
+        ? `/blood-requests?${queryString}`
+        : "/blood-requests";
+
       const response = await api.get(url);
       return response.data;
     } catch (error) {
@@ -320,42 +346,48 @@ export const bloodRequestService = {
     bloodType: string;
     hospital: string;
     location: string;
-    urgency: 'low' | 'medium' | 'high';
+    urgency: "low" | "medium" | "high";
     units: number;
     contactNumber: string;
     reason: string;
   }) => {
     try {
-      const response = await api.post('/blood-requests', requestData);
+      const response = await api.post("/blood-requests", requestData);
       return response.data;
     } catch (error) {
       throw error;
     }
   },
 
-  respondToRequest: async (requestId: string, responseData: {
-    donorId: string;
-    responseTime: string;
-    message?: string;
-    contactNumber: string;
-  }) => {
+  respondToRequest: async (
+    requestId: string,
+    responseData: {
+      donorId: string;
+      responseTime: string;
+      message?: string;
+      contactNumber: string;
+    }
+  ) => {
     try {
-      const response = await api.post(`/blood-requests/${requestId}/respond`, responseData);
+      const response = await api.post(
+        `/blood-requests/${requestId}/respond`,
+        responseData
+      );
       return response.data;
     } catch (error) {
       throw error;
     }
   },
-  
+
   getUserRequests: async () => {
     try {
-      const response = await api.get('/blood-requests/user');
+      const response = await api.get("/blood-requests/user");
       return response.data;
     } catch (error) {
       throw error;
     }
   },
-  
+
   cancelRequest: async (requestId: string) => {
     try {
       const response = await api.delete(`/blood-requests/${requestId}`);
@@ -363,16 +395,16 @@ export const bloodRequestService = {
     } catch (error) {
       throw error;
     }
-  }
+  },
 };
 
 // Report services
 export const reportService = {
   uploadReport: async (reportData: FormData) => {
     try {
-      const response = await api.post('/reports/upload', reportData, {
+      const response = await api.post("/reports/upload", reportData, {
         headers: {
-          'Content-Type': 'multipart/form-data',
+          "Content-Type": "multipart/form-data",
         },
       });
       return response.data;
@@ -383,7 +415,7 @@ export const reportService = {
 
   getUserReports: async () => {
     try {
-      const response = await api.get('/reports/user');
+      const response = await api.get("/reports/user");
       return response.data;
     } catch (error) {
       throw error;
@@ -395,7 +427,7 @@ export const reportService = {
 export const postService = {
   getAllPosts: async () => {
     try {
-      const response = await api.get('/post/all');
+      const response = await api.get("/post/all");
       return response.data;
     } catch (error) {
       throw error;
@@ -413,9 +445,9 @@ export const postService = {
 
   createPost: async (postData: FormData) => {
     try {
-      const response = await api.post('/post/create', postData, {
+      const response = await api.post("/post/create", postData, {
         headers: {
-          'Content-Type': 'multipart/form-data',
+          "Content-Type": "multipart/form-data",
         },
       });
       return response.data;
@@ -423,12 +455,12 @@ export const postService = {
       throw error;
     }
   },
-  
+
   updatePost: async (id: string, postData: FormData) => {
     try {
       const response = await api.put(`/post/${id}`, postData, {
         headers: {
-          'Content-Type': 'multipart/form-data',
+          "Content-Type": "multipart/form-data",
         },
       });
       return response.data;
@@ -436,7 +468,7 @@ export const postService = {
       throw error;
     }
   },
-  
+
   deletePost: async (id: string) => {
     try {
       const response = await api.delete(`/post/${id}`);
@@ -444,7 +476,7 @@ export const postService = {
     } catch (error) {
       throw error;
     }
-  }
+  },
 };
 
 export default api;

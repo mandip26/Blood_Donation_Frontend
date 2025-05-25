@@ -48,7 +48,7 @@ export function NavUser({
     {
       name: "Logout",
       icon: <LogOutIcon color="#fff" />,
-      link: "/dashboard",
+      link: "/",
     },
   ];
 
@@ -104,10 +104,21 @@ export function NavUser({
                   key={i}
                   className={`focus:bg-white/15 focus:text-white rounded-lg h-9 ${currentRoute === item.link ? "bg-white/20" : "bg-transparent"}`}
                 >
+                  {" "}
                   {item.name === "Logout" ? (
                     <button
                       className="flex gap-3 items-center px-3"
-                      onClick={() => logout()}
+                      onClick={async () => {
+                        try {
+                          await logout();
+                          // Use window.location to navigate after successful logout
+                          window.location.href = item.link;
+                        } catch (error) {
+                          console.error("Logout failed:", error);
+                          // Even on error, redirect to login
+                          window.location.href = item.link;
+                        }
+                      }}
                     >
                       {item.icon}
                       {item.name}

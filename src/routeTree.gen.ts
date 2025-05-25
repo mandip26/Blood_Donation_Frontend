@@ -19,6 +19,7 @@ import { Route as DashboardCreateImport } from './routes/dashboard/create'
 import { Route as DashboardDashboardLayoutImport } from './routes/dashboard/_dashboardLayout'
 import { Route as authSignUpImport } from './routes/(auth)/sign-up'
 import { Route as authLoginImport } from './routes/(auth)/login'
+import { Route as DashboardDashboardLayoutVisualizationApiImport } from './routes/dashboard/_dashboardLayout/visualization-api'
 import { Route as DashboardDashboardLayoutVisualizationImport } from './routes/dashboard/_dashboardLayout/visualization'
 import { Route as DashboardDashboardLayoutRecipientImport } from './routes/dashboard/_dashboardLayout/recipient'
 import { Route as DashboardDashboardLayoutProfileImport } from './routes/dashboard/_dashboardLayout/profile'
@@ -134,6 +135,13 @@ const DashboardDashboardLayoutAnalyticsLazyRoute =
       (d) => d.Route,
     ),
   )
+
+const DashboardDashboardLayoutVisualizationApiRoute =
+  DashboardDashboardLayoutVisualizationApiImport.update({
+    id: '/visualization-api',
+    path: '/visualization-api',
+    getParentRoute: () => DashboardDashboardLayoutRoute,
+  } as any)
 
 const DashboardDashboardLayoutVisualizationRoute =
   DashboardDashboardLayoutVisualizationImport.update({
@@ -332,6 +340,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardDashboardLayoutVisualizationImport
       parentRoute: typeof DashboardDashboardLayoutImport
     }
+    '/dashboard/_dashboardLayout/visualization-api': {
+      id: '/dashboard/_dashboardLayout/visualization-api'
+      path: '/visualization-api'
+      fullPath: '/dashboard/visualization-api'
+      preLoaderRoute: typeof DashboardDashboardLayoutVisualizationApiImport
+      parentRoute: typeof DashboardDashboardLayoutImport
+    }
     '/dashboard/_dashboardLayout/analytics': {
       id: '/dashboard/_dashboardLayout/analytics'
       path: '/analytics'
@@ -374,6 +389,7 @@ interface DashboardDashboardLayoutRouteChildren {
   DashboardDashboardLayoutProfileRoute: typeof DashboardDashboardLayoutProfileRoute
   DashboardDashboardLayoutRecipientRoute: typeof DashboardDashboardLayoutRecipientRoute
   DashboardDashboardLayoutVisualizationRoute: typeof DashboardDashboardLayoutVisualizationRoute
+  DashboardDashboardLayoutVisualizationApiRoute: typeof DashboardDashboardLayoutVisualizationApiRoute
   DashboardDashboardLayoutAnalyticsLazyRoute: typeof DashboardDashboardLayoutAnalyticsLazyRoute
   DashboardDashboardLayoutBloodtestsLazyRoute: typeof DashboardDashboardLayoutBloodtestsLazyRoute
   DashboardDashboardLayoutCreateLazyRoute: typeof DashboardDashboardLayoutCreateLazyRoute
@@ -395,6 +411,8 @@ const DashboardDashboardLayoutRouteChildren: DashboardDashboardLayoutRouteChildr
       DashboardDashboardLayoutRecipientRoute,
     DashboardDashboardLayoutVisualizationRoute:
       DashboardDashboardLayoutVisualizationRoute,
+    DashboardDashboardLayoutVisualizationApiRoute:
+      DashboardDashboardLayoutVisualizationApiRoute,
     DashboardDashboardLayoutAnalyticsLazyRoute:
       DashboardDashboardLayoutAnalyticsLazyRoute,
     DashboardDashboardLayoutBloodtestsLazyRoute:
@@ -441,6 +459,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/profile': typeof DashboardDashboardLayoutProfileRoute
   '/dashboard/recipient': typeof DashboardDashboardLayoutRecipientRoute
   '/dashboard/visualization': typeof DashboardDashboardLayoutVisualizationRoute
+  '/dashboard/visualization-api': typeof DashboardDashboardLayoutVisualizationApiRoute
   '/dashboard/analytics': typeof DashboardDashboardLayoutAnalyticsLazyRoute
   '/dashboard/bloodtests': typeof DashboardDashboardLayoutBloodtestsLazyRoute
 }
@@ -459,6 +478,7 @@ export interface FileRoutesByTo {
   '/dashboard/profile': typeof DashboardDashboardLayoutProfileRoute
   '/dashboard/recipient': typeof DashboardDashboardLayoutRecipientRoute
   '/dashboard/visualization': typeof DashboardDashboardLayoutVisualizationRoute
+  '/dashboard/visualization-api': typeof DashboardDashboardLayoutVisualizationApiRoute
   '/dashboard/analytics': typeof DashboardDashboardLayoutAnalyticsLazyRoute
   '/dashboard/bloodtests': typeof DashboardDashboardLayoutBloodtestsLazyRoute
 }
@@ -480,6 +500,7 @@ export interface FileRoutesById {
   '/dashboard/_dashboardLayout/profile': typeof DashboardDashboardLayoutProfileRoute
   '/dashboard/_dashboardLayout/recipient': typeof DashboardDashboardLayoutRecipientRoute
   '/dashboard/_dashboardLayout/visualization': typeof DashboardDashboardLayoutVisualizationRoute
+  '/dashboard/_dashboardLayout/visualization-api': typeof DashboardDashboardLayoutVisualizationApiRoute
   '/dashboard/_dashboardLayout/analytics': typeof DashboardDashboardLayoutAnalyticsLazyRoute
   '/dashboard/_dashboardLayout/bloodtests': typeof DashboardDashboardLayoutBloodtestsLazyRoute
   '/dashboard/_dashboardLayout/create': typeof DashboardDashboardLayoutCreateLazyRoute
@@ -503,6 +524,7 @@ export interface FileRouteTypes {
     | '/dashboard/profile'
     | '/dashboard/recipient'
     | '/dashboard/visualization'
+    | '/dashboard/visualization-api'
     | '/dashboard/analytics'
     | '/dashboard/bloodtests'
   fileRoutesByTo: FileRoutesByTo
@@ -520,6 +542,7 @@ export interface FileRouteTypes {
     | '/dashboard/profile'
     | '/dashboard/recipient'
     | '/dashboard/visualization'
+    | '/dashboard/visualization-api'
     | '/dashboard/analytics'
     | '/dashboard/bloodtests'
   id:
@@ -539,6 +562,7 @@ export interface FileRouteTypes {
     | '/dashboard/_dashboardLayout/profile'
     | '/dashboard/_dashboardLayout/recipient'
     | '/dashboard/_dashboardLayout/visualization'
+    | '/dashboard/_dashboardLayout/visualization-api'
     | '/dashboard/_dashboardLayout/analytics'
     | '/dashboard/_dashboardLayout/bloodtests'
     | '/dashboard/_dashboardLayout/create'
@@ -605,6 +629,7 @@ export const routeTree = rootRoute
         "/dashboard/_dashboardLayout/profile",
         "/dashboard/_dashboardLayout/recipient",
         "/dashboard/_dashboardLayout/visualization",
+        "/dashboard/_dashboardLayout/visualization-api",
         "/dashboard/_dashboardLayout/analytics",
         "/dashboard/_dashboardLayout/bloodtests",
         "/dashboard/_dashboardLayout/create",
@@ -649,6 +674,10 @@ export const routeTree = rootRoute
     },
     "/dashboard/_dashboardLayout/visualization": {
       "filePath": "dashboard/_dashboardLayout/visualization.tsx",
+      "parent": "/dashboard/_dashboardLayout"
+    },
+    "/dashboard/_dashboardLayout/visualization-api": {
+      "filePath": "dashboard/_dashboardLayout/visualization-api.tsx",
       "parent": "/dashboard/_dashboardLayout"
     },
     "/dashboard/_dashboardLayout/analytics": {

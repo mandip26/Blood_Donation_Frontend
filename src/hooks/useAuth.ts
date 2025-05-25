@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
-import { authService } from '@/services/apiService';
+import { useState, useEffect, useCallback } from "react";
+import { authService } from "@/services/apiService";
 
 export interface User {
   addhar: string;
@@ -16,7 +16,7 @@ export interface User {
   hospitalName?: string;
   organisationName?: string;
   email: string;
-  role: 'admin' | 'organisation' | 'user' | 'hospital';
+  role: "admin" | "organisation" | "user" | "hospital";
   phone?: string;
   profile?: {
     bio?: string;
@@ -36,10 +36,10 @@ interface AuthState {
 export function useAuth() {
   const [authState, setAuthState] = useState<AuthState>(() => {
     // Try to get cached user data from localStorage for immediate UI display
-    const cachedUser = localStorage.getItem('bloodDonationUser');
+    const cachedUser = localStorage.getItem("bloodDonationUser");
     return {
       user: cachedUser ? JSON.parse(cachedUser) : null,
-      isLoading: false,  // Start with false since we've checked localStorage
+      isLoading: false, // Start with false since we've checked localStorage
       error: null,
     };
   });
@@ -48,8 +48,8 @@ export function useAuth() {
   const checkUserSession = useCallback(async () => {
     try {
       // We'll use the localStorage data and consider it valid
-      const cachedUser = localStorage.getItem('bloodDonationUser');
-      
+      const cachedUser = localStorage.getItem("bloodDonationUser");
+
       if (cachedUser) {
         const userData = JSON.parse(cachedUser);
         setAuthState({
@@ -80,15 +80,15 @@ export function useAuth() {
   useEffect(() => {
     checkUserSession();
   }, [checkUserSession]);
-  
+
   // Login function
   const login = useCallback(async (email: string, password: string) => {
     try {
-      setAuthState(prev => ({ ...prev, isLoading: true, error: null }));
+      setAuthState((prev) => ({ ...prev, isLoading: true, error: null }));
       const response = await authService.login(email, password);
-      
+
       console.log("Login response:", response);
-      
+
       if (response && response.user) {
         // Auth success - store user data and update state
         setAuthState({
@@ -98,19 +98,19 @@ export function useAuth() {
         });
         return response.user;
       } else {
-        throw new Error('Invalid response from server');
+        throw new Error("Invalid response from server");
       }
     } catch (error: any) {
       console.error("Login error in hook:", error);
-      
-      let errorMessage = 'Login failed. Please try again.';
+
+      let errorMessage = "Login failed. Please try again.";
       if (error.response?.data?.message) {
         errorMessage = error.response.data.message;
       } else if (error.message) {
         errorMessage = error.message;
       }
-      
-      setAuthState(prev => ({
+
+      setAuthState((prev) => ({
         ...prev,
         isLoading: false,
         error: errorMessage,
@@ -121,7 +121,7 @@ export function useAuth() {
   // Register function
   const register = useCallback(async (userData: FormData) => {
     try {
-      setAuthState(prev => ({ ...prev, isLoading: true, error: null }));
+      setAuthState((prev) => ({ ...prev, isLoading: true, error: null }));
       const newUser = await authService.register(userData);
       setAuthState({
         user: newUser,
@@ -130,63 +130,78 @@ export function useAuth() {
       });
       return newUser;
     } catch (error: any) {
-      let errorMessage = 'Registration failed. Please try again.';
-      if (error.response && error.response.data && error.response.data.message) {
+      let errorMessage = "Registration failed. Please try again.";
+      if (
+        error.response &&
+        error.response.data &&
+        error.response.data.message
+      ) {
         errorMessage = error.response.data.message;
       }
-      
-      setAuthState(prev => ({
+
+      setAuthState((prev) => ({
         ...prev,
         isLoading: false,
         error: errorMessage,
       }));
       throw error;
     }
-  }, []);
-  // Logout function
+  }, []); // Logout function
   const logout = useCallback(async () => {
     try {
-      setAuthState(prev => ({ ...prev, isLoading: true }));
-      await authService.logout();
-      
+      setAuthState((prev) => ({ ...prev, isLoading: true }));
+      const response = await authService.logout();
+
+      console.log("Logout response in hook:", response);
+
       // Remove user data from localStorage on logout
-      localStorage.removeItem('bloodDonationUser');
-      
+      localStorage.removeItem("bloodDonationUser");
+
       setAuthState({
         user: null,
         isLoading: false,
         error: null,
       });
+
+      return response;
     } catch (error: any) {
+      console.error("Logout error in hook:", error);
       // Even if the API call fails, clear local storage and state
-      localStorage.removeItem('bloodDonationUser');
-      
+      localStorage.removeItem("bloodDonationUser");
+
       setAuthState({
         user: null,
         isLoading: false,
         error: null,
       });
+
+      // Return success even on API failure since we've logged out locally
+      return { success: true, message: "Logged out locally" };
     }
   }, []);
 
   // Update user function
   const updateUser = useCallback(async (userData: FormData) => {
     try {
-      setAuthState(prev => ({ ...prev, isLoading: true, error: null }));
+      setAuthState((prev) => ({ ...prev, isLoading: true, error: null }));
       const updatedUser = await authService.updateProfile(userData);
-      setAuthState(prev => ({
+      setAuthState((prev) => ({
         ...prev,
         user: updatedUser,
         isLoading: false,
       }));
       return updatedUser;
     } catch (error: any) {
-      let errorMessage = 'Failed to update profile. Please try again.';
-      if (error.response && error.response.data && error.response.data.message) {
+      let errorMessage = "Failed to update profile. Please try again.";
+      if (
+        error.response &&
+        error.response.data &&
+        error.response.data.message
+      ) {
         errorMessage = error.response.data.message;
       }
-      
-      setAuthState(prev => ({
+
+      setAuthState((prev) => ({
         ...prev,
         isLoading: false,
         error: errorMessage,
@@ -196,7 +211,7 @@ export function useAuth() {
   }, []);
   // Clear authentication errors
   const clearError = useCallback(() => {
-    setAuthState(prev => ({ ...prev, error: null }));
+    setAuthState((prev) => ({ ...prev, error: null }));
   }, []);
   // Reload user data
   const reloadUser = useCallback(async () => {
