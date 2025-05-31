@@ -14,7 +14,6 @@ import { createFileRoute } from '@tanstack/react-router'
 
 import { Route as rootRoute } from './routes/__root'
 import { Route as IndexImport } from './routes/index'
-import { Route as DashboardIndexImport } from './routes/dashboard/index'
 import { Route as DashboardDashboardLayoutImport } from './routes/dashboard/_dashboardLayout'
 import { Route as authSignUpImport } from './routes/(auth)/sign-up'
 import { Route as authLoginImport } from './routes/(auth)/login'
@@ -24,6 +23,7 @@ import { Route as DashboardDashboardLayoutVisualizationLazyFixedImport } from '.
 // Create Virtual Routes
 
 const DashboardImport = createFileRoute('/dashboard')()
+const DashboardIndexLazyImport = createFileRoute('/dashboard/')()
 const DashboardCreateLazyImport = createFileRoute('/dashboard/create')()
 const DashboardDashboardLayoutIndexLazyImport = createFileRoute(
   '/dashboard/_dashboardLayout/',
@@ -73,7 +73,7 @@ const IndexRoute = IndexImport.update({
   getParentRoute: () => rootRoute,
 } as any)
 
-const DashboardIndexRoute = DashboardIndexImport.update({
+const DashboardIndexLazyRoute = DashboardIndexLazyImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => DashboardRoute,
@@ -291,7 +291,7 @@ declare module '@tanstack/react-router' {
       id: '/dashboard/'
       path: '/'
       fullPath: '/dashboard/'
-      preLoaderRoute: typeof DashboardIndexImport
+      preLoaderRoute: typeof DashboardIndexLazyImport
       parentRoute: typeof DashboardImport
     }
     '/dashboard/_dashboardLayout/visualization-api': {
@@ -456,13 +456,13 @@ const DashboardDashboardLayoutRouteWithChildren =
 interface DashboardRouteChildren {
   DashboardDashboardLayoutRoute: typeof DashboardDashboardLayoutRouteWithChildren
   DashboardCreateLazyRoute: typeof DashboardCreateLazyRoute
-  DashboardIndexRoute: typeof DashboardIndexRoute
+  DashboardIndexLazyRoute: typeof DashboardIndexLazyRoute
 }
 
 const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardDashboardLayoutRoute: DashboardDashboardLayoutRouteWithChildren,
   DashboardCreateLazyRoute: DashboardCreateLazyRoute,
-  DashboardIndexRoute: DashboardIndexRoute,
+  DashboardIndexLazyRoute: DashboardIndexLazyRoute,
 }
 
 const DashboardRouteWithChildren = DashboardRoute._addFileChildren(
@@ -516,7 +516,7 @@ export interface FileRoutesById {
   '/dashboard': typeof DashboardRouteWithChildren
   '/dashboard/_dashboardLayout': typeof DashboardDashboardLayoutRouteWithChildren
   '/dashboard/create': typeof DashboardCreateLazyRoute
-  '/dashboard/': typeof DashboardIndexRoute
+  '/dashboard/': typeof DashboardIndexLazyRoute
   '/dashboard/_dashboardLayout/visualization-api': typeof DashboardDashboardLayoutVisualizationApiRoute
   '/dashboard/_dashboardLayout/analytics': typeof DashboardDashboardLayoutAnalyticsLazyRoute
   '/dashboard/_dashboardLayout/bloodtests': typeof DashboardDashboardLayoutBloodtestsLazyRoute
@@ -665,7 +665,7 @@ export const routeTree = rootRoute
       "parent": "/dashboard"
     },
     "/dashboard/": {
-      "filePath": "dashboard/index.tsx",
+      "filePath": "dashboard/index.lazy.tsx",
       "parent": "/dashboard"
     },
     "/dashboard/_dashboardLayout/visualization-api": {
