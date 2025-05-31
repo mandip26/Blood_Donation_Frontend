@@ -4,8 +4,7 @@ import { Input } from "@/components/ui/input.tsx";
 import axios from "axios";
 import { useEffect, useState } from "react";
 import { Toaster, toast } from "react-hot-toast";
-import { Link, useNavigate } from "@tanstack/react-router";
-import useAuth from "@/hooks/useAuth";
+import { Link } from "@tanstack/react-router";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
@@ -52,14 +51,18 @@ const userSchema = z
     path: ["confirmPassword"],
   });
 
-// Organization-specific schema
-const organizationSchema = z
+// organisation-specific schema
+const organisationSchema = z
   .object({
     ...baseSchema,
     organisationName: z
       .string()
-      .min(2, "Organization name must be at least 2 characters long")
-      .max(100, "Organization name cannot exceed 100 characters"),
+      .min(2, "organisation name must be at least 2 characters long")
+      .max(100, "organisation name cannot exceed 100 characters"),
+    organisationId: z
+      .string()
+      .min(2, "organisation ID must be at least 2 characters long")
+      .max(50, "organisation ID cannot exceed 50 characters"),
     organisationIdImage: fileSchema,
   })
   .refine((data) => data.password === data.confirmPassword, {
@@ -75,6 +78,10 @@ const hospitalSchema = z
       .string()
       .min(2, "Hospital name must be at least 2 characters long")
       .max(100, "Hospital name cannot exceed 100 characters"),
+    hospitalId: z
+      .string()
+      .min(2, "Hospital ID must be at least 2 characters long")
+      .max(50, "Hospital ID cannot exceed 50 characters"),
     hospitalIdImage: fileSchema,
   })
   .refine((data) => data.password === data.confirmPassword, {
@@ -122,10 +129,10 @@ export default function SignupForm({ userType, isLogin = false }: props) {
       setIdName("addharImage");
       setNameBasedOnUser("Full Name");
       setIdBasedOnUser("Aadhar ID");
-    } else if (userType === "organization") {
+    } else if (userType === "organisation") {
       setIdName("organisationIdImage");
-      setNameBasedOnUser("Organization Name");
-      setIdBasedOnUser("Organization ID");
+      setNameBasedOnUser("organisation Name");
+      setIdBasedOnUser("organisation ID");
     } else if (userType === "hospital") {
       setIdName("hospitalIdImage");
       setNameBasedOnUser("Hospital Name");
@@ -159,8 +166,8 @@ export default function SignupForm({ userType, isLogin = false }: props) {
     switch (userType) {
       case "user":
         return userSchema;
-      case "organisation":
-        return organizationSchema;
+      case "organisation": // Fixed: was "organisation"
+        return organisationSchema;
       case "hospital":
         return hospitalSchema;
       case "admin":
@@ -194,16 +201,18 @@ export default function SignupForm({ userType, isLogin = false }: props) {
           addhar: "",
           addharImage: undefined as File | undefined,
         };
-      case "organisation":
+      case "organisation": // Fixed: was "organisation"
         return {
           ...baseValues,
           organisationName: "",
+          organisationId: "",
           organisationIdImage: undefined as File | undefined,
         };
       case "hospital":
         return {
           ...baseValues,
           hospitalName: "",
+          hospitalId: "",
           hospitalIdImage: undefined as File | undefined,
         };
       case "admin":
@@ -252,22 +261,23 @@ export default function SignupForm({ userType, isLogin = false }: props) {
               formData.append("addharImage", value.addharImage);
             }
           } else if (userType === "organisation") {
+            // Fixed: was "organisation"
             if (value.organisationName) {
               formData.append("organisationName", value.organisationName);
-            } else if (value.name) {
-              formData.append("organisationName", value.name);
             }
-
+            if (value.organisationId) {
+              formData.append("organisationId", value.organisationId);
+            }
             if (value.organisationIdImage) {
               formData.append("organisationIdImage", value.organisationIdImage);
             }
           } else if (userType === "hospital") {
             if (value.hospitalName) {
               formData.append("hospitalName", value.hospitalName);
-            } else if (value.name) {
-              formData.append("hospitalName", value.name);
             }
-
+            if (value.hospitalId) {
+              formData.append("hospitalId", value.hospitalId);
+            }
             if (value.hospitalIdImage) {
               formData.append("hospitalIdImage", value.hospitalIdImage);
             }
@@ -383,31 +393,131 @@ export default function SignupForm({ userType, isLogin = false }: props) {
 
         {!isLogin && (
           <>
-            <form.Field
-              name="name"
-              children={(field) => {
-                return (
-                  <div className="flex flex-col gap-y-2">
-                    {/* <label className="text-white text-sm font-light ml-2">
-                      {nameBasedOnUser}
-                    </label> */}
-                    <Input
-                      type="text"
-                      placeholder={nameBasedOnUser}
-                      name={field.name}
-                      value={field.state.value}
-                      onBlur={field.handleBlur}
-                      onChange={(e) => field.handleChange(e.target.value)}
-                      className="bg-white h-10 shadow-even-xl border-0 outline-none focus:outline-none focus:border-0 focus:ring-0 focus-visible:ring-0 focus-visible:ring-transparent focus-visible:border-0 focus-visible:outline-none ring-0 mx-0"
-                    />
-                    {field.state.meta.errors &&
-                      field.state.meta.errors.length > 0 && (
-                        <ErrorMessage errors={field.state.meta.errors} />
-                      )}
-                  </div>
-                );
-              }}
-            />
+            {/* Name field - conditional based on user type */}
+            {(userType === "user" || userType === "admin") && (
+              <form.Field
+                name="name"
+                children={(field) => {
+                  return (
+                    <div className="flex flex-col gap-y-2">
+                      <Input
+                        type="text"
+                        placeholder={nameBasedOnUser}
+                        name={field.name}
+                        value={field.state.value}
+                        onBlur={field.handleBlur}
+                        onChange={(e) => field.handleChange(e.target.value)}
+                        className="bg-white h-10 shadow-even-xl border-0 outline-none focus:outline-none focus:border-0 focus:ring-0 focus-visible:ring-0 focus-visible:ring-transparent focus-visible:border-0 focus-visible:outline-none ring-0 mx-0"
+                      />
+                      {field.state.meta.errors &&
+                        field.state.meta.errors.length > 0 && (
+                          <ErrorMessage errors={field.state.meta.errors} />
+                        )}
+                    </div>
+                  );
+                }}
+              />
+            )}
+
+            {/* organisation Name and ID fields */}
+            {userType === "organisation" && (
+              <>
+                <form.Field
+                  name="organisationName"
+                  children={(field) => {
+                    return (
+                      <div className="flex flex-col gap-y-2">
+                        <Input
+                          type="text"
+                          placeholder="organisation Name"
+                          name={field.name}
+                          value={field.state.value}
+                          onBlur={field.handleBlur}
+                          onChange={(e) => field.handleChange(e.target.value)}
+                          className="bg-white h-10 shadow-even-xl border-0 outline-none focus:outline-none focus:border-0 focus:ring-0 focus-visible:ring-0 focus-visible:ring-transparent focus-visible:border-0 focus-visible:outline-none ring-0 mx-0"
+                        />
+                        {field.state.meta.errors &&
+                          field.state.meta.errors.length > 0 && (
+                            <ErrorMessage errors={field.state.meta.errors} />
+                          )}
+                      </div>
+                    );
+                  }}
+                />
+                <form.Field
+                  name="organisationId"
+                  children={(field) => {
+                    return (
+                      <div className="flex flex-col gap-y-2">
+                        <Input
+                          type="text"
+                          placeholder="organisation ID"
+                          name={field.name}
+                          value={field.state.value}
+                          onBlur={field.handleBlur}
+                          onChange={(e) => field.handleChange(e.target.value)}
+                          className="bg-white h-10 shadow-even-xl border-0 outline-none focus:outline-none focus:border-0 focus:ring-0 focus-visible:ring-0 focus-visible:ring-transparent focus-visible:border-0 focus-visible:outline-none ring-0 mx-0"
+                        />
+                        {field.state.meta.errors &&
+                          field.state.meta.errors.length > 0 && (
+                            <ErrorMessage errors={field.state.meta.errors} />
+                          )}
+                      </div>
+                    );
+                  }}
+                />
+              </>
+            )}
+
+            {/* Hospital Name and ID fields */}
+            {userType === "hospital" && (
+              <>
+                <form.Field
+                  name="hospitalName"
+                  children={(field) => {
+                    return (
+                      <div className="flex flex-col gap-y-2">
+                        <Input
+                          type="text"
+                          placeholder="Hospital Name"
+                          name={field.name}
+                          value={field.state.value}
+                          onBlur={field.handleBlur}
+                          onChange={(e) => field.handleChange(e.target.value)}
+                          className="bg-white h-10 shadow-even-xl border-0 outline-none focus:outline-none focus:border-0 focus:ring-0 focus-visible:ring-0 focus-visible:ring-transparent focus-visible:border-0 focus-visible:outline-none ring-0 mx-0"
+                        />
+                        {field.state.meta.errors &&
+                          field.state.meta.errors.length > 0 && (
+                            <ErrorMessage errors={field.state.meta.errors} />
+                          )}
+                      </div>
+                    );
+                  }}
+                />
+                <form.Field
+                  name="hospitalId"
+                  children={(field) => {
+                    return (
+                      <div className="flex flex-col gap-y-2">
+                        <Input
+                          type="text"
+                          placeholder="Hospital ID"
+                          name={field.name}
+                          value={field.state.value}
+                          onBlur={field.handleBlur}
+                          onChange={(e) => field.handleChange(e.target.value)}
+                          className="bg-white h-10 shadow-even-xl border-0 outline-none focus:outline-none focus:border-0 focus:ring-0 focus-visible:ring-0 focus-visible:ring-transparent focus-visible:border-0 focus-visible:outline-none ring-0 mx-0"
+                        />
+                        {field.state.meta.errors &&
+                          field.state.meta.errors.length > 0 && (
+                            <ErrorMessage errors={field.state.meta.errors} />
+                          )}
+                      </div>
+                    );
+                  }}
+                />
+              </>
+            )}
 
             <div className="flex gap-5 justify-between">
               <form.Field
@@ -415,9 +525,6 @@ export default function SignupForm({ userType, isLogin = false }: props) {
                 children={(field) => {
                   return (
                     <div className="flex flex-col gap-y-2 w-full">
-                      {/* <label className="text-white text-sm font-light ml-2">
-                        Email
-                      </label> */}
                       <Input
                         type="email"
                         placeholder="Email"
@@ -440,9 +547,6 @@ export default function SignupForm({ userType, isLogin = false }: props) {
                 children={(field) => {
                   return (
                     <div className="flex flex-col gap-y-2 w-full">
-                      {/* <label className="text-white text-sm font-light ml-2">
-                        Phone
-                      </label> */}
                       <Input
                         type="text"
                         placeholder="Phone"
@@ -464,147 +568,85 @@ export default function SignupForm({ userType, isLogin = false }: props) {
                 }}
               />
             </div>
-            {userType === "organisation" && (
-              <form.Field
-                name="organisationIdImage"
-                children={(field) => {
-                  return (
-                    <div className="flex flex-col gap-y-2">
-                      {/* <label className="text-white text-sm font-light ml-2">
-                        Upload Organisation ID
-                      </label> */}
-                      <Input
-                        type="file"
-                        accept="image/png,image/jpeg,image/webp"
-                        placeholder="Upload Organisation ID"
-                        name={field.name}
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          field.handleChange(file || undefined);
-                        }}
-                        onBlur={field.handleBlur}
-                        className="bg-white h-10 shadow-even-xl border-0 outline-none focus:outline-none focus:border-0 focus:ring-0 focus-visible:ring-0 focus-visible:ring-transparent focus-visible:border-0 focus-visible:outline-none ring-0 mx-0"
-                      />
-                      {field.state.meta.errors &&
-                        field.state.meta.errors.length > 0 && (
-                          <ErrorMessage errors={field.state.meta.errors} />
-                        )}
-                      <p className="text-xs text-white/60 ml-2">
-                        Upload organisation ID image (JPG, PNG or WEBP, max 5MB)
-                      </p>
-                    </div>
-                  );
-                }}
-              />
+
+            {/* File upload and ID fields - conditional based on user type */}
+            {(userType === "user" ||
+              userType === "organisation" ||
+              userType === "hospital") && (
+              <div
+                className={
+                  userType === "user" ? "flex gap-5 justify-between" : ""
+                }
+              >
+                <form.Field
+                  name={idName}
+                  children={(field) => {
+                    return (
+                      <div className="flex flex-col gap-y-2">
+                        <Input
+                          type="file"
+                          accept="image/png,image/jpeg,image/webp"
+                          placeholder={`Upload ${idBasedOnUser}`}
+                          name={field.name}
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            field.handleChange(file || undefined);
+                          }}
+                          onBlur={field.handleBlur}
+                          className="bg-white h-10 shadow-even-xl border-0 outline-none focus:outline-none focus:border-0 focus:ring-0 focus-visible:ring-0 focus-visible:ring-transparent focus-visible:border-0 focus-visible:outline-none ring-0 mx-0"
+                        />
+                        {field.state.meta.errors &&
+                          field.state.meta.errors.length > 0 && (
+                            <ErrorMessage errors={field.state.meta.errors} />
+                          )}
+                        <p className="text-xs text-white/60 ml-2">
+                          Upload {idBasedOnUser ?? "ID"} image (JPG, PNG or
+                          WEBP, max 5MB)
+                        </p>
+                      </div>
+                    );
+                  }}
+                />
+
+                {/* Aadhar number field - only for users */}
+                {userType === "user" && (
+                  <form.Field
+                    name="addhar"
+                    children={(field) => {
+                      return (
+                        <div className="flex flex-col gap-y-2 w-full">
+                          <Input
+                            type="text"
+                            placeholder="12-digit Aadhar Number"
+                            name={field.name}
+                            value={field.state.value || ""}
+                            onBlur={field.handleBlur}
+                            onChange={(e) => field.handleChange(e.target.value)}
+                            className="bg-white h-10 shadow-even-xl border-0 outline-none focus:outline-none focus:border-0 focus:ring-0 focus-visible:ring-0 focus-visible:ring-transparent focus-visible:border-0 focus-visible:outline-none ring-0 mx-0"
+                            maxLength={12}
+                            pattern="[0-9]*"
+                            inputMode="numeric"
+                          />
+                          {field.state.meta.errors &&
+                            field.state.meta.errors.length > 0 && (
+                              <ErrorMessage errors={field.state.meta.errors} />
+                            )}
+                          <p className="text-xs text-white/60 ml-2">
+                            Enter your 12-digit Aadhar number
+                          </p>
+                        </div>
+                      );
+                    }}
+                  />
+                )}
+              </div>
             )}
-
-            <div className="flex gap-5 justify-between">
-              {/* <form.Field
-                name="hospitalIdImage"
-                children={(field) => {
-                  return (
-                    <div className="flex flex-col gap-y-2">
-                      <label className="text-white text-sm font-light ml-2">
-                        Upload Hospital ID
-                      </label>
-                      <Input
-                        type="file"
-                        accept="image/png,image/jpeg,image/webp"
-                        placeholder="Upload Hospital ID"
-                        name={field.name}
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          field.handleChange(file || undefined);
-                        }}
-                        onBlur={field.handleBlur}
-                        className="bg-white h-10 shadow-even-xl border-0 outline-none focus:outline-none focus:border-0 focus:ring-0 focus-visible:ring-0 focus-visible:ring-transparent focus-visible:border-0 focus-visible:outline-none ring-0 mx-0"
-                      />
-                      {field.state.meta.errors &&
-                        field.state.meta.errors.length > 0 && (
-                          <ErrorMessage errors={field.state.meta.errors} />
-                        )}
-                      <p className="text-xs text-white/60 ml-2">
-                        Upload hospital ID image (JPG, PNG or WEBP, max 5MB)
-                      </p>
-                    </div>
-                  );
-                }}
-              /> */}
-
-              <form.Field
-                name={idName}
-                children={(field) => {
-                  return (
-                    <div className="flex flex-col gap-y-2">
-                      {/* <label className="text-white text-sm font-light ml-2">
-                        Upload Aadhar Card
-                      </label> */}
-                      <Input
-                        type="file"
-                        accept="image/png,image/jpeg,image/webp"
-                        placeholder="Upload Aadhar Card"
-                        name={field.name}
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          field.handleChange(file || undefined);
-                        }}
-                        onBlur={field.handleBlur}
-                        className="bg-white h-10 shadow-even-xl border-0 outline-none focus:outline-none focus:border-0 focus:ring-0 focus-visible:ring-0 focus-visible:ring-transparent focus-visible:border-0 focus-visible:outline-none ring-0 mx-0"
-                      />
-                      {field.state.meta.errors &&
-                        field.state.meta.errors.length > 0 && (
-                          <ErrorMessage errors={field.state.meta.errors} />
-                        )}
-                      <p className="text-xs text-white/60 ml-2">
-                        Upload {idBasedOnUser ?? "Aadhar card"} image (JPG, PNG or WEBP, max 5MB)
-                      </p>
-                    </div>
-                  );
-                }}
-              />
-
-{/* AADHAR NUMBER */}
-              <form.Field
-                name="addhar"
-                children={(field) => {
-                  return (
-                    <div className="flex flex-col gap-y-2 w-full">
-                      {/* <label className="text-white text-sm font-light ml-2">
-                        Aadhar Number
-                      </label> */}
-                      <Input
-                        type="text"
-                        placeholder={idBasedOnUser ?? "12-digit Aadhar Number"}
-                        name={field.name}
-                        value={field.state.value || ""}
-                        onBlur={field.handleBlur}
-                        onChange={(e) => field.handleChange(e.target.value)}
-                        className="bg-white h-10 shadow-even-xl border-0 outline-none focus:outline-none focus:border-0 focus:ring-0 focus-visible:ring-0 focus-visible:ring-transparent focus-visible:border-0 focus-visible:outline-none ring-0 mx-0"
-                        maxLength={12}
-                        pattern="[0-9]*"
-                        inputMode="numeric"
-                      />
-                      {field.state.meta.errors &&
-                        field.state.meta.errors.length > 0 && (
-                          <ErrorMessage errors={field.state.meta.errors} />
-                        )}
-                      <p className="text-xs text-white/60 ml-2">
-                        Enter your {idBasedOnUser}
-                      </p>
-                    </div>
-                  );
-                }}
-              />
-            </div>
 
             <div className="flex gap-5 justify-between">
               <form.Field
                 name="password"
                 children={(field) => (
                   <div className="flex flex-col gap-y-2 w-full">
-                    {/* <label className="text-white text-sm font-light ml-2">
-                      Password
-                    </label> */}
                     <Input
                       type="password"
                       placeholder="Password"
@@ -625,9 +667,6 @@ export default function SignupForm({ userType, isLogin = false }: props) {
                 name="confirmPassword"
                 children={(field) => (
                   <div className="flex flex-col gap-y-2 w-full">
-                    {/* <label className="text-white text-sm font-light ml-2">
-                      Re-enter Password
-                    </label> */}
                     <Input
                       type="password"
                       placeholder="Re-enter Password"
@@ -655,9 +694,6 @@ export default function SignupForm({ userType, isLogin = false }: props) {
               children={(field) => {
                 return (
                   <div className="flex flex-col gap-y-2">
-                    {/* <label className="text-white text-sm font-light ml-2">
-                      Email
-                    </label> */}
                     <Input
                       type="email"
                       placeholder="Email"
@@ -679,9 +715,6 @@ export default function SignupForm({ userType, isLogin = false }: props) {
               name="password"
               children={(field) => (
                 <div className="flex flex-col gap-y-2">
-                  {/* <label className="text-white text-sm font-light ml-2">
-                    Password
-                  </label> */}
                   <Input
                     type="password"
                     placeholder="Password"
@@ -742,17 +775,17 @@ export default function SignupForm({ userType, isLogin = false }: props) {
           )}
         />
 
-         <div className="text-center mt-4">
-                  <p className="text-sm text-gray-600">
-                    Already have an account?{" "}
-                    <Link
-                      to="/login"
-                      className="text-primary-magenta hover:underline font-medium"
-                    >
-                      Login
-                    </Link>
-                  </p>
-                </div>
+        <div className="text-center mt-4">
+          <p className="text-sm text-gray-600">
+            Already have an account?{" "}
+            <Link
+              to="/login"
+              className="text-primary-magenta hover:underline font-medium"
+            >
+              Login
+            </Link>
+          </p>
+        </div>
       </form>
     </div>
   );

@@ -6,7 +6,6 @@ import {
   FileText,
   AlertTriangle,
   Trash2,
-  Download,
   BarChart3,
   LineChart,
   PieChart,
@@ -20,7 +19,6 @@ import {
   User,
   CalendarDays,
   Building2,
-  ArrowLeft,
 } from "lucide-react";
 import useAuth from "@/hooks/useAuth";
 
@@ -323,29 +321,29 @@ function VisualizationComponent() {
   };
 
   const getReports = async () => {
-      try {
-        const reportsResponse = await fetch(
-          "http://localhost:5000/api/v1/user/" + user?._id,
-          {
-            method: "GET",
-          }
-        );
-
-        if (!reportsResponse.ok) {
-          throw new Error(`HTTP error! status: ${reportsResponse.status}`);
+    try {
+      const reportsResponse = await fetch(
+        "http://localhost:5000/api/v1/user/" + user?._id,
+        {
+          method: "GET",
         }
+      );
 
-        const reportsData = await reportsResponse.json();
-
-        console.log("Fetched reports data:", reportsData);
-
-        setReportsHistory(reportsData);
-      } catch (error) {
-        console.error("Error in useEffect:", error);
-        setErrorMessage("An unexpected error occurred. Please try again.");
-        setUploadStep("error");
+      if (!reportsResponse.ok) {
+        throw new Error(`HTTP error! status: ${reportsResponse.status}`);
       }
-    };
+
+      const reportsData = await reportsResponse.json();
+
+      console.log("Fetched reports data:", reportsData);
+
+      setReportsHistory(reportsData);
+    } catch (error) {
+      console.error("Error in useEffect:", error);
+      setErrorMessage("An unexpected error occurred. Please try again.");
+      setUploadStep("error");
+    }
+  };
 
   useEffect(() => {
     if (user?._id) {
@@ -451,7 +449,6 @@ function VisualizationComponent() {
                   </div>
                 </div>{" "}
               </div>
-              
               {/* Reports Grid */}
               <div className="grid gap-4 max-w-4xl mx-auto">
                 {reportsHistory.map((report, index) => {
@@ -531,7 +528,13 @@ function VisualizationComponent() {
 
                         {/* Action Button */}
                         <div className="ml-4 space-x-2">
-                          <Button variant="ghost" className="hover:bg-red-500 hover:text-white size-6" onClick={() => handleReportDelete(report._id)}><Trash2Icon /></Button>
+                          <Button
+                            variant="ghost"
+                            className="hover:bg-red-500 hover:text-white size-6"
+                            onClick={() => handleReportDelete(report._id)}
+                          >
+                            <Trash2Icon />
+                          </Button>
                           <Button
                             variant="outline"
                             className="border-2 border-primary-magenta/30 text-primary-magenta hover:bg-primary-magenta hover:text-white transition-all duration-200 px-6 py-2.5 rounded-xl font-medium shadow-sm hover:shadow-md group-hover:border-primary-magenta/50"
@@ -575,7 +578,6 @@ function VisualizationComponent() {
                   </div>
                 </div>
               </div>
-              
             </div>
           ) : (
             <div className="text-center py-16">
@@ -1329,7 +1331,9 @@ function VisualizationComponent() {
                             variant="ghost"
                             size="sm"
                             className="hover:bg-red-500 hover:text-white"
-                            onClick={() => handleReportDelete(extractedData?._id)}
+                            onClick={() =>
+                              handleReportDelete(extractedData?._id)
+                            }
                           >
                             <Trash2Icon size={16} />
                           </Button>

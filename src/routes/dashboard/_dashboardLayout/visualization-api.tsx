@@ -42,7 +42,7 @@ export const Route = createFileRoute(
 });
 
 function VisualizationPage() {
-  const { user, isLoading } = useAuth();
+  const { isLoading } = useAuth();
 
   // File upload state
   const [selectedFile, setSelectedFile] = useState<File | null>(null);

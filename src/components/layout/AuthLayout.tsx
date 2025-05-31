@@ -1,9 +1,3 @@
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs.tsx";
 import SignupForm from "@/components/common/SignupForm.tsx";
 import LoginForm from "@/components/common/LoginForm.tsx";
 import { useState } from "react";

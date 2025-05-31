@@ -56,7 +56,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const location = useLocation();
   const currentRoute = location.pathname;
 
-  const { user: loggedInUser, isLoading: authLoading } = useAuth();
+  const { user: loggedInUser } = useAuth();
 
   return (
     <Sidebar variant="inset" {...props} className={"bg-primary-magenta"}>
@@ -88,7 +88,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarFooter className={"bg-primary-magenta"}>
         <NavUser
           user={{
-            name: loggedInUser ? loggedInUser.name : "Mandip",
+            name: loggedInUser?.name || "Mandip",
             avatar: "",
             email: loggedInUser
               ? loggedInUser.email

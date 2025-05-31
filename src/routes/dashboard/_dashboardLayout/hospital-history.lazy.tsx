@@ -1,150 +1,164 @@
-import { createLazyFileRoute } from '@tanstack/react-router'
-import { useState } from 'react'
-import { Button } from '@/components/ui/button'
-import { Search, Filter, Download, ChevronDown, X, ArrowRight } from 'lucide-react'
-import { Link } from '@tanstack/react-router'
+import { createLazyFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Search,
+  Filter,
+  Download,
+  ChevronDown,
+  X,
+  ArrowRight,
+} from "lucide-react";
 
 export const Route = createLazyFileRoute(
-  '/dashboard/_dashboardLayout/hospital-history',
+  "/dashboard/_dashboardLayout/hospital-history"
 )({
   component: HospitalHistoryComponent,
-})
+});
 
 interface DonationRecord {
-  id: string
-  hospitalName: string
-  donationDate: string
-  bloodType: string
-  units: number
-  certificateAvailable: boolean
-  status: 'completed' | 'processing' | 'verified'
-  reportAvailable: boolean
+  id: string;
+  hospitalName: string;
+  donationDate: string;
+  bloodType: string;
+  units: number;
+  certificateAvailable: boolean;
+  status: "completed" | "processing" | "verified";
+  reportAvailable: boolean;
 }
 
 function HospitalHistoryComponent() {
-  const [searchTerm, setSearchTerm] = useState('')
-  const [selectedStatus, setSelectedStatus] = useState<string | null>(null)
-  const [selectedYear, setSelectedYear] = useState<string | null>(null)
-  const [isFilterOpen, setIsFilterOpen] = useState(false)
-  
-  const statuses = ['Completed', 'Processing', 'Verified']
-  const years = ['2025', '2024', '2023', '2022']
-  
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
+  const [selectedYear, setSelectedYear] = useState<string | null>(null);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+
+  const statuses = ["Completed", "Processing", "Verified"];
+  const years = ["2025", "2024", "2023", "2022"];
+
   const donationRecords: DonationRecord[] = [
     {
-      id: '1',
-      hospitalName: 'Apollo Hospital',
-      donationDate: '2025-03-15',
-      bloodType: 'O+',
+      id: "1",
+      hospitalName: "Apollo Hospital",
+      donationDate: "2025-03-15",
+      bloodType: "O+",
       units: 1,
       certificateAvailable: true,
-      status: 'verified',
-      reportAvailable: true
+      status: "verified",
+      reportAvailable: true,
     },
     {
-      id: '2',
-      hospitalName: 'Fortis Hospital',
-      donationDate: '2024-12-10',
-      bloodType: 'O+',
+      id: "2",
+      hospitalName: "Fortis Hospital",
+      donationDate: "2024-12-10",
+      bloodType: "O+",
       units: 1,
       certificateAvailable: true,
-      status: 'verified',
-      reportAvailable: true
+      status: "verified",
+      reportAvailable: true,
     },
     {
-      id: '3',
-      hospitalName: 'City Blood Bank',
-      donationDate: '2024-08-22',
-      bloodType: 'O+',
+      id: "3",
+      hospitalName: "City Blood Bank",
+      donationDate: "2024-08-22",
+      bloodType: "O+",
       units: 1,
       certificateAvailable: true,
-      status: 'verified',
-      reportAvailable: false
+      status: "verified",
+      reportAvailable: false,
     },
     {
-      id: '4',
-      hospitalName: 'University Medical Center',
-      donationDate: '2024-04-05',
-      bloodType: 'O+',
+      id: "4",
+      hospitalName: "University Medical Center",
+      donationDate: "2024-04-05",
+      bloodType: "O+",
       units: 1,
       certificateAvailable: true,
-      status: 'completed',
-      reportAvailable: true
+      status: "completed",
+      reportAvailable: true,
     },
     {
-      id: '5',
-      hospitalName: 'Community Blood Drive',
-      donationDate: '2023-11-18',
-      bloodType: 'O+',
+      id: "5",
+      hospitalName: "Community Blood Drive",
+      donationDate: "2023-11-18",
+      bloodType: "O+",
       units: 1,
       certificateAvailable: false,
-      status: 'completed',
-      reportAvailable: false
+      status: "completed",
+      reportAvailable: false,
     },
     {
-      id: '6',
-      hospitalName: 'Apollo Hospital',
-      donationDate: '2023-07-03',
-      bloodType: 'O+',
+      id: "6",
+      hospitalName: "Apollo Hospital",
+      donationDate: "2023-07-03",
+      bloodType: "O+",
       units: 1,
       certificateAvailable: true,
-      status: 'verified',
-      reportAvailable: true
+      status: "verified",
+      reportAvailable: true,
     },
     {
-      id: '7',
-      hospitalName: 'Red Cross Blood Drive',
-      donationDate: '2023-02-14',
-      bloodType: 'O+',
+      id: "7",
+      hospitalName: "Red Cross Blood Drive",
+      donationDate: "2023-02-14",
+      bloodType: "O+",
       units: 1,
       certificateAvailable: true,
-      status: 'verified',
-      reportAvailable: true
+      status: "verified",
+      reportAvailable: true,
     },
     {
-      id: '8',
-      hospitalName: 'Apollo Hospital',
-      donationDate: '2025-05-01',
-      bloodType: 'O+',
+      id: "8",
+      hospitalName: "Apollo Hospital",
+      donationDate: "2025-05-01",
+      bloodType: "O+",
       units: 1,
       certificateAvailable: false,
-      status: 'processing',
-      reportAvailable: false
-    }
-  ]
-  
+      status: "processing",
+      reportAvailable: false,
+    },
+  ];
+
   // Format date function
   const formatDate = (dateString: string) => {
-    const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric' }
-    return new Date(dateString).toLocaleDateString(undefined, options)
-  }
-  
+    const options: Intl.DateTimeFormatOptions = {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    };
+    return new Date(dateString).toLocaleDateString(undefined, options);
+  };
+
   // Filter records based on search term and filters
-  const filteredRecords = donationRecords.filter(record => {
-    const matchesSearch = 
-      record.hospitalName.toLowerCase().includes(searchTerm.toLowerCase())
-    
-    const matchesStatus = selectedStatus ? 
-      record.status === selectedStatus.toLowerCase() : true
-    
-    const matchesYear = selectedYear ? 
-      new Date(record.donationDate).getFullYear().toString() === selectedYear : true
-    
-    return matchesSearch && matchesStatus && matchesYear
-  })
-  
+  const filteredRecords = donationRecords.filter((record) => {
+    const matchesSearch = record.hospitalName
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase());
+
+    const matchesStatus = selectedStatus
+      ? record.status === selectedStatus.toLowerCase()
+      : true;
+
+    const matchesYear = selectedYear
+      ? new Date(record.donationDate).getFullYear().toString() === selectedYear
+      : true;
+
+    return matchesSearch && matchesStatus && matchesYear;
+  });
+
   // Sort records by date (newest first)
-  filteredRecords.sort((a, b) => 
-    new Date(b.donationDate).getTime() - new Date(a.donationDate).getTime()
-  )
-  
+  filteredRecords.sort(
+    (a, b) =>
+      new Date(b.donationDate).getTime() - new Date(a.donationDate).getTime()
+  );
+
   return (
     <div className="container mx-auto py-6 px-4">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Donation History</h1>
         <div>
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             className="border-primary-magenta text-primary-magenta hover:bg-primary-magenta/10"
           >
             <Download size={18} className="mr-2" />
@@ -152,43 +166,51 @@ function HospitalHistoryComponent() {
           </Button>
         </div>
       </div>
-      
+
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <div className="bg-white rounded-xl shadow-sm p-4">
           <h3 className="text-gray-500 text-sm mb-1">Total Donations</h3>
           <p className="text-2xl font-bold">{donationRecords.length}</p>
         </div>
-        
+
         <div className="bg-white rounded-xl shadow-sm p-4">
           <h3 className="text-gray-500 text-sm mb-1">Total Units</h3>
           <p className="text-2xl font-bold">
             {donationRecords.reduce((total, record) => total + record.units, 0)}
           </p>
         </div>
-        
+
         <div className="bg-white rounded-xl shadow-sm p-4">
           <h3 className="text-gray-500 text-sm mb-1">This Year</h3>
           <p className="text-2xl font-bold">
-            {donationRecords.filter(record => 
-              new Date(record.donationDate).getFullYear() === 2025
-            ).length}
+            {
+              donationRecords.filter(
+                (record) => new Date(record.donationDate).getFullYear() === 2025
+              ).length
+            }
           </p>
         </div>
-        
+
         <div className="bg-white rounded-xl shadow-sm p-4">
           <h3 className="text-gray-500 text-sm mb-1">Certificates</h3>
           <p className="text-2xl font-bold">
-            {donationRecords.filter(record => record.certificateAvailable).length}
+            {
+              donationRecords.filter((record) => record.certificateAvailable)
+                .length
+            }
           </p>
         </div>
       </div>
-      
+
       {/* Search and Filter */}
       <div className="bg-white rounded-xl shadow-sm p-4 mb-6">
         <div className="flex flex-col md:flex-row gap-4">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+            <Search
+              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+              size={18}
+            />
             <input
               type="text"
               placeholder="Search by hospital name"
@@ -197,11 +219,11 @@ function HospitalHistoryComponent() {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          
+
           <div className="flex gap-4">
             <div className="relative">
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 className="border border-gray-200 px-4 py-2 flex items-center gap-2"
                 onClick={() => setIsFilterOpen(!isFilterOpen)}
               >
@@ -209,61 +231,67 @@ function HospitalHistoryComponent() {
                 Filter
                 <ChevronDown size={16} />
               </Button>
-              
+
               {/* Filter dropdown */}
               {isFilterOpen && (
                 <div className="absolute right-0 mt-2 z-10 w-72 bg-white rounded-lg shadow-lg border border-gray-200 p-4">
                   <div className="mb-4">
                     <h3 className="text-sm font-medium mb-2">Status</h3>
                     <div className="grid grid-cols-2 gap-2">
-                      {statuses.map(status => (
+                      {statuses.map((status) => (
                         <button
                           key={status}
                           className={`py-1 px-2 text-sm rounded ${
                             selectedStatus === status
-                              ? 'bg-primary-magenta text-white'
-                              : 'bg-gray-100 hover:bg-gray-200'
+                              ? "bg-primary-magenta text-white"
+                              : "bg-gray-100 hover:bg-gray-200"
                           }`}
-                          onClick={() => setSelectedStatus(selectedStatus === status ? null : status)}
+                          onClick={() =>
+                            setSelectedStatus(
+                              selectedStatus === status ? null : status
+                            )
+                          }
                         >
                           {status}
                         </button>
                       ))}
                     </div>
                   </div>
-                  
+
                   <div>
                     <h3 className="text-sm font-medium mb-2">Year</h3>
                     <div className="grid grid-cols-2 gap-2">
-                      {years.map(year => (
+                      {years.map((year) => (
                         <button
                           key={year}
                           className={`py-1 px-2 text-sm rounded ${
                             selectedYear === year
-                              ? 'bg-primary-magenta text-white'
-                              : 'bg-gray-100 hover:bg-gray-200'
+                              ? "bg-primary-magenta text-white"
+                              : "bg-gray-100 hover:bg-gray-200"
                           }`}
-                          onClick={() => setSelectedYear(selectedYear === year ? null : year)}
+                          onClick={() =>
+                            setSelectedYear(selectedYear === year ? null : year)
+                          }
                         >
                           {year}
                         </button>
                       ))}
                     </div>
                   </div>
-                  
+
                   <div className="mt-4 flex justify-end">
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       size="sm"
                       onClick={() => {
-                        setSelectedStatus(null)
-                        setSelectedYear(null)
+                        setSelectedStatus(null);
+                        setSelectedYear(null);
                       }}
                       className="text-gray-600 mr-2"
                     >
                       Clear All
                     </Button>
-                    <Button 
+                    <Button
                       size="sm"
                       className="bg-primary-magenta text-white hover:bg-primary-magenta/90"
                       onClick={() => setIsFilterOpen(false)}
@@ -276,14 +304,14 @@ function HospitalHistoryComponent() {
             </div>
           </div>
         </div>
-        
+
         {/* Active filters */}
         {(selectedStatus || selectedYear) && (
           <div className="flex gap-2 mt-4">
             {selectedStatus && (
               <div className="bg-gray-100 rounded-full px-3 py-1 text-sm flex items-center gap-1">
                 Status: {selectedStatus}
-                <button 
+                <button
                   onClick={() => setSelectedStatus(null)}
                   className="text-gray-500 hover:text-gray-700"
                 >
@@ -294,7 +322,7 @@ function HospitalHistoryComponent() {
             {selectedYear && (
               <div className="bg-gray-100 rounded-full px-3 py-1 text-sm flex items-center gap-1">
                 Year: {selectedYear}
-                <button 
+                <button
                   onClick={() => setSelectedYear(null)}
                   className="text-gray-500 hover:text-gray-700"
                 >
@@ -305,7 +333,7 @@ function HospitalHistoryComponent() {
           </div>
         )}
       </div>
-      
+
       {/* Records Table */}
       <div className="bg-white rounded-xl shadow-sm overflow-hidden mb-6">
         <table className="min-w-full divide-y divide-gray-200">
@@ -334,26 +362,42 @@ function HospitalHistoryComponent() {
           <tbody className="bg-white divide-y divide-gray-200">
             {filteredRecords.length > 0 ? (
               filteredRecords.map((record, index) => (
-                <tr key={record.id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                <tr
+                  key={record.id}
+                  className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}
+                >
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="font-medium text-gray-900">{record.hospitalName}</div>
+                    <div className="font-medium text-gray-900">
+                      {record.hospitalName}
+                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{formatDate(record.donationDate)}</div>
+                    <div className="text-sm text-gray-900">
+                      {formatDate(record.donationDate)}
+                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{record.bloodType}</div>
+                    <div className="text-sm text-gray-900">
+                      {record.bloodType}
+                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-900">{record.units}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full
-                      ${record.status === 'verified' ? 'bg-green-100 text-green-800' : 
-                        record.status === 'processing' ? 'bg-yellow-100 text-yellow-800' : 
-                        'bg-blue-100 text-blue-800'}
-                    `}>
-                      {record.status.charAt(0).toUpperCase() + record.status.slice(1)}
+                    <span
+                      className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full
+                      ${
+                        record.status === "verified"
+                          ? "bg-green-100 text-green-800"
+                          : record.status === "processing"
+                            ? "bg-yellow-100 text-yellow-800"
+                            : "bg-blue-100 text-blue-800"
+                      }
+                    `}
+                    >
+                      {record.status.charAt(0).toUpperCase() +
+                        record.status.slice(1)}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -362,12 +406,15 @@ function HospitalHistoryComponent() {
                         <button className="text-primary-magenta hover:text-primary-magenta/80">
                           <Download size={16} />
                         </button>
-                      )}
-                      <Link to={`/dashboard/hospital-history/${record.id}`}>
+                      )}{" "}
+                      {/* <Link to={`/dashboard/hospital-history/${record.id}`}>
                         <span className="text-gray-600 hover:text-gray-900">
                           <ArrowRight size={16} />
                         </span>
-                      </Link>
+                      </Link> */}
+                      <button className="text-gray-600 hover:text-gray-900">
+                        <ArrowRight size={16} />
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -382,21 +429,37 @@ function HospitalHistoryComponent() {
           </tbody>
         </table>
       </div>
-      
+
       {/* Pagination */}
       <div className="flex justify-between items-center">
         <div className="text-sm text-gray-500">
-          Showing <span className="font-medium">{filteredRecords.length}</span> of <span className="font-medium">{donationRecords.length}</span> records
+          Showing <span className="font-medium">{filteredRecords.length}</span>{" "}
+          of <span className="font-medium">{donationRecords.length}</span>{" "}
+          records
         </div>
-        
+
         <div className="flex space-x-2">
-          <Button variant="outline" size="sm" className="text-gray-600">Previous</Button>
-          <Button variant="outline" size="sm" className="bg-primary-magenta/10 border-primary-magenta text-primary-magenta">1</Button>
-          <Button variant="outline" size="sm" className="text-gray-600">2</Button>
-          <Button variant="outline" size="sm" className="text-gray-600">3</Button>
-          <Button variant="outline" size="sm" className="text-gray-600">Next</Button>
+          <Button variant="outline" size="sm" className="text-gray-600">
+            Previous
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="bg-primary-magenta/10 border-primary-magenta text-primary-magenta"
+          >
+            1
+          </Button>
+          <Button variant="outline" size="sm" className="text-gray-600">
+            2
+          </Button>
+          <Button variant="outline" size="sm" className="text-gray-600">
+            3
+          </Button>
+          <Button variant="outline" size="sm" className="text-gray-600">
+            Next
+          </Button>
         </div>
       </div>
     </div>
-  )
+  );
 }
