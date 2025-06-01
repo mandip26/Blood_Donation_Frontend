@@ -142,14 +142,36 @@ export const authService = {
       return null;
     }
   },
-
   updateProfile: async (userData: FormData) => {
     try {
-      const response = await api.put("/users/update", userData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
+      // Get user data from localStorage
+      const userDataString = localStorage.getItem("bloodDonationUser");
+      if (!userDataString) {
+        throw new Error("User not found in local storage");
+      }
+      
+      const userData_local = JSON.parse(userDataString);
+      const userId = userData_local._id; // Get the _id from the stored user data
+      
+      if (!userId) {
+        throw new Error("User ID not found");
+      }
+
+      const response = await api.put(
+        `/users/${userId}`,
+        userData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+
+      // Update the cached user data
+      if (response.data.user) {
+        localStorage.setItem("bloodDonationUser", JSON.stringify(response.data.user));
+      }
+
       return response.data;
     } catch (error) {
       throw error;

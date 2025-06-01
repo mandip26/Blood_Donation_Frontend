@@ -53,6 +53,8 @@ export default function LoginForm() {
         
         console.log("Login function returned:", response); // Debug response
         
+        // Token storage is handled by the useAuth hook
+        
         // Show success message
         toast.success("Login successful!");
         

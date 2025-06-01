@@ -34,7 +34,7 @@ interface BloodRequest {
   hospital: string;
   location: string;
   distance?: string;
-  urgency: "high" | "medium" | "low";
+  urgency: "Low" | "Medium" | "High";  // Updated to match backend enum
   postedTime: string;
   units: number;
   contactNumber: string;
@@ -49,14 +49,10 @@ function RecipientComponent() {
   const { isMobile } = useResponsive();
 
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedBloodType, setSelectedBloodType] = useState<string | null>(
-    null
-  );
+  const [selectedBloodType, setSelectedBloodType] = useState<string | null>(null);
   const [selectedUrgency, setSelectedUrgency] = useState<string | null>(null);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [selectedRequest, setSelectedRequest] = useState<BloodRequest | null>(
-    null
-  );
+  const [selectedRequest, setSelectedRequest] = useState<BloodRequest | null>(null);
   const [isNewRequestModalOpen, setIsNewRequestModalOpen] = useState(false);
   const [sorting, setSorting] = useState<{
     key: keyof BloodRequest | null;
@@ -80,7 +76,7 @@ function RecipientComponent() {
     bloodType: "",
     hospital: "",
     location: "",
-    urgency: "medium",
+    urgency: "Medium" as "Low" | "Medium" | "High",
     units: 1,
     contactNumber: "",
     reason: "",
@@ -93,64 +89,69 @@ function RecipientComponent() {
 
   // Fetch blood requests from API
   useEffect(() => {
-    const fetchBloodRequests = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
-
-        // Prepare filters
-        const filters: {
-          bloodType?: string;
-          urgency?: string;
-          location?: string;
-        } = {};
-
-        if (selectedBloodType) {
-          filters.bloodType = selectedBloodType;
-        }
-
-        if (selectedUrgency) {
-          filters.urgency = selectedUrgency.toLowerCase();
-        }
-
-        // Fetch requests with filters
-        const requests = await bloodRequestService.getActiveRequests(filters);
-
-        // Format data and update state
-        if (requests && requests.length > 0) {
-          const formattedRequests: BloodRequest[] = requests.map(
-            (request: any) => ({
-              id: request._id || request.id,
-              name: request.name,
-              bloodType: request.bloodType,
-              hospital: request.hospital,
-              location: request.location,
-              urgency: request.urgency || "medium",
-              postedTime: getTimeAgo(new Date(request.createdAt || new Date())),
-              units: request.units || 1,
-              contactNumber: request.contactNumber || "",
-              reason: request.reason || "",
-            })
-          );
-
-          setBloodRequests(formattedRequests);
-        } else {
-          setBloodRequests([]);
-        }
-      } catch (err) {
-        console.error("Error fetching blood requests:", err);
-        setError("Failed to load blood requests. Please try again.");
-        // Use fallback mock data if available
-        if (bloodRequests.length === 0) {
-          setBloodRequests(mockBloodRequests);
-        }
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     fetchBloodRequests();
   }, [selectedBloodType, selectedUrgency]);
+
+  // Fetch blood requests function (for refreshing data)
+  const fetchBloodRequests = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      // Prepare filters
+      const filters: {
+        bloodType?: string;
+        urgency?: string;
+      } = {};
+
+      if (selectedBloodType) {
+        filters.bloodType = selectedBloodType;
+      }
+
+      if (selectedUrgency) {
+        filters.urgency = selectedUrgency;
+      }
+
+      // Call the API endpoint to get blood requests
+      const response = await fetch('http://localhost:8001/api/v1/user/blood-requests');
+      const data = await response.json();
+      
+      if (data.success) {
+        const formattedRequests = data.bloodRequests.map(request => ({
+          id: request._id,
+          name: request.patientName,
+          bloodType: request.bloodType,
+          hospital: request.hospital,
+          location: request.location,
+          urgency: request.urgency,
+          postedTime: getTimeAgo(new Date(request.createdAt)),
+          units: request.unitsRequired,
+          contactNumber: request.contactNumber,
+          reason: request.reason
+        }));
+        
+        // Apply filters if any
+        let filteredRequests = formattedRequests;
+        if (filters.bloodType) {
+          filteredRequests = filteredRequests.filter(req => req.bloodType === filters.bloodType);
+        }
+        if (filters.urgency) {
+          filteredRequests = filteredRequests.filter(req => req.urgency === filters.urgency);
+        }
+        
+        setBloodRequests(filteredRequests);
+      } else {
+        setError("Failed to load blood requests");
+        setBloodRequests([]);
+      }
+    } catch (err) {
+      console.error("Error fetching blood requests:", err);
+      setError("Failed to load blood requests. Please try again.");
+      setBloodRequests([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Helper function to format time ago
   const getTimeAgo = (date: Date) => {
@@ -249,17 +250,21 @@ function RecipientComponent() {
     try {
       setIsSubmitting(true);
       setSubmitError(null);
+      if (!user || (!user._id && !user.id)) {
+        throw new Error("User not authenticated");
+      }
 
       // Submit request to API
       await bloodRequestService.createRequest({
-        name: newRequestForm.name,
+        patientName: newRequestForm.name,
         bloodType: newRequestForm.bloodType,
         hospital: newRequestForm.hospital,
         location: newRequestForm.location,
-        urgency: newRequestForm.urgency as "low" | "medium" | "high",
-        units: newRequestForm.units,
+        urgency: newRequestForm.urgency, // Keep the original case
+        unitsRequired: newRequestForm.units,
         contactNumber: newRequestForm.contactNumber,
         reason: newRequestForm.reason,
+        createdBy: user._id || user.id, // Use either _id or id
       });
 
       // Reset form and close modal on success
@@ -268,7 +273,7 @@ function RecipientComponent() {
         bloodType: "",
         hospital: "",
         location: "",
-        urgency: "medium",
+        urgency: "Medium",
         units: 1,
         contactNumber: "",
         reason: "",
@@ -321,177 +326,27 @@ function RecipientComponent() {
     }
   };
 
-  // Fetch blood requests function (for refreshing data)
-  const fetchBloodRequests = async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-
-      // Prepare filters
-      const filters: {
-        bloodType?: string;
-        urgency?: string;
-      } = {};
-
-      if (selectedBloodType) {
-        filters.bloodType = selectedBloodType;
-      }
-
-      if (selectedUrgency) {
-        filters.urgency = selectedUrgency.toLowerCase();
-      }
-
-      // Fetch requests with filters
-      const requests = await bloodRequestService.getActiveRequests(filters);
-
-      // Format data and update state
-      if (requests && requests.length > 0) {
-        const formattedRequests: BloodRequest[] = requests.map(
-          (request: any) => ({
-            id: request._id || request.id,
-            name: request.name,
-            bloodType: request.bloodType,
-            hospital: request.hospital,
-            location: request.location,
-            urgency: request.urgency || "medium",
-            postedTime: getTimeAgo(new Date(request.createdAt || new Date())),
-            units: request.units || 1,
-            contactNumber: request.contactNumber || "",
-            reason: request.reason || "",
-          })
-        );
-
-        setBloodRequests(formattedRequests);
-      } else {
-        setBloodRequests([]);
-      }
-    } catch (err) {
-      console.error("Error fetching blood requests:", err);
-      setError("Failed to load blood requests. Please try again.");
-      // Use fallback mock data
-      if (bloodRequests.length === 0) {
-        setBloodRequests(mockBloodRequests);
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Mock data for blood requests (fallback)
-  const mockBloodRequests: BloodRequest[] = [
-    {
-      id: "1",
-      name: "Rahul Sharma",
-      bloodType: "O+",
-      hospital: "Apollo Hospital",
-      location: "Bangalore, Karnataka",
-      distance: "2.5 km",
-      urgency: "high",
-      postedTime: "1 hour ago",
-      units: 2,
-      contactNumber: "+91-9876543210",
-      reason: "Emergency surgery for road accident victim",
-    },
-    {
-      id: "2",
-      name: "Priya Singh",
-      bloodType: "A-",
-      hospital: "Fortis Hospital",
-      location: "Delhi, Delhi",
-      distance: "5.2 km",
-      urgency: "medium",
-      postedTime: "3 hours ago",
-      units: 1,
-      contactNumber: "+91-8765432109",
-      reason: "Cancer patient undergoing chemotherapy",
-    },
-    {
-      id: "3",
-      name: "Akash Patel",
-      bloodType: "B+",
-      hospital: "Manipal Hospital",
-      location: "Mumbai, Maharashtra",
-      distance: "1.8 km",
-      urgency: "low",
-      postedTime: "6 hours ago",
-      units: 3,
-      contactNumber: "+91-7654321098",
-      reason: "Scheduled surgery for tomorrow",
-    },
-    {
-      id: "4",
-      name: "Meera Joshi",
-      bloodType: "AB+",
-      hospital: "AIIMS",
-      location: "Delhi, Delhi",
-      distance: "3.1 km",
-      urgency: "high",
-      postedTime: "2 hours ago",
-      units: 2,
-      contactNumber: "+91-6543210987",
-      reason: "Emergency transplant surgery",
-    },
-  ];
   // Render loading state
   if (isLoading) {
     return (
-      <div className="p-4 md:p-6 bg-gray-50">
-        <div className="flex justify-between items-center mb-6">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
-              Blood Requests
-            </h1>
-            <p className="text-gray-600 mt-1">
-              Find and respond to blood donation requests in your area
-            </p>
-          </div>
-        </div>
-        <div className="flex justify-center items-center h-80">
-          <div className="flex flex-col items-center">
-            <div className="relative">
-              <div className="h-16 w-16 rounded-full bg-primary-magenta/10 absolute animate-ping"></div>
-              <Loader2 className="h-16 w-16 animate-spin text-primary-magenta relative" />
-            </div>
-            <p className="text-gray-600 mt-6 text-lg">
-              Loading blood requests...
-            </p>
-          </div>
-        </div>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
       </div>
     );
   }
+
   // Render error state
-  if (error && bloodRequests.length === 0) {
+  if (error) {
     return (
-      <div className="p-4 md:p-6 bg-gray-50">
-        <div className="flex justify-between items-center mb-6">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
-              Blood Requests
-            </h1>
-            <p className="text-gray-600 mt-1">
-              Find and respond to blood donation requests in your area
-            </p>
-          </div>
-        </div>
-        <div className="bg-red-50 border border-red-200 rounded-xl p-6 shadow-sm flex items-start max-w-2xl mx-auto">
-          <div className="h-10 w-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0 mr-4">
-            <AlertCircle className="h-5 w-5 text-red-600" />
-          </div>
-          <div>
-            <p className="text-red-800 font-medium text-lg mb-1">
-              Error Loading Blood Requests
-            </p>
-            <p className="text-red-700 mb-4">{error}</p>
-            <Button
-              variant="outline"
-              onClick={fetchBloodRequests}
-              className="border-red-300 hover:bg-red-50 text-red-700 transition-all duration-200 shadow-sm"
-            >
-              <RefreshCw className="mr-2 h-4 w-4" />
-              Try Again
-            </Button>
-          </div>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <p className="text-red-500 mb-4">{error}</p>
+          <button
+            onClick={() => fetchBloodRequests()}
+            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          >
+            Try Again
+          </button>
         </div>
       </div>
     );
@@ -644,229 +499,51 @@ function RecipientComponent() {
       {/* Blood requests list */}
       {sortedRequests.length > 0 ? (
         <div className="space-y-4">
-          {/* Table header - only on non-mobile */}
-          {!isMobile && (
-            <div className="grid grid-cols-7 py-3 px-5 bg-gray-50 rounded-lg text-sm font-medium border border-gray-100">
-              <div className="col-span-1">
-                <button
-                  onClick={() => handleSort("bloodType")}
-                  className="flex items-center hover:text-primary-magenta transition-colors duration-200"
-                >
-                  <div className="flex items-center gap-1.5">
-                    <Droplets className="h-3.5 w-3.5 text-primary-magenta" />
-                    Blood Type
-                  </div>
-                  {sorting.key === "bloodType" && (
-                    <ArrowUpDown className="ml-1.5 h-3.5 w-3.5" />
-                  )}
-                </button>
-              </div>
-              <div className="col-span-2">
-                <button
-                  onClick={() => handleSort("name")}
-                  className="flex items-center hover:text-primary-magenta"
-                >
-                  Name
-                  {sorting.key === "name" && (
-                    <ArrowUpDown className="ml-1 h-3.5 w-3.5" />
-                  )}
-                </button>
-              </div>
-              <div className="col-span-1">
-                <button
-                  onClick={() => handleSort("urgency")}
-                  className="flex items-center hover:text-primary-magenta"
-                >
-                  Urgency
-                  {sorting.key === "urgency" && (
-                    <ArrowUpDown className="ml-1 h-3.5 w-3.5" />
-                  )}
-                </button>
-              </div>
-              <div className="col-span-2">
-                <button
-                  onClick={() => handleSort("hospital")}
-                  className="flex items-center hover:text-primary-magenta"
-                >
-                  Hospital
-                  {sorting.key === "hospital" && (
-                    <ArrowUpDown className="ml-1 h-3.5 w-3.5" />
-                  )}
-                </button>
-              </div>
-              <div className="col-span-1"></div>
-            </div>
-          )}
-
-          {/* Request cards */}
           {sortedRequests.map((request) => (
             <div
               key={request.id}
-              className="bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md hover:border-gray-200 transition-all duration-300 overflow-hidden"
+              className="bg-white rounded-xl shadow-md border border-gray-100 p-4 hover:shadow-lg transition-shadow"
             >
-              {" "}
-              {/* Card for mobile */}
-              {isMobile ? (
-                <div className="p-5">
-                  <div className="flex items-center mb-4">
-                    <div
-                      className={`h-12 w-12 rounded-full flex items-center justify-center text-white font-medium shadow-md
-                      ${
-                        request.bloodType.includes("A")
-                          ? "bg-gradient-to-br from-green-400 to-green-600"
-                          : request.bloodType.includes("B")
-                            ? "bg-gradient-to-br from-blue-400 to-blue-600"
-                            : request.bloodType.includes("O")
-                              ? "bg-gradient-to-br from-red-400 to-red-600"
-                              : "bg-gradient-to-br from-purple-400 to-purple-600"
-                      }`}
-                    >
-                      {request.bloodType}
-                    </div>
-                    <div className="ml-3">
-                      <h3 className="font-semibold">{request.name}</h3>
-                      <p className="text-sm text-gray-600">
-                        {request.hospital}
-                      </p>
-                    </div>
-                    <div className="ml-auto">
-                      <span
-                        className={`px-2.5 py-1 rounded-full text-xs font-medium ${
-                          request.urgency === "high"
-                            ? "bg-red-100 text-red-700"
-                            : request.urgency === "medium"
-                              ? "bg-yellow-100 text-yellow-700"
-                              : "bg-green-100 text-green-700"
-                        }`}
-                      >
-                        {request.urgency.charAt(0).toUpperCase() +
-                          request.urgency.slice(1)}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col gap-2 mb-3">
-                    <div className="flex items-center text-sm">
-                      <MapPin className="h-4 w-4 text-gray-400 mr-1.5" />
-                      <span className="text-gray-700">{request.location}</span>
-                    </div>
-                    <div className="flex items-center text-sm">
-                      <Clock className="h-4 w-4 text-gray-400 mr-1.5" />
-                      <span className="text-gray-500">
-                        {request.postedTime}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex justify-between gap-3 mt-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setSelectedRequest(request)}
-                      className="flex-1 border-gray-200 hover:bg-gray-50 transition-colors duration-200"
-                    >
-                      View Details
-                    </Button>
-                    <Button
-                      size="sm"
-                      className="flex-1 bg-primary-magenta hover:bg-primary-magenta/90 shadow-sm transition-all duration-200"
-                      onClick={() => handleRespondToRequest(request.id)}
-                    >
-                      Respond
-                    </Button>
-                  </div>
+              <div className="flex justify-between items-start">
+                <div>
+                  <h3 className="text-lg font-semibold">{request.name}</h3>
+                  <p className="text-gray-600">{request.hospital}</p>
+                  <p className="text-gray-500 text-sm">{request.location}</p>
                 </div>
-              ) : (
-                /* Card for desktop/tablet */
-                <div className="grid grid-cols-7 items-center py-4 px-5">
-                  <div className="col-span-1">
-                    <div
-                      className={`h-12 w-12 rounded-full flex items-center justify-center text-white font-medium shadow-md
-                      ${
-                        request.bloodType.includes("A")
-                          ? "bg-gradient-to-br from-green-400 to-green-600"
-                          : request.bloodType.includes("B")
-                            ? "bg-gradient-to-br from-blue-400 to-blue-600"
-                            : request.bloodType.includes("O")
-                              ? "bg-gradient-to-br from-red-400 to-red-600"
-                              : "bg-gradient-to-br from-purple-400 to-purple-600"
-                      }`}
-                    >
-                      {request.bloodType}
-                    </div>
-                  </div>
-                  <div className="col-span-2">
-                    <h3 className="font-semibold">{request.name}</h3>
-                    <div className="flex items-center text-xs text-gray-500">
-                      <Clock className="h-3.5 w-3.5 mr-1" />
-                      {request.postedTime}
-                    </div>
-                  </div>
-                  <div className="col-span-1">
-                    <span
-                      className={`px-2.5 py-1 rounded-full text-xs font-medium ${
-                        request.urgency === "high"
-                          ? "bg-red-100 text-red-700"
-                          : request.urgency === "medium"
-                            ? "bg-yellow-100 text-yellow-700"
-                            : "bg-green-100 text-green-700"
-                      }`}
-                    >
-                      {request.urgency.charAt(0).toUpperCase() +
-                        request.urgency.slice(1)}
-                    </span>
-                  </div>
-                  <div className="col-span-2">
-                    <p className="font-medium">{request.hospital}</p>
-                    <div className="flex items-center text-xs text-gray-500">
-                      <MapPin className="h-3.5 w-3.5 mr-1" />
-                      {request.location}
-                    </div>
-                  </div>{" "}
-                  <div className="col-span-1 flex justify-end gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setSelectedRequest(request)}
-                      className="border-gray-200 hover:bg-gray-50 transition-colors duration-200"
-                    >
-                      Details
-                    </Button>
-                    <Button
-                      size="sm"
-                      className="bg-primary-magenta hover:bg-primary-magenta/90 shadow-sm transition-all duration-200"
-                      onClick={() => handleRespondToRequest(request.id)}
-                    >
-                      Respond
-                    </Button>
-                  </div>
+                <div className="text-right">
+                  <span className="inline-block px-3 py-1 rounded-full text-sm font-medium
+                    ${request.urgency === 'High' ? 'bg-red-100 text-red-800' :
+                    request.urgency === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
+                    'bg-green-100 text-green-800'}"
+                  >
+                    {request.urgency}
+                  </span>
+                  <p className="text-gray-500 text-sm mt-1">{request.postedTime}</p>
                 </div>
-              )}
+              </div>
+              <div className="mt-4 flex justify-between items-center">
+                <div>
+                  <span className="inline-block px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
+                    {request.bloodType}
+                  </span>
+                  <span className="ml-2 text-gray-600">{request.units} units needed</span>
+                </div>
+                <button
+                  onClick={() => setSelectedRequest(request)}
+                  className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                >
+                  View Details
+                </button>
+              </div>
             </div>
           ))}
         </div>
       ) : (
         <div className="bg-white rounded-xl shadow-md border border-gray-100 p-12 text-center">
-          <div className="flex flex-col items-center justify-center">
-            <div className="h-20 w-20 rounded-full bg-gray-50 border border-gray-100 flex items-center justify-center mb-5 shadow-inner">
-              <Droplets className="h-10 w-10 text-primary-magenta/70" />
-            </div>
-            <h3 className="text-xl font-bold mb-3 text-gray-800">
-              No Blood Requests Found
-            </h3>
-            <p className="text-gray-600 mb-8 max-w-md mx-auto">
-              There are currently no blood requests matching your criteria.
-              Create a new request or adjust your filter settings.
-            </p>
-            <Button
-              onClick={() => setIsNewRequestModalOpen(true)}
-              className="bg-primary-magenta hover:bg-primary-magenta/90 shadow-md transition-all duration-200 px-6 py-2.5"
-            >
-              <Droplets className="mr-2 h-4 w-4" />
-              Create a Request
-            </Button>
-          </div>
+          <p className="text-gray-500">No blood requests found</p>
         </div>
       )}
+      
       {/* Selected request modal */}{" "}
       {selectedRequest && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-4 backdrop-blur-sm animate-in fade-in duration-300">
