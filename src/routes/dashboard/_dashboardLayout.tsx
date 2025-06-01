@@ -6,14 +6,17 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar.tsx";
 import { Separator } from "@radix-ui/react-separator";
-import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList } from "@/components/ui/breadcrumb";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+} from "@/components/ui/breadcrumb";
 import ProtectedRoute from "@/components/common/ProtectedRoute";
 
 export const Route = createFileRoute("/dashboard/_dashboardLayout")({
   component: RouteComponent,
 });
-
-
 
 function RouteComponent() {
   return (
@@ -21,7 +24,7 @@ function RouteComponent() {
       <main className={"bg-primary-magenta"}>
         <SidebarProvider style={{ background: "#c6414c" }}>
           <AppSidebar />
-          <SidebarInset className={"p-4"} style={{borderRadius: "20px"}}>
+          <SidebarInset className={"p-4"} style={{ borderRadius: "20px" }}>
             <div className="flex items-center">
               <SidebarTrigger className="text-2xl" />
               <Separator

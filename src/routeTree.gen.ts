@@ -18,7 +18,6 @@ import { Route as DashboardDashboardLayoutImport } from './routes/dashboard/_das
 import { Route as authSignUpImport } from './routes/(auth)/sign-up'
 import { Route as authLoginImport } from './routes/(auth)/login'
 import { Route as DashboardDashboardLayoutVisualizationApiImport } from './routes/dashboard/_dashboardLayout/visualization-api'
-import { Route as DashboardDashboardLayoutVisualizationLazyFixedImport } from './routes/dashboard/_dashboardLayout/visualization.lazy.fixed'
 
 // Create Virtual Routes
 
@@ -234,13 +233,6 @@ const DashboardDashboardLayoutVisualizationApiRoute =
     getParentRoute: () => DashboardDashboardLayoutRoute,
   } as any)
 
-const DashboardDashboardLayoutVisualizationLazyFixedRoute =
-  DashboardDashboardLayoutVisualizationLazyFixedImport.update({
-    id: '/lazy/fixed',
-    path: '/lazy/fixed',
-    getParentRoute: () => DashboardDashboardLayoutVisualizationLazyRoute,
-  } as any)
-
 // Populate the FileRoutesByPath interface
 
 declare module '@tanstack/react-router' {
@@ -378,32 +370,10 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardDashboardLayoutIndexLazyImport
       parentRoute: typeof DashboardDashboardLayoutImport
     }
-    '/dashboard/_dashboardLayout/visualization/lazy/fixed': {
-      id: '/dashboard/_dashboardLayout/visualization/lazy/fixed'
-      path: '/lazy/fixed'
-      fullPath: '/dashboard/visualization/lazy/fixed'
-      preLoaderRoute: typeof DashboardDashboardLayoutVisualizationLazyFixedImport
-      parentRoute: typeof DashboardDashboardLayoutVisualizationLazyImport
-    }
   }
 }
 
 // Create and export the route tree
-
-interface DashboardDashboardLayoutVisualizationLazyRouteChildren {
-  DashboardDashboardLayoutVisualizationLazyFixedRoute: typeof DashboardDashboardLayoutVisualizationLazyFixedRoute
-}
-
-const DashboardDashboardLayoutVisualizationLazyRouteChildren: DashboardDashboardLayoutVisualizationLazyRouteChildren =
-  {
-    DashboardDashboardLayoutVisualizationLazyFixedRoute:
-      DashboardDashboardLayoutVisualizationLazyFixedRoute,
-  }
-
-const DashboardDashboardLayoutVisualizationLazyRouteWithChildren =
-  DashboardDashboardLayoutVisualizationLazyRoute._addFileChildren(
-    DashboardDashboardLayoutVisualizationLazyRouteChildren,
-  )
 
 interface DashboardDashboardLayoutRouteChildren {
   DashboardDashboardLayoutVisualizationApiRoute: typeof DashboardDashboardLayoutVisualizationApiRoute
@@ -416,7 +386,7 @@ interface DashboardDashboardLayoutRouteChildren {
   DashboardDashboardLayoutHospitalHistoryLazyRoute: typeof DashboardDashboardLayoutHospitalHistoryLazyRoute
   DashboardDashboardLayoutProfileLazyRoute: typeof DashboardDashboardLayoutProfileLazyRoute
   DashboardDashboardLayoutRecipientLazyRoute: typeof DashboardDashboardLayoutRecipientLazyRoute
-  DashboardDashboardLayoutVisualizationLazyRoute: typeof DashboardDashboardLayoutVisualizationLazyRouteWithChildren
+  DashboardDashboardLayoutVisualizationLazyRoute: typeof DashboardDashboardLayoutVisualizationLazyRoute
   DashboardDashboardLayoutIndexLazyRoute: typeof DashboardDashboardLayoutIndexLazyRoute
 }
 
@@ -443,7 +413,7 @@ const DashboardDashboardLayoutRouteChildren: DashboardDashboardLayoutRouteChildr
     DashboardDashboardLayoutRecipientLazyRoute:
       DashboardDashboardLayoutRecipientLazyRoute,
     DashboardDashboardLayoutVisualizationLazyRoute:
-      DashboardDashboardLayoutVisualizationLazyRouteWithChildren,
+      DashboardDashboardLayoutVisualizationLazyRoute,
     DashboardDashboardLayoutIndexLazyRoute:
       DashboardDashboardLayoutIndexLazyRoute,
   }
@@ -485,8 +455,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/hospital-history': typeof DashboardDashboardLayoutHospitalHistoryLazyRoute
   '/dashboard/profile': typeof DashboardDashboardLayoutProfileLazyRoute
   '/dashboard/recipient': typeof DashboardDashboardLayoutRecipientLazyRoute
-  '/dashboard/visualization': typeof DashboardDashboardLayoutVisualizationLazyRouteWithChildren
-  '/dashboard/visualization/lazy/fixed': typeof DashboardDashboardLayoutVisualizationLazyFixedRoute
+  '/dashboard/visualization': typeof DashboardDashboardLayoutVisualizationLazyRoute
 }
 
 export interface FileRoutesByTo {
@@ -504,8 +473,7 @@ export interface FileRoutesByTo {
   '/dashboard/hospital-history': typeof DashboardDashboardLayoutHospitalHistoryLazyRoute
   '/dashboard/profile': typeof DashboardDashboardLayoutProfileLazyRoute
   '/dashboard/recipient': typeof DashboardDashboardLayoutRecipientLazyRoute
-  '/dashboard/visualization': typeof DashboardDashboardLayoutVisualizationLazyRouteWithChildren
-  '/dashboard/visualization/lazy/fixed': typeof DashboardDashboardLayoutVisualizationLazyFixedRoute
+  '/dashboard/visualization': typeof DashboardDashboardLayoutVisualizationLazyRoute
 }
 
 export interface FileRoutesById {
@@ -527,9 +495,8 @@ export interface FileRoutesById {
   '/dashboard/_dashboardLayout/hospital-history': typeof DashboardDashboardLayoutHospitalHistoryLazyRoute
   '/dashboard/_dashboardLayout/profile': typeof DashboardDashboardLayoutProfileLazyRoute
   '/dashboard/_dashboardLayout/recipient': typeof DashboardDashboardLayoutRecipientLazyRoute
-  '/dashboard/_dashboardLayout/visualization': typeof DashboardDashboardLayoutVisualizationLazyRouteWithChildren
+  '/dashboard/_dashboardLayout/visualization': typeof DashboardDashboardLayoutVisualizationLazyRoute
   '/dashboard/_dashboardLayout/': typeof DashboardDashboardLayoutIndexLazyRoute
-  '/dashboard/_dashboardLayout/visualization/lazy/fixed': typeof DashboardDashboardLayoutVisualizationLazyFixedRoute
 }
 
 export interface FileRouteTypes {
@@ -551,7 +518,6 @@ export interface FileRouteTypes {
     | '/dashboard/profile'
     | '/dashboard/recipient'
     | '/dashboard/visualization'
-    | '/dashboard/visualization/lazy/fixed'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -569,7 +535,6 @@ export interface FileRouteTypes {
     | '/dashboard/profile'
     | '/dashboard/recipient'
     | '/dashboard/visualization'
-    | '/dashboard/visualization/lazy/fixed'
   id:
     | '__root__'
     | '/'
@@ -591,7 +556,6 @@ export interface FileRouteTypes {
     | '/dashboard/_dashboardLayout/recipient'
     | '/dashboard/_dashboardLayout/visualization'
     | '/dashboard/_dashboardLayout/'
-    | '/dashboard/_dashboardLayout/visualization/lazy/fixed'
   fileRoutesById: FileRoutesById
 }
 
@@ -710,18 +674,11 @@ export const routeTree = rootRoute
     },
     "/dashboard/_dashboardLayout/visualization": {
       "filePath": "dashboard/_dashboardLayout/visualization.lazy.tsx",
-      "parent": "/dashboard/_dashboardLayout",
-      "children": [
-        "/dashboard/_dashboardLayout/visualization/lazy/fixed"
-      ]
+      "parent": "/dashboard/_dashboardLayout"
     },
     "/dashboard/_dashboardLayout/": {
       "filePath": "dashboard/_dashboardLayout/index.lazy.jsx",
       "parent": "/dashboard/_dashboardLayout"
-    },
-    "/dashboard/_dashboardLayout/visualization/lazy/fixed": {
-      "filePath": "dashboard/_dashboardLayout/visualization.lazy.fixed.tsx",
-      "parent": "/dashboard/_dashboardLayout/visualization"
     }
   }
 }
