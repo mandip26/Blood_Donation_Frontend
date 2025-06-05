@@ -16,11 +16,17 @@ import { Link, useLocation } from "@tanstack/react-router";
 import RecipeIcon from "@/components/icons/RecipeIcon.tsx";
 import CalendarIcon from "@/components/icons/CalendarIcon.tsx";
 import VisualizationIcon from "@/components/icons/VisualizationIcon.tsx";
-import { CirclePlus } from "lucide-react";
+import { CirclePlus, Users, Building, Building2 } from "lucide-react";
 import useAuth from "@/hooks/useAuth";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const sideNavData = [
+  const location = useLocation();
+  const currentRoute = location.pathname;
+  const { user: loggedInUser } = useAuth();
+  const userRole = loggedInUser?.role || "user";
+
+  // Default user navigation
+  const userNavData = [
     {
       name: "Home",
       icon: <HomeIcon />,
@@ -52,11 +58,120 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       link: "/dashboard/create",
     },
   ];
+  // Hospital navigation
+  const hospitalNavData = [
+    {
+      name: "Home",
+      icon: <HomeIcon />,
+      link: "/dashboard",
+    },
+    {
+      name: "Donate",
+      icon: <DonateIcon />,
+      link: "/dashboard/donate",
+    },
+    {
+      name: "Recipient",
+      icon: <RecipeIcon />,
+      link: "/dashboard/recipient",
+    },
+    {
+      name: "Events",
+      icon: <CalendarIcon />,
+      link: "/dashboard/events",
+    },
+    {
+      name: "Visualization",
+      icon: <VisualizationIcon />,
+      link: "/dashboard/visualization",
+    },
+    {
+      name: "Create",
+      icon: <CirclePlus />,
+      link: "/dashboard/create",
+    },
+  ];
+  // Organization navigation
+  const organizationNavData = [
+    {
+      name: "Home",
+      icon: <HomeIcon />,
+      link: "/dashboard",
+    },
+    {
+      name: "Donate",
+      icon: <DonateIcon />,
+      link: "/dashboard/donate",
+    },
+    {
+      name: "Recipient",
+      icon: <RecipeIcon />,
+      link: "/dashboard/recipient",
+    },
+    {
+      name: "Events",
+      icon: <CalendarIcon />,
+      link: "/dashboard/events",
+    },
+    {
+      name: "Visualization",
+      icon: <VisualizationIcon />,
+      link: "/dashboard/visualization",
+    },
+    {
+      name: "Create",
+      icon: <CirclePlus />,
+      link: "/dashboard/create",
+    },
+  ];
+  // Admin navigation
+  const adminNavData = [
+    {
+      name: "Home",
+      icon: <HomeIcon />,
+      link: "/dashboard/admin",
+    },
+    {
+      name: "Users",
+      icon: <Users />,
+      link: "/dashboard/admin/users",
+    },
+    {
+      name: "Hospitals",
+      icon: <Building />,
+      link: "/dashboard/donate",
+    },
+    {
+      name: "Events",
+      icon: <CalendarIcon />,
+      link: "/dashboard/admin/events",
+    },
+    {
+      name: "Organizations",
+      icon: <Building2 />,
+      link: "/dashboard/events",
+    },
+    {
+      name: "Analytics",
+      icon: <VisualizationIcon />,
+      link: "/dashboard/admin/analytics",
+    },
+    {
+      name: "System",
+      icon: <Users />,
+      link: "/dashboard/admin/profile",
+    },
+  ];
 
-  const location = useLocation();
-  const currentRoute = location.pathname;
-
-  const { user: loggedInUser } = useAuth();
+  // Select navigation based on user role
+  let sideNavData = userNavData;
+  if (userRole === "hospital") {
+    sideNavData = hospitalNavData;
+  } else if (userRole === "organisation") {
+    sideNavData = organizationNavData;
+  } else if (userRole === "admin") {
+    sideNavData = adminNavData;
+  }
 
   return (
     <Sidebar variant="inset" {...props} className={"bg-primary-magenta"}>
@@ -88,11 +203,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarFooter className={"bg-primary-magenta"}>
         <NavUser
           user={{
-            name: loggedInUser?.name || "Mandip",
+            name:
+              loggedInUser?.name ||
+              loggedInUser?.hospitalName ||
+              loggedInUser?.organisationName ||
+              "User",
             avatar: "",
-            email: loggedInUser
-              ? loggedInUser.email
-              : "mandip.runtime@gmail.com",
+            email: loggedInUser ? loggedInUser.email : "user@example.com",
           }}
         />
       </SidebarFooter>

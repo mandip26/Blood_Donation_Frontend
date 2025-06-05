@@ -1,13 +1,5 @@
 import { createLazyFileRoute } from "@tanstack/react-router";
-import {
-  MapPin,
-  Calendar,
-  Phone,
-  Mail,
-  CheckCircle,
-  Edit3,
-  Camera,
-} from "lucide-react";
+import { MapPin, Calendar, Phone, Mail, Edit3, Camera } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import useAuth from "@/hooks/useAuth";
@@ -26,10 +18,33 @@ interface MedicalDetail {
   lastUpdated: string;
 }
 
+// Extending the User interface to add health-related properties needed in this component
+interface ExtendedUser {
+  name?: string;
+  email?: string;
+  phone?: string;
+  bloodType?: string;
+  dateOfBirth?: string;
+  gender?: string;
+  address?: string;
+  weight?: number;
+  height?: number;
+  bloodPressure?: string;
+  allergies?: string[];
+  chronicConditions?: string[];
+  medications?: string[];
+  emergencyContact?: string;
+  profile?: {
+    profilePhoto?: string;
+  };
+}
+
 function EditProfileComponent() {
   const [editingPersonal, setEditingPersonal] = useState(false);
   const [editingMedical, setEditingMedical] = useState(false);
-  const { user: loggedInUser } = useAuth();
+  const { user } = useAuth();
+  // Cast user to ExtendedUser to access health-related properties
+  const loggedInUser = user as unknown as ExtendedUser;
 
   const [personalInfo, setPersonalInfo] = useState({
     name: loggedInUser?.name || "",
@@ -39,72 +54,91 @@ function EditProfileComponent() {
     dob: loggedInUser?.dateOfBirth || "", // Changed from dob to dateOfBirth to match backend
     gender: loggedInUser?.gender || "",
     address: loggedInUser?.address || "",
-    emergencyContact: loggedInUser?.emergencyContact || "",
+    emergencyContact: "",
   });
- // Replace the medicalDetails state initialization with this corrected version:
+  // Replace the medicalDetails state initialization with this corrected version:
 
-const [medicalDetails, setMedicalDetails] = useState<MedicalDetail[]>([
-  { 
-    key: 'Weight', 
-    value: loggedInUser?.weight ? `${loggedInUser.weight} kg` : '75 kg',
-    lastUpdated: new Date().toISOString().split('T')[0]
-  },
-  { 
-    key: 'Height', 
-    value: loggedInUser?.height ? `${loggedInUser.height} cm` : '178 cm',
-    lastUpdated: new Date().toISOString().split('T')[0]
-  },
-  { 
-    key: 'Blood Pressure', 
-    value: loggedInUser?.bloodPressure || '120/80 mmHg',
-    lastUpdated: new Date().toISOString().split('T')[0]
-  },
-  { 
-    key: 'Allergies', 
-    value: (() => {
-      try {
-        if (Array.isArray(loggedInUser?.allergies) && loggedInUser.allergies.length > 0) {
-          const parsedAllergies = JSON.parse(loggedInUser.allergies[0]);
-          return Array.isArray(parsedAllergies) && parsedAllergies.length > 0 ? parsedAllergies.join(', ') : 'None';
+  const [medicalDetails, setMedicalDetails] = useState<MedicalDetail[]>([
+    {
+      key: "Weight",
+      value: loggedInUser?.weight ? `${loggedInUser.weight} kg` : "75 kg",
+      lastUpdated: new Date().toISOString().split("T")[0],
+    },
+    {
+      key: "Height",
+      value: loggedInUser?.height ? `${loggedInUser.height} cm` : "178 cm",
+      lastUpdated: new Date().toISOString().split("T")[0],
+    },
+    {
+      key: "Blood Pressure",
+      value: loggedInUser?.bloodPressure || "120/80 mmHg",
+      lastUpdated: new Date().toISOString().split("T")[0],
+    },
+    {
+      key: "Allergies",
+      value: (() => {
+        try {
+          if (
+            Array.isArray(loggedInUser?.allergies) &&
+            loggedInUser.allergies.length > 0
+          ) {
+            const parsedAllergies = JSON.parse(loggedInUser.allergies[0]);
+            return Array.isArray(parsedAllergies) && parsedAllergies.length > 0
+              ? parsedAllergies.join(", ")
+              : "None";
+          }
+          return "None";
+        } catch {
+          return loggedInUser?.allergies?.[0] || "None";
         }
-        return 'None';
-      } catch {
-        return loggedInUser?.allergies?.[0] || 'None';
-      }
-    })(),
-    lastUpdated: new Date().toISOString().split('T')[0]
-  },
-  { 
-    key: 'Chronic Conditions', 
-    value: (() => {
-      try {
-        if (Array.isArray(loggedInUser?.chronicConditions) && loggedInUser.chronicConditions.length > 0) {
-          const parsedConditions = JSON.parse(loggedInUser.chronicConditions[0]);
-          return Array.isArray(parsedConditions) && parsedConditions.length > 0 ? parsedConditions.join(', ') : 'None';
+      })(),
+      lastUpdated: new Date().toISOString().split("T")[0],
+    },
+    {
+      key: "Chronic Conditions",
+      value: (() => {
+        try {
+          if (
+            Array.isArray(loggedInUser?.chronicConditions) &&
+            loggedInUser.chronicConditions.length > 0
+          ) {
+            const parsedConditions = JSON.parse(
+              loggedInUser.chronicConditions[0]
+            );
+            return Array.isArray(parsedConditions) &&
+              parsedConditions.length > 0
+              ? parsedConditions.join(", ")
+              : "None";
+          }
+          return "None";
+        } catch {
+          return loggedInUser?.chronicConditions?.[0] || "None";
         }
-        return 'None';
-      } catch {
-        return loggedInUser?.chronicConditions?.[0] || 'None';
-      }
-    })(),
-    lastUpdated: new Date().toISOString().split('T')[0]
-  },
-  { 
-    key: 'Medications', 
-    value: (() => {
-      try {
-        if (Array.isArray(loggedInUser?.medications) && loggedInUser.medications.length > 0) {
-          const parsedMedications = JSON.parse(loggedInUser.medications[0]);
-          return Array.isArray(parsedMedications) && parsedMedications.length > 0 ? parsedMedications.join(', ') : 'None';
+      })(),
+      lastUpdated: new Date().toISOString().split("T")[0],
+    },
+    {
+      key: "Medications",
+      value: (() => {
+        try {
+          if (
+            Array.isArray(loggedInUser?.medications) &&
+            loggedInUser.medications.length > 0
+          ) {
+            const parsedMedications = JSON.parse(loggedInUser.medications[0]);
+            return Array.isArray(parsedMedications) &&
+              parsedMedications.length > 0
+              ? parsedMedications.join(", ")
+              : "None";
+          }
+          return "None";
+        } catch {
+          return loggedInUser?.medications?.[0] || "None";
         }
-        return 'None';
-      } catch {
-        return loggedInUser?.medications?.[0] || 'None';
-      }
-    })(),
-    lastUpdated: new Date().toISOString().split('T')[0]
-  }
-])
+      })(),
+      lastUpdated: new Date().toISOString().split("T")[0],
+    },
+  ]);
 
   // Format date function
   const formatDate = (dateString: string) => {

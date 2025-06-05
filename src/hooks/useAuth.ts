@@ -23,6 +23,19 @@ export interface User {
     skills?: string[];
     profilePhoto?: string;
   };
+  // Admin profile properties
+  department?: string;
+  bio?: string;
+  // Hospital profile properties
+  regNumber?: string;
+  totalBeds?: string;
+  specializations?: string;
+  description?: string;
+  // Organization profile properties
+  type?: string;
+  foundedYear?: string;
+  website?: string;
+  mission?: string;
   createdAt?: string;
   updatedAt?: string;
 }

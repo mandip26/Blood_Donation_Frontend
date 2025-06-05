@@ -8,10 +8,8 @@ import {
   Clock,
   ChevronDown,
   X,
-  ArrowUpDown,
   AlertCircle,
   Loader2,
-  RefreshCw,
   Droplets,
   Heart,
   Phone,
@@ -34,7 +32,7 @@ interface BloodRequest {
   hospital: string;
   location: string;
   distance?: string;
-  urgency: "Low" | "Medium" | "High";  // Updated to match backend enum
+  urgency: "low" | "medium" | "high"; // Lowercase to match API
   postedTime: string;
   units: number;
   contactNumber: string;
@@ -49,12 +47,18 @@ function RecipientComponent() {
   const { isMobile } = useResponsive();
 
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedBloodType, setSelectedBloodType] = useState<string | null>(null);
-  const [selectedUrgency, setSelectedUrgency] = useState<string | null>(null);
+  const [selectedBloodType, setSelectedBloodType] = useState<string | null>(
+    null
+  );
+  const [selectedUrgency, setSelectedUrgency] = useState<
+    "low" | "medium" | "high" | null
+  >(null);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [selectedRequest, setSelectedRequest] = useState<BloodRequest | null>(null);
+  const [selectedRequest, setSelectedRequest] = useState<BloodRequest | null>(
+    null
+  );
   const [isNewRequestModalOpen, setIsNewRequestModalOpen] = useState(false);
-  const [sorting, setSorting] = useState<{
+  const [sorting] = useState<{
     key: keyof BloodRequest | null;
     direction: "asc" | "desc";
   }>({
@@ -66,17 +70,15 @@ function RecipientComponent() {
   const [bloodRequests, setBloodRequests] = useState<BloodRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
   const bloodTypes = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
-  const urgencyLevels = ["High", "Medium", "Low"];
-
+  const urgencyLevels = ["high", "medium", "low"];
   // New request form state
   const [newRequestForm, setNewRequestForm] = useState({
     name: "",
     bloodType: "",
     hospital: "",
     location: "",
-    urgency: "Medium" as "Low" | "Medium" | "High",
+    urgency: "medium" as "low" | "medium" | "high", // Lowercase to match API
     units: 1,
     contactNumber: "",
     reason: "",
@@ -113,11 +115,13 @@ function RecipientComponent() {
       }
 
       // Call the API endpoint to get blood requests
-      const response = await fetch('http://localhost:8001/api/v1/user/blood-requests');
+      const response = await fetch(
+        "http://localhost:8001/api/v1/user/blood-requests"
+      );
       const data = await response.json();
-      
+
       if (data.success) {
-        const formattedRequests = data.bloodRequests.map(request => ({
+        const formattedRequests = data.bloodRequests.map((request: any) => ({
           id: request._id,
           name: request.patientName,
           bloodType: request.bloodType,
@@ -127,18 +131,22 @@ function RecipientComponent() {
           postedTime: getTimeAgo(new Date(request.createdAt)),
           units: request.unitsRequired,
           contactNumber: request.contactNumber,
-          reason: request.reason
+          reason: request.reason,
         }));
-        
+
         // Apply filters if any
         let filteredRequests = formattedRequests;
         if (filters.bloodType) {
-          filteredRequests = filteredRequests.filter(req => req.bloodType === filters.bloodType);
+          filteredRequests = filteredRequests.filter(
+            (req: BloodRequest) => req.bloodType === filters.bloodType
+          );
         }
         if (filters.urgency) {
-          filteredRequests = filteredRequests.filter(req => req.urgency === filters.urgency);
+          filteredRequests = filteredRequests.filter(
+            (req: BloodRequest) => req.urgency === filters.urgency
+          );
         }
-        
+
         setBloodRequests(filteredRequests);
       } else {
         setError("Failed to load blood requests");
@@ -209,14 +217,14 @@ function RecipientComponent() {
 
     return 0;
   });
-
   // Handle sorting change
-  const handleSort = (key: keyof BloodRequest) => {
+  // Commented out to fix TS6133 error - unused variable
+  /* const handleSort = (key: keyof BloodRequest) => {
     setSorting((prev) => ({
       key,
       direction: prev.key === key && prev.direction === "asc" ? "desc" : "asc",
     }));
-  };
+  }; */
 
   // Form submission for new blood request
   const handleSubmitRequest = async (e: React.FormEvent) => {
@@ -256,24 +264,24 @@ function RecipientComponent() {
 
       // Submit request to API
       await bloodRequestService.createRequest({
-        patientName: newRequestForm.name,
+        name: newRequestForm.name,
         bloodType: newRequestForm.bloodType,
         hospital: newRequestForm.hospital,
         location: newRequestForm.location,
-        urgency: newRequestForm.urgency, // Keep the original case
-        unitsRequired: newRequestForm.units,
+        urgency: newRequestForm.urgency.toLowerCase() as
+          | "low"
+          | "medium"
+          | "high", // Convert to lowercase to match API
+        units: newRequestForm.units,
         contactNumber: newRequestForm.contactNumber,
         reason: newRequestForm.reason,
-        createdBy: user._id || user.id, // Use either _id or id
-      });
-
-      // Reset form and close modal on success
+      }); // Reset form and close modal on success
       setNewRequestForm({
         name: "",
         bloodType: "",
         hospital: "",
         location: "",
-        urgency: "Medium",
+        urgency: "medium", // Lowercase to match API
         units: 1,
         contactNumber: "",
         reason: "",
@@ -448,7 +456,9 @@ function RecipientComponent() {
                       key={level}
                       onClick={() =>
                         setSelectedUrgency(
-                          level === selectedUrgency ? null : level
+                          level === selectedUrgency
+                            ? null
+                            : (level as "low" | "medium" | "high")
                         )
                       }
                       className={`rounded-md py-1 px-2 text-sm ${
@@ -511,14 +521,17 @@ function RecipientComponent() {
                   <p className="text-gray-500 text-sm">{request.location}</p>
                 </div>
                 <div className="text-right">
-                  <span className="inline-block px-3 py-1 rounded-full text-sm font-medium
+                  <span
+                    className="inline-block px-3 py-1 rounded-full text-sm font-medium
                     ${request.urgency === 'High' ? 'bg-red-100 text-red-800' :
                     request.urgency === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
                     'bg-green-100 text-green-800'}"
                   >
                     {request.urgency}
                   </span>
-                  <p className="text-gray-500 text-sm mt-1">{request.postedTime}</p>
+                  <p className="text-gray-500 text-sm mt-1">
+                    {request.postedTime}
+                  </p>
                 </div>
               </div>
               <div className="mt-4 flex justify-between items-center">
@@ -526,7 +539,9 @@ function RecipientComponent() {
                   <span className="inline-block px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
                     {request.bloodType}
                   </span>
-                  <span className="ml-2 text-gray-600">{request.units} units needed</span>
+                  <span className="ml-2 text-gray-600">
+                    {request.units} units needed
+                  </span>
                 </div>
                 <button
                   onClick={() => setSelectedRequest(request)}
@@ -543,7 +558,6 @@ function RecipientComponent() {
           <p className="text-gray-500">No blood requests found</p>
         </div>
       )}
-      
       {/* Selected request modal */}{" "}
       {selectedRequest && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-4 backdrop-blur-sm animate-in fade-in duration-300">
@@ -626,17 +640,17 @@ function RecipientComponent() {
                   <div>
                     <span className="text-xs text-gray-500 block">Urgency</span>
                     <span className="flex-1">
+                      {" "}
                       <span
                         className={`px-2.5 py-1 rounded-full text-xs font-medium ${
-                          selectedRequest.urgency === "high"
+                          selectedRequest.urgency.toLowerCase() === "high"
                             ? "bg-red-100 text-red-700 border border-red-200"
-                            : selectedRequest.urgency === "medium"
+                            : selectedRequest.urgency.toLowerCase() === "medium"
                               ? "bg-yellow-100 text-yellow-700 border border-yellow-200"
                               : "bg-green-100 text-green-700 border border-green-200"
                         }`}
                       >
-                        {selectedRequest.urgency.charAt(0).toUpperCase() +
-                          selectedRequest.urgency.slice(1)}
+                        {selectedRequest.urgency}
                       </span>
                     </span>
                   </div>
@@ -814,7 +828,7 @@ function RecipientComponent() {
                         onClick={() =>
                           setNewRequestForm({
                             ...newRequestForm,
-                            urgency: level as any,
+                            urgency: level as "low" | "medium" | "high",
                           })
                         }
                         className={`py-2 px-4 rounded-md text-center text-sm ${
