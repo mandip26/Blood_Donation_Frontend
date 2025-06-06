@@ -11,7 +11,6 @@ import {
 } from "@/components/ui/sidebar";
 import { NavUser } from "@/components/layout/NavUser.tsx";
 import HomeIcon from "@/components/icons/HomeIcon.tsx";
-import DonateIcon from "@/components/icons/DonateIcon.tsx";
 import { Link, useLocation } from "@tanstack/react-router";
 import RecipeIcon from "@/components/icons/RecipeIcon.tsx";
 import CalendarIcon from "@/components/icons/CalendarIcon.tsx";
@@ -31,11 +30,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       name: "Home",
       icon: <HomeIcon />,
       link: "/dashboard",
-    },
-    {
-      name: "Donate",
-      icon: <DonateIcon />,
-      link: "/dashboard/donate",
     },
     {
       name: "Recipient",
@@ -66,11 +60,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       link: "/dashboard",
     },
     {
-      name: "Donate",
-      icon: <DonateIcon />,
-      link: "/dashboard/donate",
-    },
-    {
       name: "Recipient",
       icon: <RecipeIcon />,
       link: "/dashboard/recipient",
@@ -97,11 +86,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       name: "Home",
       icon: <HomeIcon />,
       link: "/dashboard",
-    },
-    {
-      name: "Donate",
-      icon: <DonateIcon />,
-      link: "/dashboard/donate",
     },
     {
       name: "Recipient",
