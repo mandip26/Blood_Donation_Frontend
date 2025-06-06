@@ -126,12 +126,19 @@ function RecipientComponent() {
 
   // New state for user's own blood requests and responses to those requests
   const [userCreatedRequests, setUserCreatedRequests] = useState<any[]>([]);
-  const [userCreatedRequestsResponses, setUserCreatedRequestsResponses] = useState<any[]>([]);
-  const [selectedCreatedRequest, setSelectedCreatedRequest] = useState<string | null>(null);
-  const [showMyRequestsResponsesModal, setShowMyRequestsResponsesModal] = useState(false);
+  const [userCreatedRequestsResponses, setUserCreatedRequestsResponses] =
+    useState<any[]>([]);
+  const [selectedCreatedRequest, setSelectedCreatedRequest] = useState<
+    string | null
+  >(null);
+  const [showMyRequestsResponsesModal, setShowMyRequestsResponsesModal] =
+    useState(false);
   const [isLoadingMyRequests, setIsLoadingMyRequests] = useState(false);
-  const [isUpdatingResponseStatus, setIsUpdatingResponseStatus] = useState(false);
-  const [updatingResponseId, setUpdatingResponseId] = useState<string | null>(null);
+  const [isUpdatingResponseStatus, setIsUpdatingResponseStatus] =
+    useState(false);
+  const [updatingResponseId, setUpdatingResponseId] = useState<string | null>(
+    null
+  );
 
   // Function to check if user has already responded to a request
   const checkExistingResponse = async (requestId: string) => {
@@ -435,21 +442,21 @@ function RecipientComponent() {
       setIsLoadingResponses(false);
     }
   };
-  
+
   // Fetch user created blood requests
   const fetchUserCreatedRequests = async () => {
     if (!user || (!user._id && !user.id)) return;
-    
+
     try {
       setIsLoadingMyRequests(true);
       setError(null);
-      
+
       // Call API to get requests created by the user
       const result = await bloodRequestService.getUserRequests();
-      
+
       if (result && result.success && result.bloodRequests) {
         setUserCreatedRequests(result.bloodRequests);
-        
+
         // If there are requests, select the first one by default
         if (result.bloodRequests.length > 0) {
           setSelectedCreatedRequest(result.bloodRequests[0]._id);
@@ -468,17 +475,17 @@ function RecipientComponent() {
       setIsLoadingMyRequests(false);
     }
   };
-  
+
   // Fetch responses for a specific blood request created by the user
   const fetchResponsesForRequest = async (requestId: string) => {
     if (!requestId) return;
-    
+
     try {
       setIsLoadingResponses(true);
       setError(null);
-      
+
       const result = await bloodRequestService.getRequestResponses(requestId);
-      
+
       if (result && result.success && result.responses) {
         setUserCreatedRequestsResponses(result.responses);
         setShowMyRequestsResponsesModal(true);
@@ -494,20 +501,26 @@ function RecipientComponent() {
       setIsLoadingResponses(false);
     }
   };
-  
+
   // Handle updating the response status
-  const handleUpdateResponseStatus = async (responseId: string, status: "Pending" | "Accepted" | "Declined" | "Completed") => {
+  const handleUpdateResponseStatus = async (
+    responseId: string,
+    status: "Pending" | "Accepted" | "Declined" | "Completed"
+  ) => {
     try {
       setIsUpdatingResponseStatus(true);
       setUpdatingResponseId(responseId);
-      
-      const result = await bloodRequestService.updateResponseStatus(responseId, status);
-      
+
+      const result = await bloodRequestService.updateResponseStatus(
+        responseId,
+        status
+      );
+
       if (result && result.success) {
         // Update the response in the list with the new status
-        setUserCreatedRequestsResponses(prevResponses => 
-          prevResponses.map(response => 
-            response._id === responseId 
+        setUserCreatedRequestsResponses((prevResponses) =>
+          prevResponses.map((response) =>
+            response._id === responseId
               ? { ...response, status: status }
               : response
           )
@@ -668,7 +681,8 @@ function RecipientComponent() {
   // Main component render
   return (
     <div className="p-4 md:p-6 bg-gray-50">
-      {" "}      <div className="flex justify-between items-center mb-6">
+      {" "}
+      <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
             Blood Requests
@@ -1424,7 +1438,6 @@ function RecipientComponent() {
           </div>
         </div>
       )}
-
       {/* Modal to display responses to user's created requests */}
       {showMyRequestsResponsesModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
@@ -1447,7 +1460,9 @@ function RecipientComponent() {
               {isLoadingMyRequests ? (
                 <div className="flex flex-col items-center justify-center p-8">
                   <Loader2 className="h-8 w-8 animate-spin text-primary-magenta mb-2" />
-                  <p className="text-gray-600">Loading your blood requests...</p>
+                  <p className="text-gray-600">
+                    Loading your blood requests...
+                  </p>
                 </div>
               ) : error ? (
                 <div className="bg-red-50 p-6 rounded-lg text-center">
@@ -1471,14 +1486,17 @@ function RecipientComponent() {
                     You haven't created any blood requests yet.
                   </p>
                   <p className="text-sm">
-                    When you create a blood request, responses to it will appear here.
+                    When you create a blood request, responses to it will appear
+                    here.
                   </p>
                 </div>
               ) : (
                 <div className="flex flex-col lg:flex-row gap-6">
                   {/* Request selection sidebar */}
                   <div className="lg:w-72 border-r">
-                    <h4 className="font-medium text-gray-700 mb-3">My Requests</h4>
+                    <h4 className="font-medium text-gray-700 mb-3">
+                      My Requests
+                    </h4>
                     <div className="space-y-2 max-h-96 overflow-y-auto pr-2">
                       {userCreatedRequests.map((request) => (
                         <div
@@ -1493,8 +1511,12 @@ function RecipientComponent() {
                               : "hover:bg-gray-100"
                           }`}
                         >
-                          <div className="font-medium text-gray-800">{request.patientName}</div>
-                          <div className="text-sm text-gray-500">{request.hospital}</div>
+                          <div className="font-medium text-gray-800">
+                            {request.patientName}
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            {request.hospital}
+                          </div>
                           <div className="flex items-center gap-2 mt-1">
                             <span className="inline-block px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full text-xs">
                               {request.bloodType}
@@ -1510,7 +1532,9 @@ function RecipientComponent() {
 
                   {/* Responses panel */}
                   <div className="flex-1">
-                    <h4 className="font-medium text-gray-700 mb-3">Responses</h4>
+                    <h4 className="font-medium text-gray-700 mb-3">
+                      Responses
+                    </h4>
                     {isLoadingResponses ? (
                       <div className="flex flex-col items-center justify-center p-8">
                         <Loader2 className="h-8 w-8 animate-spin text-green-500 mb-2" />
@@ -1518,7 +1542,9 @@ function RecipientComponent() {
                       </div>
                     ) : userCreatedRequestsResponses.length === 0 ? (
                       <div className="text-center p-8 border rounded-md bg-gray-50">
-                        <p className="text-gray-500">No responses to this request yet.</p>
+                        <p className="text-gray-500">
+                          No responses to this request yet.
+                        </p>
                       </div>
                     ) : (
                       <div className="space-y-4">
@@ -1549,7 +1575,8 @@ function RecipientComponent() {
                                   </span>
                                 </div>
                                 <div className="text-sm text-gray-500 mt-1">
-                                  {response.donor.email} | {response.contactNumber}
+                                  {response.donor.email} |{" "}
+                                  {response.contactNumber}
                                 </div>
                               </div>
                               <div className="text-sm text-gray-500">
@@ -1562,15 +1589,34 @@ function RecipientComponent() {
                                 {response.message}
                               </div>
                             )}
-                            
+
                             <div className="mt-4 pt-3 border-t border-gray-100">
-                              <div className="text-sm font-medium text-gray-700 mb-2">Update Status:</div>
+                              <div className="text-sm font-medium text-gray-700 mb-2">
+                                Update Status:
+                              </div>
                               <div className="flex flex-wrap gap-2">
-                                {["Pending", "Accepted", "Declined", "Completed"].map((status) => (
+                                {[
+                                  "Pending",
+                                  "Accepted",
+                                  "Declined",
+                                  "Completed",
+                                ].map((status) => (
                                   <Button
                                     key={status}
-                                    onClick={() => handleUpdateResponseStatus(response._id, status as "Pending" | "Accepted" | "Declined" | "Completed")}
-                                    disabled={isUpdatingResponseStatus && updatingResponseId === response._id}
+                                    onClick={() =>
+                                      handleUpdateResponseStatus(
+                                        response._id,
+                                        status as
+                                          | "Pending"
+                                          | "Accepted"
+                                          | "Declined"
+                                          | "Completed"
+                                      )
+                                    }
+                                    disabled={
+                                      isUpdatingResponseStatus &&
+                                      updatingResponseId === response._id
+                                    }
                                     className={`${
                                       status === "Pending"
                                         ? "bg-yellow-500 hover:bg-yellow-600"
@@ -1580,9 +1626,14 @@ function RecipientComponent() {
                                             ? "bg-red-500 hover:bg-red-600"
                                             : "bg-blue-500 hover:bg-blue-600"
                                     } text-white py-1 px-3 text-xs`}
-                                    variant={response.status === status ? "default" : "outline"}
+                                    variant={
+                                      response.status === status
+                                        ? "default"
+                                        : "outline"
+                                    }
                                   >
-                                    {isUpdatingResponseStatus && updatingResponseId === response._id ? (
+                                    {isUpdatingResponseStatus &&
+                                    updatingResponseId === response._id ? (
                                       <Loader2 className="h-3 w-3 animate-spin mr-1" />
                                     ) : null}
                                     {status}
