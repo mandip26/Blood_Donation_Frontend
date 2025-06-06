@@ -16,6 +16,7 @@ import {
   Hospital,
   CheckCircle,
   Eye,
+  Trash2,
 } from "lucide-react";
 import { bloodRequestService } from "@/services/apiService";
 import { useAuth } from "@/hooks/useAuth";
@@ -39,6 +40,9 @@ interface BloodRequest {
   units: number;
   contactNumber: string;
   reason: string;
+  createdBy?: string; // Add createdBy field to identify request creator
+  hasCompletedResponse?: boolean; // Add field to track if any response is completed
+  isDeleted?: boolean; // Add field to track if request is deleted
 }
 
 interface BloodRequestResponse {
@@ -48,6 +52,7 @@ interface BloodRequestResponse {
     patientName: string;
     bloodType: string;
     hospital: string;
+    isDeleted?: boolean; // Add field to track if original request is deleted
   };
   donor: {
     _id: string;
@@ -92,7 +97,6 @@ function RecipientComponent() {
     key: null,
     direction: "desc",
   });
-
   // State for API data handling
   const [bloodRequests, setBloodRequests] = useState<BloodRequest[]>([]);
   const [userResponses, setUserResponses] = useState<BloodRequestResponse[]>(
@@ -102,6 +106,14 @@ function RecipientComponent() {
   const [isLoadingResponses, setIsLoadingResponses] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [deletingRequestId, setDeletingRequestId] = useState<string | null>(
+    null
+  );
+  const [deletedRequestResponses, setDeletedRequestResponses] = useState<
+    BloodRequestResponse[]
+  >([]);
+  const [showDeletedResponsesModal, setShowDeletedResponsesModal] =
+    useState(false);
   const bloodTypes = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
   const urgencyLevels = ["high", "medium", "low"];
   // New request form state
@@ -175,7 +187,6 @@ function RecipientComponent() {
   useEffect(() => {
     fetchBloodRequests();
   }, [selectedBloodType, selectedUrgency]);
-
   // Fetch blood requests function (for refreshing data)
   const fetchBloodRequests = async () => {
     try {
@@ -203,18 +214,52 @@ function RecipientComponent() {
       const data = await response.json();
 
       if (data.success) {
-        const formattedRequests = data.bloodRequests.map((request: any) => ({
-          id: request._id,
-          name: request.patientName,
-          bloodType: request.bloodType,
-          hospital: request.hospital,
-          location: request.location,
-          urgency: request.urgency,
-          postedTime: getTimeAgo(new Date(request.createdAt)),
-          units: request.unitsRequired,
-          contactNumber: request.contactNumber,
-          reason: request.reason,
-        }));
+        // For each blood request, check if any response has "Completed" status        // Filter out rejected (soft deleted) requests
+        const activeRequests = data.bloodRequests.filter(
+          (request: any) => request.status !== "Rejected"
+        );
+
+        const formattedRequests = await Promise.all(
+          activeRequests.map(async (request: any) => {
+            let hasCompletedResponse = false;
+
+            try {
+              // Check responses for this request
+              const responsesResult =
+                await bloodRequestService.getRequestResponses(request._id);
+              if (
+                responsesResult &&
+                responsesResult.success &&
+                responsesResult.responses
+              ) {
+                hasCompletedResponse = responsesResult.responses.some(
+                  (response: any) => response.status === "Completed"
+                );
+              }
+            } catch (error) {
+              // If we can't get responses, assume no completed responses
+              console.warn(
+                "Could not fetch responses for request:",
+                request._id
+              );
+            }
+
+            return {
+              id: request._id,
+              name: request.patientName,
+              bloodType: request.bloodType,
+              hospital: request.hospital,
+              location: request.location,
+              urgency: request.urgency,
+              postedTime: getTimeAgo(new Date(request.createdAt)),
+              units: request.unitsRequired,
+              contactNumber: request.contactNumber,
+              reason: request.reason,
+              createdBy: request.createdBy?._id || request.createdBy,
+              hasCompletedResponse,
+            };
+          })
+        );
 
         // Apply filters if any
         let filteredRequests = formattedRequests;
@@ -453,15 +498,19 @@ function RecipientComponent() {
 
       // Call API to get requests created by the user
       const result = await bloodRequestService.getUserRequests();
-
       if (result && result.success && result.bloodRequests) {
-        setUserCreatedRequests(result.bloodRequests);
+        // Filter out rejected (soft deleted) requests
+        const activeRequests = result.bloodRequests.filter(
+          (request: any) => request.status !== "Rejected"
+        );
+
+        setUserCreatedRequests(activeRequests);
 
         // If there are requests, select the first one by default
-        if (result.bloodRequests.length > 0) {
-          setSelectedCreatedRequest(result.bloodRequests[0]._id);
+        if (activeRequests.length > 0) {
+          setSelectedCreatedRequest(activeRequests[0]._id);
           // Fetch responses for the first request
-          fetchResponsesForRequest(result.bloodRequests[0]._id);
+          fetchResponsesForRequest(activeRequests[0]._id);
         }
       } else {
         setUserCreatedRequests([]);
@@ -500,9 +549,7 @@ function RecipientComponent() {
     } finally {
       setIsLoadingResponses(false);
     }
-  };
-
-  // Handle updating the response status
+  }; // Handle updating the response status
   const handleUpdateResponseStatus = async (
     responseId: string,
     status: "Pending" | "Accepted" | "Declined" | "Completed"
@@ -532,6 +579,108 @@ function RecipientComponent() {
     } finally {
       setIsUpdatingResponseStatus(false);
       setUpdatingResponseId(null);
+    }
+  };
+
+  // Check if response modification should be disabled
+  const isResponseModificationDisabled = (response: BloodRequestResponse) => {
+    // Disable if the original request is deleted
+    if (response.bloodRequest.isDeleted) {
+      return true;
+    }
+    // Disable if any response is completed
+    return response.status === "Completed";
+  }; // Handle deleting a blood request (only for request creators)
+  const handleDeleteRequest = async (requestId: string) => {
+    if (!user) return;
+
+    if (
+      window.confirm(
+        "Are you sure you want to delete this blood request? This action cannot be undone."
+      )
+    ) {
+      try {
+        setDeletingRequestId(requestId);
+
+        // First, get all responses for this request before deleting
+        const responsesResult =
+          await bloodRequestService.getRequestResponses(requestId);
+        if (
+          responsesResult &&
+          responsesResult.success &&
+          responsesResult.responses
+        ) {
+          // Mark responses as from deleted request
+          const responsesWithDeletedFlag = responsesResult.responses.map(
+            (response: BloodRequestResponse) => ({
+              ...response,
+              bloodRequest: {
+                ...response.bloodRequest,
+                isDeleted: true,
+              },
+            })
+          );
+          setDeletedRequestResponses((prev) => [
+            ...prev,
+            ...responsesWithDeletedFlag,
+          ]);
+        }
+
+        const result = await bloodRequestService.cancelRequest(requestId);
+        if (result && result.success) {
+          // Remove the deleted request from local state immediately
+          setBloodRequests((prev) =>
+            prev.filter((req) => req.id !== requestId)
+          );
+          setUserCreatedRequests((prev) =>
+            prev.filter((req) => req._id !== requestId)
+          );
+
+          // If this was the selected request in the responses modal, clear it
+          if (selectedCreatedRequest === requestId) {
+            setSelectedCreatedRequest(null);
+            setUserCreatedRequestsResponses([]);
+          }
+
+          // Refresh the blood requests list
+          await fetchBloodRequests();
+          // Also refresh user created requests if that modal is open
+          if (showMyRequestsResponsesModal) {
+            await fetchUserCreatedRequests();
+          }
+          alert(
+            "Blood request deleted successfully. All responses have been moved to records."
+          );
+        } else {
+          alert("Failed to delete blood request. Please try again.");
+        }
+      } catch (err: any) {
+        console.error("Error deleting blood request:", err);
+
+        // More specific error handling
+        let errorMessage = "Failed to delete blood request. Please try again.";
+
+        if (err.response) {
+          // Server responded with error status
+          if (err.response.status === 404) {
+            errorMessage = "Blood request not found or already deleted.";
+          } else if (err.response.status === 403) {
+            errorMessage = "You don't have permission to delete this request.";
+          } else if (err.response.status === 500) {
+            errorMessage = "Server error. Please try again later.";
+          } else if (err.response.data?.message) {
+            errorMessage = err.response.data.message;
+          }
+        } else if (err.request) {
+          // Network error
+          errorMessage =
+            "Network error. Please check your connection and try again.";
+        }
+
+        alert(errorMessage);
+      } finally {
+        setDeletingRequestId(null);
+      }
     }
   };
 
@@ -718,7 +867,7 @@ function RecipientComponent() {
                 ) : (
                   <Eye className="h-4 w-4" />
                 )}
-                View My Requests Responses
+                View My Requests Responses{" "}
               </Button>
               <Button
                 onClick={() => setIsNewRequestModalOpen(true)}
@@ -727,6 +876,15 @@ function RecipientComponent() {
                 <Heart className="h-4 w-4" />
                 Create Request
               </Button>
+              {deletedRequestResponses.length > 0 && (
+                <Button
+                  onClick={() => setShowDeletedResponsesModal(true)}
+                  className="bg-gray-500 hover:bg-gray-600 text-white font-medium py-2.5 px-6 shadow-md transition-all duration-200"
+                >
+                  <AlertCircle className="mr-2 h-4 w-4" />
+                  Deleted Request Records ({deletedRequestResponses.length})
+                </Button>
+              )}
             </>
           )}
         </div>
@@ -886,6 +1044,7 @@ function RecipientComponent() {
                 </div>
               </div>
               <div className="mt-4 flex justify-between items-center">
+                {" "}
                 <div>
                   <span className="inline-block px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
                     {request.bloodType}
@@ -893,25 +1052,61 @@ function RecipientComponent() {
                   <span className="ml-2 text-gray-600">
                     {request.units} units needed
                   </span>
-                </div>{" "}
-                <button
-                  onClick={async () => {
-                    // Check if user has already responded before showing details
-                    const hasExistingResponse = await checkExistingResponse(
-                      request.id
-                    );
-                    if (!hasExistingResponse) {
-                      setSelectedRequest(request);
-                    }
-                  }}
-                  className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors flex items-center justify-center"
-                >
-                  {loadingResponseCheck === request.id ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    "View Details"
+                </div>
+                <div className="flex gap-2">
+                  {" "}
+                  {/* Show delete button if user is the creator of the request */}
+                  {user && request.createdBy === user._id && (
+                    <button
+                      onClick={() => handleDeleteRequest(request.id)}
+                      disabled={deletingRequestId === request.id}
+                      className={`px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors flex items-center justify-center gap-2 ${
+                        deletingRequestId === request.id
+                          ? "opacity-75 cursor-not-allowed"
+                          : ""
+                      }`}
+                    >
+                      {deletingRequestId === request.id ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Deleting...
+                        </>
+                      ) : (
+                        <>
+                          <Trash2 className="h-4 w-4" />
+                          Delete Request
+                        </>
+                      )}
+                    </button>
                   )}
-                </button>
+                  {/* Hide View Details button if any response is completed */}
+                  {!request.hasCompletedResponse && (
+                    <button
+                      onClick={async () => {
+                        // Check if user has already responded before showing details
+                        const hasExistingResponse = await checkExistingResponse(
+                          request.id
+                        );
+                        if (!hasExistingResponse) {
+                          setSelectedRequest(request);
+                        }
+                      }}
+                      className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors flex items-center justify-center"
+                    >
+                      {loadingResponseCheck === request.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        "View Details"
+                      )}
+                    </button>
+                  )}
+                  {/* Show message when request is completed */}
+                  {request.hasCompletedResponse && (
+                    <div className="px-4 py-2 bg-green-100 text-green-800 rounded-lg font-medium">
+                      Request Completed
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           ))}
@@ -1349,10 +1544,18 @@ function RecipientComponent() {
                       className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
                     >
                       <div className="flex justify-between items-start mb-2">
+                        {" "}
                         <div className="space-y-1">
-                          <h4 className="font-medium text-gray-800">
-                            Request for {response.bloodRequest.patientName}
-                          </h4>
+                          <div className="flex items-center gap-2">
+                            <h4 className="font-medium text-gray-800">
+                              Request for {response.bloodRequest.patientName}
+                            </h4>
+                            {response.bloodRequest.isDeleted && (
+                              <span className="px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs font-medium">
+                                Request Deleted
+                              </span>
+                            )}
+                          </div>
                           <div className="flex items-center gap-2">
                             <span className="inline-block px-2.5 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
                               {response.bloodRequest.bloodType}
@@ -1455,7 +1658,6 @@ function RecipientComponent() {
                 </button>
               </div>
             </div>
-
             <div className="p-5">
               {isLoadingMyRequests ? (
                 <div className="flex flex-col items-center justify-center p-8">
@@ -1614,8 +1816,11 @@ function RecipientComponent() {
                                       )
                                     }
                                     disabled={
-                                      isUpdatingResponseStatus &&
-                                      updatingResponseId === response._id
+                                      isResponseModificationDisabled(
+                                        response
+                                      ) ||
+                                      (isUpdatingResponseStatus &&
+                                        updatingResponseId === response._id)
                                     }
                                     className={`${
                                       status === "Pending"
@@ -1625,7 +1830,11 @@ function RecipientComponent() {
                                           : status === "Declined"
                                             ? "bg-red-500 hover:bg-red-600"
                                             : "bg-blue-500 hover:bg-blue-600"
-                                    } text-white py-1 px-3 text-xs`}
+                                    } text-white py-1 px-3 text-xs ${
+                                      isResponseModificationDisabled(response)
+                                        ? "opacity-50 cursor-not-allowed"
+                                        : ""
+                                    }`}
                                     variant={
                                       response.status === status
                                         ? "default"
@@ -1653,6 +1862,133 @@ function RecipientComponent() {
                 <Button
                   onClick={() => setShowMyRequestsResponsesModal(false)}
                   className="w-full bg-green-500 hover:bg-green-600 text-white py-2.5 font-medium transition-all duration-200"
+                >
+                  Close
+                </Button>
+              </div>
+            </div>{" "}
+          </div>
+        </div>
+      )}
+      {/* Modal to display deleted request responses */}
+      {showDeletedResponsesModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-xl border border-gray-100">
+            <div className="p-5 border-b bg-gradient-to-r from-gray-50 to-white">
+              <div className="flex justify-between items-center">
+                <h3 className="text-xl font-bold text-gray-800">
+                  Deleted Request Records
+                </h3>
+                <button
+                  onClick={() => setShowDeletedResponsesModal(false)}
+                  className="text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 p-1 transition-colors duration-200"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-5">
+              {deletedRequestResponses.length > 0 ? (
+                <div className="space-y-4">
+                  <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200 mb-4">
+                    <div className="flex items-center">
+                      <AlertCircle className="h-5 w-5 text-yellow-600 mr-2" />
+                      <p className="text-yellow-800 text-sm">
+                        These are records of responses to deleted blood
+                        requests. They cannot be modified.
+                      </p>
+                    </div>
+                  </div>
+
+                  {deletedRequestResponses.map((response) => (
+                    <div
+                      key={response._id}
+                      className="border border-gray-300 rounded-lg p-4 bg-gray-50 opacity-75"
+                    >
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h4 className="font-medium text-gray-800">
+                              {response.donor.name}
+                            </h4>
+                            <span className="px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs font-medium">
+                              Request Deleted
+                            </span>
+                            <span
+                              className={`px-2.5 py-1 rounded-full text-xs font-medium
+                              ${
+                                response.status === "Accepted"
+                                  ? "bg-green-100 text-green-800"
+                                  : response.status === "Declined"
+                                    ? "bg-red-100 text-red-800"
+                                    : response.status === "Completed"
+                                      ? "bg-blue-100 text-blue-800"
+                                      : "bg-yellow-100 text-yellow-800"
+                              }`}
+                            >
+                              {response.status}
+                            </span>
+                          </div>
+                          <div className="text-sm text-gray-500 mt-1">
+                            {response.donor.email} | {response.contactNumber}
+                          </div>
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          {new Date(response.createdAt).toLocaleString()}
+                        </div>
+                      </div>
+
+                      <div className="mt-3 space-y-2">
+                        <div>
+                          <span className="text-xs text-gray-500 block">
+                            Original Request
+                          </span>
+                          <div className="text-sm text-gray-700">
+                            Patient: {response.bloodRequest.patientName} | Blood
+                            Type: {response.bloodRequest.bloodType} | Hospital:{" "}
+                            {response.bloodRequest.hospital}
+                          </div>
+                        </div>
+
+                        {response.message && (
+                          <div>
+                            <span className="text-xs text-gray-500 block">
+                              Response Message
+                            </span>
+                            <div className="bg-white p-3 rounded-md text-gray-700 text-sm border">
+                              {response.message}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="mt-4 pt-3 border-t border-gray-200">
+                        <div className="text-sm text-gray-500 italic">
+                          This record cannot be modified as the original request
+                          has been deleted.
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center p-8 text-gray-500">
+                  <div className="mb-3">
+                    <AlertCircle className="h-10 w-10 mx-auto text-gray-400" />
+                  </div>
+                  <p className="mb-1">No deleted request records found.</p>
+                  <p className="text-sm">
+                    When you delete a blood request that has responses, those
+                    responses will appear here as records.
+                  </p>
+                </div>
+              )}
+
+              <div className="mt-6">
+                <Button
+                  onClick={() => setShowDeletedResponsesModal(false)}
+                  className="w-full bg-gray-500 hover:bg-gray-600 text-white py-2.5 font-medium transition-all duration-200"
                 >
                   Close
                 </Button>

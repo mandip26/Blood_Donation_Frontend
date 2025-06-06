@@ -432,8 +432,22 @@ export const bloodRequestService = {
       throw error;
     }
   },
+  updateRequestStatus: async (
+    requestId: string,
+    status: "Pending" | "Approved" | "Rejected" | "Fulfilled"
+  ) => {
+    try {
+      const response = await api.put(`/blood-requests/${requestId}/status`, {
+        status,
+      });
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
   cancelRequest: async (requestId: string) => {
     try {
+      // Use the proper DELETE endpoint for soft deletion
       const response = await api.delete(`/blood-requests/${requestId}`);
       return response.data;
     } catch (error) {
