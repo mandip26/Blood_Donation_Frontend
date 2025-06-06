@@ -440,6 +440,20 @@ export const bloodRequestService = {
       throw error;
     }
   },
+  updateResponseStatus: async (
+    responseId: string,
+    status: "Pending" | "Accepted" | "Declined" | "Completed"
+  ) => {
+    try {
+      const response = await api.put(
+        `/blood-requests/responses/${responseId}/status`,
+        { status }
+      );
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
 };
 
 // Report services

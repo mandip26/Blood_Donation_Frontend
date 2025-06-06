@@ -124,6 +124,15 @@ function RecipientComponent() {
     string | null
   >(null);
 
+  // New state for user's own blood requests and responses to those requests
+  const [userCreatedRequests, setUserCreatedRequests] = useState<any[]>([]);
+  const [userCreatedRequestsResponses, setUserCreatedRequestsResponses] = useState<any[]>([]);
+  const [selectedCreatedRequest, setSelectedCreatedRequest] = useState<string | null>(null);
+  const [showMyRequestsResponsesModal, setShowMyRequestsResponsesModal] = useState(false);
+  const [isLoadingMyRequests, setIsLoadingMyRequests] = useState(false);
+  const [isUpdatingResponseStatus, setIsUpdatingResponseStatus] = useState(false);
+  const [updatingResponseId, setUpdatingResponseId] = useState<string | null>(null);
+
   // Function to check if user has already responded to a request
   const checkExistingResponse = async (requestId: string) => {
     if (!user) return false;
@@ -426,6 +435,102 @@ function RecipientComponent() {
       setIsLoadingResponses(false);
     }
   };
+  
+  // Fetch user created blood requests
+  const fetchUserCreatedRequests = async () => {
+    if (!user || (!user._id && !user.id)) return;
+    
+    try {
+      setIsLoadingMyRequests(true);
+      setError(null);
+      
+      // Call API to get requests created by the user
+      const result = await bloodRequestService.getUserRequests();
+      
+      if (result && result.success && result.bloodRequests) {
+        setUserCreatedRequests(result.bloodRequests);
+        
+        // If there are requests, select the first one by default
+        if (result.bloodRequests.length > 0) {
+          setSelectedCreatedRequest(result.bloodRequests[0]._id);
+          // Fetch responses for the first request
+          fetchResponsesForRequest(result.bloodRequests[0]._id);
+        }
+      } else {
+        setUserCreatedRequests([]);
+        setUserCreatedRequestsResponses([]);
+      }
+    } catch (err) {
+      console.error("Error fetching user created requests:", err);
+      setError("Failed to load your blood requests. Please try again.");
+      setUserCreatedRequests([]);
+    } finally {
+      setIsLoadingMyRequests(false);
+    }
+  };
+  
+  // Fetch responses for a specific blood request created by the user
+  const fetchResponsesForRequest = async (requestId: string) => {
+    if (!requestId) return;
+    
+    try {
+      setIsLoadingResponses(true);
+      setError(null);
+      
+      const result = await bloodRequestService.getRequestResponses(requestId);
+      
+      if (result && result.success && result.responses) {
+        setUserCreatedRequestsResponses(result.responses);
+        setShowMyRequestsResponsesModal(true);
+      } else {
+        setUserCreatedRequestsResponses([]);
+        setShowMyRequestsResponsesModal(true);
+      }
+    } catch (err) {
+      console.error("Error fetching responses for request:", err);
+      setError("Failed to load responses for this request. Please try again.");
+      setUserCreatedRequestsResponses([]);
+    } finally {
+      setIsLoadingResponses(false);
+    }
+  };
+  
+  // Handle updating the response status
+  const handleUpdateResponseStatus = async (responseId: string, status: "Pending" | "Accepted" | "Declined" | "Completed") => {
+    try {
+      setIsUpdatingResponseStatus(true);
+      setUpdatingResponseId(responseId);
+      
+      const result = await bloodRequestService.updateResponseStatus(responseId, status);
+      
+      if (result && result.success) {
+        // Update the response in the list with the new status
+        setUserCreatedRequestsResponses(prevResponses => 
+          prevResponses.map(response => 
+            response._id === responseId 
+              ? { ...response, status: status }
+              : response
+          )
+        );
+      }
+    } catch (err) {
+      console.error("Error updating response status:", err);
+      setError("Failed to update response status. Please try again.");
+    } finally {
+      setIsUpdatingResponseStatus(false);
+      setUpdatingResponseId(null);
+    }
+  };
+
+  // Fetch initial data
+  useEffect(() => {
+    fetchBloodRequests();
+    if (user) {
+      fetchUserResponses();
+      fetchUserCreatedRequests();
+    }
+  }, [user]);
+
   // Render loading state
   if (isLoading) {
     return (
@@ -563,8 +668,7 @@ function RecipientComponent() {
   // Main component render
   return (
     <div className="p-4 md:p-6 bg-gray-50">
-      {" "}
-      <div className="flex justify-between items-center mb-6">
+      {" "}      <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
             Blood Requests
@@ -589,13 +693,27 @@ function RecipientComponent() {
             </Button>
           )}
           {user?.role !== "user" && (
-            <Button
-              onClick={() => setIsNewRequestModalOpen(true)}
-              className="bg-primary-magenta hover:bg-primary-magenta/90 shadow-md transition-all duration-200 flex items-center gap-2 px-5"
-            >
-              <Heart className="h-4 w-4" />
-              Create Request
-            </Button>
+            <>
+              <Button
+                onClick={fetchUserCreatedRequests}
+                className={`bg-green-500 hover:bg-green-600 shadow-md transition-all duration-200 flex items-center gap-2 px-4 ${isLoadingMyRequests ? "opacity-75 cursor-not-allowed" : ""}`}
+                disabled={isLoadingMyRequests}
+              >
+                {isLoadingMyRequests ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Eye className="h-4 w-4" />
+                )}
+                View My Requests Responses
+              </Button>
+              <Button
+                onClick={() => setIsNewRequestModalOpen(true)}
+                className="bg-primary-magenta hover:bg-primary-magenta/90 shadow-md transition-all duration-200 flex items-center gap-2 px-5"
+              >
+                <Heart className="h-4 w-4" />
+                Create Request
+              </Button>
+            </>
           )}
         </div>
       </div>
@@ -1298,6 +1416,192 @@ function RecipientComponent() {
                 <Button
                   onClick={() => setShowAllResponsesModal(false)}
                   className="w-full bg-blue-500 hover:bg-blue-600 text-white py-2.5 font-medium transition-all duration-200"
+                >
+                  Close
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal to display responses to user's created requests */}
+      {showMyRequestsResponsesModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-xl border border-gray-100">
+            <div className="p-5 border-b bg-gradient-to-r from-green-50 to-white">
+              <div className="flex justify-between items-center">
+                <h3 className="text-xl font-bold text-gray-800">
+                  Responses to My Blood Requests
+                </h3>
+                <button
+                  onClick={() => setShowMyRequestsResponsesModal(false)}
+                  className="text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 p-1 transition-colors duration-200"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-5">
+              {isLoadingMyRequests ? (
+                <div className="flex flex-col items-center justify-center p-8">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary-magenta mb-2" />
+                  <p className="text-gray-600">Loading your blood requests...</p>
+                </div>
+              ) : error ? (
+                <div className="bg-red-50 p-6 rounded-lg text-center">
+                  <AlertCircle className="h-8 w-8 text-red-500 mx-auto mb-2" />
+                  <p className="text-red-600 mb-2">{error}</p>
+                  <Button
+                    onClick={fetchUserCreatedRequests}
+                    variant="outline"
+                    size="sm"
+                    className="mt-2"
+                  >
+                    Try Again
+                  </Button>
+                </div>
+              ) : userCreatedRequests.length === 0 ? (
+                <div className="text-center p-8 text-gray-500">
+                  <div className="mb-3">
+                    <Hospital className="h-10 w-10 mx-auto text-gray-400" />
+                  </div>
+                  <p className="mb-1">
+                    You haven't created any blood requests yet.
+                  </p>
+                  <p className="text-sm">
+                    When you create a blood request, responses to it will appear here.
+                  </p>
+                </div>
+              ) : (
+                <div className="flex flex-col lg:flex-row gap-6">
+                  {/* Request selection sidebar */}
+                  <div className="lg:w-72 border-r">
+                    <h4 className="font-medium text-gray-700 mb-3">My Requests</h4>
+                    <div className="space-y-2 max-h-96 overflow-y-auto pr-2">
+                      {userCreatedRequests.map((request) => (
+                        <div
+                          key={request._id}
+                          onClick={() => {
+                            setSelectedCreatedRequest(request._id);
+                            fetchResponsesForRequest(request._id);
+                          }}
+                          className={`p-3 rounded-md cursor-pointer transition-colors ${
+                            selectedCreatedRequest === request._id
+                              ? "bg-green-100 border-l-4 border-green-500"
+                              : "hover:bg-gray-100"
+                          }`}
+                        >
+                          <div className="font-medium text-gray-800">{request.patientName}</div>
+                          <div className="text-sm text-gray-500">{request.hospital}</div>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className="inline-block px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full text-xs">
+                              {request.bloodType}
+                            </span>
+                            <span className="text-xs text-gray-500">
+                              {new Date(request.createdAt).toLocaleDateString()}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Responses panel */}
+                  <div className="flex-1">
+                    <h4 className="font-medium text-gray-700 mb-3">Responses</h4>
+                    {isLoadingResponses ? (
+                      <div className="flex flex-col items-center justify-center p-8">
+                        <Loader2 className="h-8 w-8 animate-spin text-green-500 mb-2" />
+                        <p className="text-gray-600">Loading responses...</p>
+                      </div>
+                    ) : userCreatedRequestsResponses.length === 0 ? (
+                      <div className="text-center p-8 border rounded-md bg-gray-50">
+                        <p className="text-gray-500">No responses to this request yet.</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {userCreatedRequestsResponses.map((response) => (
+                          <div
+                            key={response._id}
+                            className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+                          >
+                            <div className="flex justify-between items-start">
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <h4 className="font-medium text-gray-800">
+                                    {response.donor.name}
+                                  </h4>
+                                  <span
+                                    className={`px-2.5 py-1 rounded-full text-xs font-medium
+                                    ${
+                                      response.status === "Accepted"
+                                        ? "bg-green-100 text-green-800"
+                                        : response.status === "Declined"
+                                          ? "bg-red-100 text-red-800"
+                                          : response.status === "Completed"
+                                            ? "bg-blue-100 text-blue-800"
+                                            : "bg-yellow-100 text-yellow-800"
+                                    }`}
+                                  >
+                                    {response.status}
+                                  </span>
+                                </div>
+                                <div className="text-sm text-gray-500 mt-1">
+                                  {response.donor.email} | {response.contactNumber}
+                                </div>
+                              </div>
+                              <div className="text-sm text-gray-500">
+                                {new Date(response.createdAt).toLocaleString()}
+                              </div>
+                            </div>
+
+                            {response.message && (
+                              <div className="mt-3 bg-gray-50 p-3 rounded-md text-gray-700 text-sm">
+                                {response.message}
+                              </div>
+                            )}
+                            
+                            <div className="mt-4 pt-3 border-t border-gray-100">
+                              <div className="text-sm font-medium text-gray-700 mb-2">Update Status:</div>
+                              <div className="flex flex-wrap gap-2">
+                                {["Pending", "Accepted", "Declined", "Completed"].map((status) => (
+                                  <Button
+                                    key={status}
+                                    onClick={() => handleUpdateResponseStatus(response._id, status as "Pending" | "Accepted" | "Declined" | "Completed")}
+                                    disabled={isUpdatingResponseStatus && updatingResponseId === response._id}
+                                    className={`${
+                                      status === "Pending"
+                                        ? "bg-yellow-500 hover:bg-yellow-600"
+                                        : status === "Accepted"
+                                          ? "bg-green-500 hover:bg-green-600"
+                                          : status === "Declined"
+                                            ? "bg-red-500 hover:bg-red-600"
+                                            : "bg-blue-500 hover:bg-blue-600"
+                                    } text-white py-1 px-3 text-xs`}
+                                    variant={response.status === status ? "default" : "outline"}
+                                  >
+                                    {isUpdatingResponseStatus && updatingResponseId === response._id ? (
+                                      <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                                    ) : null}
+                                    {status}
+                                  </Button>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              <div className="mt-6">
+                <Button
+                  onClick={() => setShowMyRequestsResponsesModal(false)}
+                  className="w-full bg-green-500 hover:bg-green-600 text-white py-2.5 font-medium transition-all duration-200"
                 >
                   Close
                 </Button>
