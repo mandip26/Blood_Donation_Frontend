@@ -20,7 +20,7 @@ interface User {
   _id: string;
   name?: string;
   hospitalName?: string;
-  organisationName?: string;
+  organizationName?: string;
   email: string;
   profile?: {
     profilePhoto?: string;
@@ -147,7 +147,7 @@ function DashboardIndex() {
 
   // Helper function to get the display name based on user role
   const getDisplayName = (postUser: User) => {
-    return postUser.name || postUser.hospitalName || postUser.organisationName || "Unknown User";
+    return postUser.name || postUser.hospitalName || postUser.organizationName || "Unknown User";
   };
 
   // Calculate time ago from a timestamp
@@ -177,17 +177,17 @@ function DashboardIndex() {
                   alt={user?.name || "User"} 
                 />
                 <AvatarFallback>
-                  {(user?.name || user?.hospitalName || user?.organisationName || "U").charAt(0)}
+                  {(user?.name || user?.hospitalName || user?.organizationName || "U").charAt(0)}
                 </AvatarFallback>
               </Avatar>
               <div>
                 <h2 className="text-xl font-bold">
-                  {user?.name || user?.hospitalName || user?.organisationName || "User"}
+                  {user?.name || user?.hospitalName || user?.organizationName || "User"}
                 </h2>
                 <p className="text-gray-500 text-sm">
                   {user?.role === "user" ? "Blood Donor" : 
                    user?.role === "hospital" ? "Hospital Admin" :
-                   user?.role === "organisation" ? "Organization Admin" : "User"}
+                   user?.role === "organization" ? "Organization Admin" : "User"}
                 </p>
               </div>
             </div>
@@ -238,7 +238,7 @@ function DashboardIndex() {
                     alt={user?.name || "User"} 
                   />
                   <AvatarFallback>
-                    {(user?.name || user?.hospitalName || user?.organisationName || "U").charAt(0)}
+                    {(user?.name || user?.hospitalName || user?.organizationName || "U").charAt(0)}
                   </AvatarFallback>
                 </Avatar>
                 <Link

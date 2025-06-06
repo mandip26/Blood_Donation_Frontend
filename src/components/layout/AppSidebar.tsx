@@ -167,7 +167,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   let sideNavData = userNavData;
   if (userRole === "hospital") {
     sideNavData = hospitalNavData;
-  } else if (userRole === "organisation") {
+  } else if (userRole === "organization") {
     sideNavData = organizationNavData;
   } else if (userRole === "admin") {
     sideNavData = adminNavData;
@@ -206,7 +206,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             name:
               loggedInUser?.name ||
               loggedInUser?.hospitalName ||
-              loggedInUser?.organisationName ||
+              loggedInUser?.organizationName ||
               "User",
             avatar: "",
             email: loggedInUser ? loggedInUser.email : "user@example.com",

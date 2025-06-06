@@ -4,7 +4,7 @@ import { authService } from "@/services/apiService";
 export interface User {
   addhar: string;
   hospitalId: string;
-  organisationId: string;
+  organizationId: string;
   emergencyContact: any;
   address: any;
   gender: any;
@@ -14,9 +14,9 @@ export interface User {
   _id?: string; // MongoDB often uses _id
   name?: string;
   hospitalName?: string;
-  organisationName?: string;
+  organizationName?: string;
   email: string;
-  role: "admin" | "organisation" | "user" | "hospital";
+  role: "admin" | "organization" | "user" | "hospital";
   phone?: string;
   profile?: {
     bio?: string;

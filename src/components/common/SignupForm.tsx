@@ -51,19 +51,19 @@ const userSchema = z
     path: ["confirmPassword"],
   });
 
-// organisation-specific schema
-const organisationSchema = z
+// organization-specific schema
+const organizationSchema = z
   .object({
     ...baseSchema,
-    organisationName: z
+    organizationName: z
       .string()
-      .min(2, "organisation name must be at least 2 characters long")
-      .max(100, "organisation name cannot exceed 100 characters"),
-    organisationId: z
+      .min(2, "organization name must be at least 2 characters long")
+      .max(100, "organization name cannot exceed 100 characters"),
+    organizationId: z
       .string()
-      .min(2, "organisation ID must be at least 2 characters long")
-      .max(50, "organisation ID cannot exceed 50 characters"),
-    organisationIdImage: fileSchema,
+      .min(2, "organization ID must be at least 2 characters long")
+      .max(50, "organization ID cannot exceed 50 characters"),
+    organizationIdImage: fileSchema,
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords do not match",
@@ -119,7 +119,7 @@ export default function SignupForm({ userType, isLogin = false }: props) {
   const [apiError, setApiError] = useState<string | null>(null);
   const [formSubmitting, setFormSubmitting] = useState(false);
   const [idName, setIdName] = useState<
-    "addharImage" | "organisationIdImage" | "hospitalIdImage"
+    "addharImage" | "organizationIdImage" | "hospitalIdImage"
   >("addharImage");
   const [nameBasedOnUser, setNameBasedOnUser] = useState<string>("name");
   const [idBasedOnUser, setIdBasedOnUser] = useState<string>("addhar");
@@ -129,10 +129,10 @@ export default function SignupForm({ userType, isLogin = false }: props) {
       setIdName("addharImage");
       setNameBasedOnUser("Full Name");
       setIdBasedOnUser("Aadhar ID");
-    } else if (userType === "organisation") {
-      setIdName("organisationIdImage");
-      setNameBasedOnUser("organisation Name");
-      setIdBasedOnUser("organisation ID");
+    } else if (userType === "organization") {
+      setIdName("organizationIdImage");
+      setNameBasedOnUser("organization Name");
+      setIdBasedOnUser("organization ID");
     } else if (userType === "hospital") {
       setIdName("hospitalIdImage");
       setNameBasedOnUser("Hospital Name");
@@ -166,8 +166,8 @@ export default function SignupForm({ userType, isLogin = false }: props) {
     switch (userType) {
       case "user":
         return userSchema;
-      case "organisation": // Fixed: was "organisation"
-        return organisationSchema;
+      case "organization":
+        return organizationSchema;
       case "hospital":
         return hospitalSchema;
       case "admin":
@@ -201,12 +201,12 @@ export default function SignupForm({ userType, isLogin = false }: props) {
           addhar: "",
           addharImage: undefined as File | undefined,
         };
-      case "organisation": // Fixed: was "organisation"
+      case "organization":
         return {
           ...baseValues,
-          organisationName: "",
-          organisationId: "",
-          organisationIdImage: undefined as File | undefined,
+          organizationName: "",
+          organizationId: "",
+          organizationIdImage: undefined as File | undefined,
         };
       case "hospital":
         return {
@@ -260,16 +260,16 @@ export default function SignupForm({ userType, isLogin = false }: props) {
             if (value.addharImage) {
               formData.append("addharImage", value.addharImage);
             }
-          } else if (userType === "organisation") {
-            // Fixed: was "organisation"
-            if (value.organisationName) {
-              formData.append("organisationName", value.organisationName);
+          } else if (userType === "organization") {
+            // Fixed: was "organization"
+            if (value.organizationName) {
+              formData.append("organizationName", value.organizationName);
             }
-            if (value.organisationId) {
-              formData.append("organisationId", value.organisationId);
+            if (value.organizationId) {
+              formData.append("organizationId", value.organizationId);
             }
-            if (value.organisationIdImage) {
-              formData.append("organisationIdImage", value.organisationIdImage);
+            if (value.organizationIdImage) {
+              formData.append("organizationIdImage", value.organizationIdImage);
             }
           } else if (userType === "hospital") {
             if (value.hospitalName) {
@@ -419,17 +419,17 @@ export default function SignupForm({ userType, isLogin = false }: props) {
               />
             )}
 
-            {/* organisation Name and ID fields */}
-            {userType === "organisation" && (
+            {/* organization Name and ID fields */}
+            {userType === "organization" && (
               <>
                 <form.Field
-                  name="organisationName"
+                  name="organizationName"
                   children={(field) => {
                     return (
                       <div className="flex flex-col gap-y-2">
                         <Input
                           type="text"
-                          placeholder="organisation Name"
+                          placeholder="organization Name"
                           name={field.name}
                           value={field.state.value}
                           onBlur={field.handleBlur}
@@ -445,13 +445,13 @@ export default function SignupForm({ userType, isLogin = false }: props) {
                   }}
                 />
                 <form.Field
-                  name="organisationId"
+                  name="organizationId"
                   children={(field) => {
                     return (
                       <div className="flex flex-col gap-y-2">
                         <Input
                           type="text"
-                          placeholder="organisation ID"
+                          placeholder="organization ID"
                           name={field.name}
                           value={field.state.value}
                           onBlur={field.handleBlur}
@@ -571,7 +571,7 @@ export default function SignupForm({ userType, isLogin = false }: props) {
 
             {/* File upload and ID fields - conditional based on user type */}
             {(userType === "user" ||
-              userType === "organisation" ||
+              userType === "organization" ||
               userType === "hospital") && (
               <div
                 className={

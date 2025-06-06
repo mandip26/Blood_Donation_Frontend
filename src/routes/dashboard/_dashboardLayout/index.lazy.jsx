@@ -214,7 +214,7 @@ function RouteComponent() {
                         {(
                           user?.name ||
                           user?.hospitalName ||
-                          user?.organisationName ||
+                          user?.organizationName ||
                           "U"
                         ).charAt(0)}
                       </AvatarFallback>
@@ -223,7 +223,7 @@ function RouteComponent() {
                       <CardTitle>
                         {user?.name ||
                           user?.hospitalName ||
-                          user?.organisationName ||
+                          user?.organizationName ||
                           "User"}
                       </CardTitle>
                       <CardDescription>
@@ -231,7 +231,7 @@ function RouteComponent() {
                           ? "Blood Donor"
                           : user?.role === "hospital"
                             ? "Hospital Admin"
-                            : user?.role === "organisation"
+                            : user?.role === "organization"
                               ? "Organization Admin"
                               : "User"}
                       </CardDescription>
@@ -354,7 +354,7 @@ function RouteComponent() {
                           {(
                             user?.name ||
                             user?.hospitalName ||
-                            user?.organisationName ||
+                            user?.organizationName ||
                             "U"
                           ).charAt(0)}
                         </AvatarFallback>
