@@ -149,27 +149,26 @@ export const authService = {
       if (!userDataString) {
         throw new Error("User not found in local storage");
       }
-      
+
       const userData_local = JSON.parse(userDataString);
       const userId = userData_local._id; // Get the _id from the stored user data
-      
+
       if (!userId) {
         throw new Error("User ID not found");
       }
 
-      const response = await api.put(
-        `/users/${userId}`,
-        userData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
+      const response = await api.put(`/users/${userId}`, userData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
 
       // Update the cached user data
       if (response.data.user) {
-        localStorage.setItem("bloodDonationUser", JSON.stringify(response.data.user));
+        localStorage.setItem(
+          "bloodDonationUser",
+          JSON.stringify(response.data.user)
+        );
       }
 
       return response.data;
@@ -362,7 +361,6 @@ export const bloodRequestService = {
       throw error;
     }
   },
-
   createRequest: async (requestData: {
     name: string;
     bloodType: string;
@@ -374,18 +372,26 @@ export const bloodRequestService = {
     reason: string;
   }) => {
     try {
-      const response = await api.post("/blood-requests", requestData);
+      // Map frontend field names to backend field names
+      const backendData = {
+        patientName: requestData.name,
+        bloodType: requestData.bloodType,
+        hospital: requestData.hospital,
+        location: requestData.location,
+        urgency: requestData.urgency,
+        unitsRequired: requestData.units,
+        contactNumber: requestData.contactNumber,
+        reason: requestData.reason,
+      };
+      const response = await api.post("/blood-requests", backendData);
       return response.data;
     } catch (error) {
       throw error;
     }
   },
-
   respondToRequest: async (
     requestId: string,
     responseData: {
-      donorId: string;
-      responseTime: string;
       message?: string;
       contactNumber: string;
     }
@@ -401,6 +407,15 @@ export const bloodRequestService = {
     }
   },
 
+  getRequestResponses: async (requestId: string) => {
+    try {
+      const response = await api.get(`/blood-requests/${requestId}/responses`);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
   getUserRequests: async () => {
     try {
       const response = await api.get("/blood-requests/user");
@@ -409,7 +424,6 @@ export const bloodRequestService = {
       throw error;
     }
   },
-
   cancelRequest: async (requestId: string) => {
     try {
       const response = await api.delete(`/blood-requests/${requestId}`);

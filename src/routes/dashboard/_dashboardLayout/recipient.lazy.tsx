@@ -299,7 +299,6 @@ function RecipientComponent() {
       setIsSubmitting(false);
     }
   };
-
   // Respond to a blood request
   const handleRespondToRequest = async (requestId: string) => {
     if (!user) {
@@ -308,26 +307,25 @@ function RecipientComponent() {
       return;
     }
     try {
-      // Prepare response data
+      // Prepare response data - only send what the backend expects
       const responseData = {
-        donorId: user.id || "",
-        responseTime: new Date().toISOString(),
-        contactNumber: user.phone || "",
-        message: `I'm responding to your blood request. Please contact me for further details.`,
+        contactNumber: user.phone || "Contact via platform",
+        message: `Hi, I'm ${user.name || "a donor"} and I'm available to help with your blood request. Please contact me for further details.`,
       };
 
       // Send response to API
       await bloodRequestService.respondToRequest(requestId, responseData);
 
       // Show confirmation and update UI
-      alert("Your response has been sent successfully!");
-
-      // Optionally mark the request as responded in the UI
-      setBloodRequests((prev) =>
-        prev.map((request) =>
-          request.id === requestId ? { ...request, responded: true } : request
-        )
+      alert(
+        "Your response has been sent successfully! The requester will be able to contact you."
       );
+
+      // Close the modal
+      setSelectedRequest(null);
+
+      // Optionally refresh the requests to show updated status
+      fetchBloodRequests();
     } catch (error) {
       console.error("Error responding to request:", error);
       alert("Failed to respond to the request. Please try again.");
