@@ -418,7 +418,15 @@ export const bloodRequestService = {
 
   getUserRequests: async () => {
     try {
-      const response = await api.get("/blood-requests/user");
+      const response = await api.get("/blood-requests/my-requests");
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+  getUserResponses: async () => {
+    try {
+      const response = await api.get("/blood-requests/my-responses");
       return response.data;
     } catch (error) {
       throw error;

@@ -14,6 +14,8 @@ import {
   Heart,
   Phone,
   Hospital,
+  CheckCircle,
+  Eye,
 } from "lucide-react";
 import { bloodRequestService } from "@/services/apiService";
 import { useAuth } from "@/hooks/useAuth";
@@ -39,6 +41,27 @@ interface BloodRequest {
   reason: string;
 }
 
+interface BloodRequestResponse {
+  _id: string;
+  bloodRequest: {
+    _id: string;
+    patientName: string;
+    bloodType: string;
+    hospital: string;
+  };
+  donor: {
+    _id: string;
+    name: string;
+    email: string;
+    phone: string;
+  };
+  message: string;
+  contactNumber: string;
+  responseTime: string;
+  status: "Pending" | "Accepted" | "Declined" | "Completed";
+  createdAt: string;
+}
+
 function RecipientComponent() {
   // Auth context
   const { user } = useAuth();
@@ -58,6 +81,10 @@ function RecipientComponent() {
     null
   );
   const [isNewRequestModalOpen, setIsNewRequestModalOpen] = useState(false);
+  const [responseData, setResponseData] = useState<BloodRequestResponse | null>(
+    null
+  );
+  const [showResponseModal, setShowResponseModal] = useState(false);
   const [sorting] = useState<{
     key: keyof BloodRequest | null;
     direction: "asc" | "desc";
@@ -68,6 +95,11 @@ function RecipientComponent() {
 
   // State for API data handling
   const [bloodRequests, setBloodRequests] = useState<BloodRequest[]>([]);
+  const [userResponses, setUserResponses] = useState<BloodRequestResponse[]>(
+    []
+  );
+  const [showAllResponsesModal, setShowAllResponsesModal] = useState(false);
+  const [isLoadingResponses, setIsLoadingResponses] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const bloodTypes = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
@@ -88,7 +120,41 @@ function RecipientComponent() {
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [loadingResponseCheck, setLoadingResponseCheck] = useState<
+    string | null
+  >(null);
 
+  // Function to check if user has already responded to a request
+  const checkExistingResponse = async (requestId: string) => {
+    if (!user) return false;
+
+    try {
+      setLoadingResponseCheck(requestId);
+      // Get responses for this request
+      const result = await bloodRequestService.getRequestResponses(requestId);
+
+      // Check if user has already responded
+      if (result && result.success && result.responses) {
+        const userResponse = result.responses.find(
+          (response: any) =>
+            response.donor._id === user._id || response.donor.id === user._id
+        );
+
+        if (userResponse) {
+          // Show existing response
+          setResponseData(userResponse);
+          setShowResponseModal(true);
+          return true;
+        }
+      }
+      return false;
+    } catch (error) {
+      console.error("Error checking existing response:", error);
+      return false;
+    } finally {
+      setLoadingResponseCheck(null);
+    }
+  };
   // Fetch blood requests from API
   useEffect(() => {
     fetchBloodRequests();
@@ -298,8 +364,7 @@ function RecipientComponent() {
     } finally {
       setIsSubmitting(false);
     }
-  };
-  // Respond to a blood request
+  }; // Respond to a blood request
   const handleRespondToRequest = async (requestId: string) => {
     if (!user) {
       // Redirect to login if not authenticated
@@ -308,30 +373,59 @@ function RecipientComponent() {
     }
     try {
       // Prepare response data - only send what the backend expects
-      const responseData = {
+      const requestResponseData = {
         contactNumber: user.phone || "Contact via platform",
         message: `Hi, I'm ${user.name || "a donor"} and I'm available to help with your blood request. Please contact me for further details.`,
       };
 
-      // Send response to API
-      await bloodRequestService.respondToRequest(requestId, responseData);
-
-      // Show confirmation and update UI
-      alert(
-        "Your response has been sent successfully! The requester will be able to contact you."
+      // Send response to API and get response data
+      const result = await bloodRequestService.respondToRequest(
+        requestId,
+        requestResponseData
       );
+      // Store the response data returned from the API
+      if (result && result.success && result.response) {
+        setResponseData(result.response);
+        setShowResponseModal(true);
+      }
 
-      // Close the modal
+      // Close the request selection modal
       setSelectedRequest(null);
 
-      // Optionally refresh the requests to show updated status
+      // Refresh the requests to show updated status
       fetchBloodRequests();
     } catch (error) {
       console.error("Error responding to request:", error);
       alert("Failed to respond to the request. Please try again.");
     }
   };
+  // Fetch user responses
+  const fetchUserResponses = async () => {
+    if (!user || (!user._id && !user.id)) return;
 
+    try {
+      setIsLoadingResponses(true);
+      setError(null);
+
+      // Call the API endpoint to get user responses
+      const result = await bloodRequestService.getUserResponses();
+
+      if (result && result.success && result.responses) {
+        setUserResponses(result.responses);
+        setShowAllResponsesModal(true);
+      } else {
+        // If API returns success: false or no responses
+        setUserResponses([]);
+        setShowAllResponsesModal(true);
+      }
+    } catch (err) {
+      console.error("Error fetching user responses:", err);
+      setError("Failed to load your responses. Please try again.");
+      setUserResponses([]);
+    } finally {
+      setIsLoadingResponses(false);
+    }
+  };
   // Render loading state
   if (isLoading) {
     return (
@@ -344,19 +438,127 @@ function RecipientComponent() {
   // Render error state
   if (error) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <p className="text-red-500 mb-4">{error}</p>
-          <button
-            onClick={() => fetchBloodRequests()}
-            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-          >
-            Try Again
-          </button>
-        </div>
+      <div className="p-8 text-center text-gray-500">
+        <p>Error: {error}</p>
+        <button
+          className="mt-4 bg-primary-magenta hover:bg-primary-magenta/90 text-white px-4 py-2 rounded-md"
+          onClick={() => fetchBloodRequests()}
+        >
+          Retry
+        </button>
       </div>
     );
   }
+  // Response Data Display Component
+  const ResponseDataDisplay = () => {
+    if (!responseData) return null;
+
+    return (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-auto">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-bold text-gray-800">
+              Response Submitted Successfully
+            </h2>
+            <button
+              onClick={() => {
+                setResponseData(null);
+                setShowResponseModal(false);
+              }}
+              className="text-gray-500 hover:text-gray-800"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+          <div className="border rounded-md p-4 mb-4 bg-green-50">
+            <div className="flex items-center mb-2">
+              <CheckCircle className="h-5 w-5 text-green-600 mr-2" />
+              <span className="text-green-700 font-medium">
+                Your response has been sent!
+              </span>
+            </div>
+            <p className="text-sm text-gray-600">
+              The requester will be able to contact you using the provided
+              details.
+            </p>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <h3 className="text-sm font-semibold text-gray-500">
+                Response Details
+              </h3>
+              <div className="mt-2 space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Status:</span>
+                  <span className="font-medium">{responseData.status}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Contact Number:</span>
+                  <span className="font-medium">
+                    {responseData.contactNumber}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Submitted At:</span>
+                  <span className="font-medium">
+                    {new Date(responseData.createdAt).toLocaleString()}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="text-sm font-semibold text-gray-500">
+                Blood Request Info
+              </h3>
+              <div className="mt-2 space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Patient:</span>
+                  <span className="font-medium">
+                    {responseData.bloodRequest.patientName}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Blood Type:</span>
+                  <span className="font-medium">
+                    {responseData.bloodRequest.bloodType}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Hospital:</span>
+                  <span className="font-medium">
+                    {responseData.bloodRequest.hospital}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="text-sm font-semibold text-gray-500">
+                Your Message
+              </h3>
+              <p className="mt-1 text-gray-600 border rounded p-2 bg-gray-50">
+                {responseData.message}
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-6">
+            <Button
+              onClick={() => {
+                setResponseData(null);
+                setShowResponseModal(false);
+              }}
+              className="w-full bg-primary-magenta hover:bg-primary-magenta/90 text-white py-2.5 font-medium transition-all duration-200"
+            >
+              Close
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   // Main component render
   return (
@@ -370,16 +572,32 @@ function RecipientComponent() {
           <p className="text-gray-600 mt-1">
             Find and respond to blood donation requests in your area
           </p>
+        </div>{" "}
+        <div className="flex gap-2">
+          {user && (
+            <Button
+              onClick={fetchUserResponses}
+              className={`bg-blue-500 hover:bg-blue-600 shadow-md transition-all duration-200 flex items-center gap-2 px-4 ${isLoadingResponses ? "opacity-75 cursor-not-allowed" : ""}`}
+              disabled={isLoadingResponses}
+            >
+              {isLoadingResponses ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Eye className="h-4 w-4" />
+              )}
+              View My Responses
+            </Button>
+          )}
+          {user?.role !== "user" && (
+            <Button
+              onClick={() => setIsNewRequestModalOpen(true)}
+              className="bg-primary-magenta hover:bg-primary-magenta/90 shadow-md transition-all duration-200 flex items-center gap-2 px-5"
+            >
+              <Heart className="h-4 w-4" />
+              Create Request
+            </Button>
+          )}
         </div>
-        {user?.role !== "user" && (
-          <Button
-            onClick={() => setIsNewRequestModalOpen(true)}
-            className="bg-primary-magenta hover:bg-primary-magenta/90 shadow-md transition-all duration-200 flex items-center gap-2 px-5"
-          >
-            <Heart className="h-4 w-4" />
-            Create Request
-          </Button>
-        )}
       </div>
       {/* Search and filter bar */}
       <div className={`flex ${isMobile ? "flex-col" : "flex-row"} gap-4 mb-6`}>
@@ -543,12 +761,24 @@ function RecipientComponent() {
                   <span className="ml-2 text-gray-600">
                     {request.units} units needed
                   </span>
-                </div>
+                </div>{" "}
                 <button
-                  onClick={() => setSelectedRequest(request)}
-                  className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                  onClick={async () => {
+                    // Check if user has already responded before showing details
+                    const hasExistingResponse = await checkExistingResponse(
+                      request.id
+                    );
+                    if (!hasExistingResponse) {
+                      setSelectedRequest(request);
+                    }
+                  }}
+                  className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors flex items-center justify-center"
                 >
-                  View Details
+                  {loadingResponseCheck === request.id ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    "View Details"
+                  )}
                 </button>
               </div>
             </div>
@@ -937,6 +1167,142 @@ function RecipientComponent() {
                 </Button>
               </div>
             </form>
+          </div>
+        </div>
+      )}{" "}
+      {/* Display response confirmation modal if shown */}
+      {showResponseModal && responseData && <ResponseDataDisplay />}
+      {/* Modal to display all user responses */}
+      {showAllResponsesModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-xl border border-gray-100">
+            <div className="p-5 border-b bg-gradient-to-r from-blue-50 to-white">
+              <div className="flex justify-between items-center">
+                <h3 className="text-xl font-bold text-gray-800">
+                  My Blood Request Responses
+                </h3>
+                <button
+                  onClick={() => setShowAllResponsesModal(false)}
+                  className="text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 p-1 transition-colors duration-200"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-5">
+              {isLoadingResponses ? (
+                <div className="flex flex-col items-center justify-center p-8">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary-magenta mb-2" />
+                  <p className="text-gray-600">Loading your responses...</p>
+                </div>
+              ) : error ? (
+                <div className="bg-red-50 p-6 rounded-lg text-center">
+                  <AlertCircle className="h-8 w-8 text-red-500 mx-auto mb-2" />
+                  <p className="text-red-600 mb-2">{error}</p>
+                  <Button
+                    onClick={fetchUserResponses}
+                    variant="outline"
+                    size="sm"
+                    className="mt-2"
+                  >
+                    Try Again
+                  </Button>
+                </div>
+              ) : userResponses.length > 0 ? (
+                <div className="space-y-4">
+                  {userResponses.map((response: BloodRequestResponse) => (
+                    <div
+                      key={response._id}
+                      className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+                    >
+                      <div className="flex justify-between items-start mb-2">
+                        <div className="space-y-1">
+                          <h4 className="font-medium text-gray-800">
+                            Request for {response.bloodRequest.patientName}
+                          </h4>
+                          <div className="flex items-center gap-2">
+                            <span className="inline-block px-2.5 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
+                              {response.bloodRequest.bloodType}
+                            </span>
+                            <span className="text-gray-500 text-sm">
+                              {new Date(
+                                response.createdAt
+                              ).toLocaleDateString()}
+                            </span>
+                          </div>
+                        </div>
+                        <span
+                          className={`px-2.5 py-1 rounded-full text-xs font-medium
+                          ${
+                            response.status === "Accepted"
+                              ? "bg-green-100 text-green-800"
+                              : response.status === "Declined"
+                                ? "bg-red-100 text-red-800"
+                                : response.status === "Completed"
+                                  ? "bg-blue-100 text-blue-800"
+                                  : "bg-yellow-100 text-yellow-800"
+                          }`}
+                        >
+                          {response.status}
+                        </span>
+                      </div>
+
+                      <div className="border-t border-gray-100 pt-2 mt-2">
+                        <div className="flex flex-col sm:flex-row sm:justify-between gap-2">
+                          <div>
+                            <span className="text-xs text-gray-500 block">
+                              Hospital
+                            </span>
+                            <span className="text-gray-700">
+                              {response.bloodRequest.hospital}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="text-xs text-gray-500 block">
+                              Your Contact
+                            </span>
+                            <span className="text-gray-700">
+                              {response.contactNumber}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="mt-2">
+                          <span className="text-xs text-gray-500 block">
+                            Your Message
+                          </span>
+                          <p className="text-gray-700 bg-gray-50 p-2 rounded mt-1 text-sm">
+                            {response.message}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center p-8 text-gray-500">
+                  <div className="mb-3">
+                    <Eye className="h-10 w-10 mx-auto text-gray-400" />
+                  </div>
+                  <p className="mb-1">
+                    You haven't responded to any blood requests yet.
+                  </p>
+                  <p className="text-sm">
+                    When you respond to a blood request, it will appear here.
+                  </p>
+                </div>
+              )}
+
+              <div className="mt-6">
+                <Button
+                  onClick={() => setShowAllResponsesModal(false)}
+                  className="w-full bg-blue-500 hover:bg-blue-600 text-white py-2.5 font-medium transition-all duration-200"
+                >
+                  Close
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
       )}
