@@ -424,6 +424,14 @@ export const bloodRequestService = {
       throw error;
     }
   },
+  getUserDeletedRequests: async () => {
+    try {
+      const response = await api.get("/blood-requests/my-deleted-requests");
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
   getUserResponses: async () => {
     try {
       const response = await api.get("/blood-requests/my-responses");

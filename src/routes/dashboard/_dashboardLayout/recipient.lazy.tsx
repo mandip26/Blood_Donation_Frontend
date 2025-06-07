@@ -109,10 +109,10 @@ function RecipientComponent() {
   const [deletingRequestId, setDeletingRequestId] = useState<string | null>(
     null
   );
-  const [deletedRequestResponses, setDeletedRequestResponses] = useState<
-    BloodRequestResponse[]
-  >([]);
+  const [deletedRequests, setDeletedRequests] = useState<BloodRequest[]>([]);
   const [showDeletedResponsesModal, setShowDeletedResponsesModal] =
+    useState(false);
+  const [isLoadingDeletedRequests, setIsLoadingDeletedRequests] =
     useState(false);
   const bloodTypes = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
   const urgencyLevels = ["high", "medium", "low"];
@@ -150,11 +150,16 @@ function RecipientComponent() {
     useState(false);
   const [updatingResponseId, setUpdatingResponseId] = useState<string | null>(
     null
-  );
-
-  // Function to check if user has already responded to a request
+  ); // Function to check if user has already responded to a request
   const checkExistingResponse = async (requestId: string) => {
     if (!user) return false;
+
+    // Check if user is trying to respond to their own request
+    const requestToCheck = bloodRequests.find((req) => req.id === requestId);
+    if (requestToCheck && requestToCheck.createdBy === user._id) {
+      // Allow viewing details modal for own requests, but prevent responding
+      return false; // Return false to allow modal to open
+    }
 
     try {
       setLoadingResponseCheck(requestId);
@@ -432,6 +437,14 @@ function RecipientComponent() {
       window.location.href = "/login?redirect=/dashboard/recipient";
       return;
     }
+
+    // Check if user is trying to respond to their own request
+    const requestToRespond = bloodRequests.find((req) => req.id === requestId);
+    if (requestToRespond && requestToRespond.createdBy === user._id) {
+      alert("You cannot respond to your own blood request.");
+      return;
+    }
+
     try {
       // Prepare response data - only send what the backend expects
       const requestResponseData = {
@@ -487,7 +500,6 @@ function RecipientComponent() {
       setIsLoadingResponses(false);
     }
   };
-
   // Fetch user created blood requests
   const fetchUserCreatedRequests = async () => {
     if (!user || (!user._id && !user.id)) return;
@@ -522,6 +534,48 @@ function RecipientComponent() {
       setUserCreatedRequests([]);
     } finally {
       setIsLoadingMyRequests(false);
+    }
+  };
+
+  // Fetch deleted blood requests from backend
+  const fetchDeletedRequests = async () => {
+    if (!user || (!user._id && !user.id)) return;
+
+    try {
+      setIsLoadingDeletedRequests(true);
+      setError(null);
+
+      // Call API to get deleted requests created by the user
+      const result = await bloodRequestService.getUserDeletedRequests();
+      if (result && result.success && result.bloodRequests) {
+        // Transform deleted blood requests to match our interface
+        const formattedDeletedRequests = result.bloodRequests.map(
+          (request: any) => ({
+            id: request._id,
+            name: request.patientName,
+            bloodType: request.bloodType,
+            hospital: request.hospital,
+            location: request.location,
+            urgency: request.urgency,
+            postedTime: getTimeAgo(new Date(request.updatedAt)), // Use updatedAt for when it was deleted
+            units: request.unitsRequired,
+            contactNumber: request.contactNumber,
+            reason: request.reason,
+            createdBy: request.createdBy?._id || request.createdBy,
+            isDeleted: true,
+          })
+        );
+
+        setDeletedRequests(formattedDeletedRequests);
+      } else {
+        setDeletedRequests([]);
+      }
+    } catch (err) {
+      console.error("Error fetching deleted requests:", err);
+      setError("Failed to load deleted requests. Please try again.");
+      setDeletedRequests([]);
+    } finally {
+      setIsLoadingDeletedRequests(false);
     }
   };
 
@@ -602,30 +656,6 @@ function RecipientComponent() {
       try {
         setDeletingRequestId(requestId);
 
-        // First, get all responses for this request before deleting
-        const responsesResult =
-          await bloodRequestService.getRequestResponses(requestId);
-        if (
-          responsesResult &&
-          responsesResult.success &&
-          responsesResult.responses
-        ) {
-          // Mark responses as from deleted request
-          const responsesWithDeletedFlag = responsesResult.responses.map(
-            (response: BloodRequestResponse) => ({
-              ...response,
-              bloodRequest: {
-                ...response.bloodRequest,
-                isDeleted: true,
-              },
-            })
-          );
-          setDeletedRequestResponses((prev) => [
-            ...prev,
-            ...responsesWithDeletedFlag,
-          ]);
-        }
-
         const result = await bloodRequestService.cancelRequest(requestId);
         if (result && result.success) {
           // Remove the deleted request from local state immediately
@@ -648,8 +678,11 @@ function RecipientComponent() {
           if (showMyRequestsResponsesModal) {
             await fetchUserCreatedRequests();
           }
+          // Fetch updated deleted requests from backend
+          await fetchDeletedRequests();
+
           alert(
-            "Blood request deleted successfully. All responses have been moved to records."
+            "Blood request deleted successfully. It has been moved to deleted records."
           );
         } else {
           alert("Failed to delete blood request. Please try again.");
@@ -683,13 +716,13 @@ function RecipientComponent() {
       }
     }
   };
-
   // Fetch initial data
   useEffect(() => {
     fetchBloodRequests();
     if (user) {
       fetchUserResponses();
       fetchUserCreatedRequests();
+      fetchDeletedRequests();
     }
   }, [user]);
 
@@ -873,16 +906,15 @@ function RecipientComponent() {
                 onClick={() => setIsNewRequestModalOpen(true)}
                 className="bg-primary-magenta hover:bg-primary-magenta/90 shadow-md transition-all duration-200 flex items-center gap-2 px-5"
               >
-                <Heart className="h-4 w-4" />
-                Create Request
+                <Heart className="h-4 w-4" /> Create Request
               </Button>
-              {deletedRequestResponses.length > 0 && (
+              {deletedRequests.length > 0 && (
                 <Button
                   onClick={() => setShowDeletedResponsesModal(true)}
                   className="bg-gray-500 hover:bg-gray-600 text-white font-medium py-2.5 px-6 shadow-md transition-all duration-200"
                 >
                   <AlertCircle className="mr-2 h-4 w-4" />
-                  Deleted Request Records ({deletedRequestResponses.length})
+                  Deleted Request Records ({deletedRequests.length})
                 </Button>
               )}
             </>
@@ -1230,7 +1262,7 @@ function RecipientComponent() {
                 <p className="text-gray-700 bg-gray-50 p-4 rounded-lg border border-gray-100 leading-relaxed">
                   {selectedRequest.reason}
                 </p>
-              </div>
+              </div>{" "}
               <div className="flex gap-4 mt-4">
                 <Button
                   variant="outline"
@@ -1239,13 +1271,23 @@ function RecipientComponent() {
                 >
                   Close
                 </Button>
-                <Button
-                  className="flex-1 bg-primary-magenta hover:bg-primary-magenta/90 shadow-md transition-all duration-200"
-                  onClick={() => handleRespondToRequest(selectedRequest.id)}
-                >
-                  <Heart className="mr-2 h-4 w-4" />
-                  Respond to Request
-                </Button>
+                {user && selectedRequest.createdBy === user._id ? (
+                  <Button
+                    className="flex-1 bg-gray-400 cursor-not-allowed shadow-md"
+                    disabled
+                  >
+                    <Heart className="mr-2 h-4 w-4" />
+                    Cannot Respond to Own Request
+                  </Button>
+                ) : (
+                  <Button
+                    className="flex-1 bg-primary-magenta hover:bg-primary-magenta/90 shadow-md transition-all duration-200"
+                    onClick={() => handleRespondToRequest(selectedRequest.id)}
+                  >
+                    <Heart className="mr-2 h-4 w-4" />
+                    Respond to Request
+                  </Button>
+                )}
               </div>
             </div>
           </div>
@@ -1869,8 +1911,8 @@ function RecipientComponent() {
             </div>{" "}
           </div>
         </div>
-      )}
-      {/* Modal to display deleted request responses */}
+      )}{" "}
+      {/* Modal to display deleted blood requests */}
       {showDeletedResponsesModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
           <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-xl border border-gray-100">
@@ -1889,84 +1931,107 @@ function RecipientComponent() {
             </div>
 
             <div className="p-5">
-              {deletedRequestResponses.length > 0 ? (
+              {isLoadingDeletedRequests ? (
+                <div className="text-center p-8">
+                  <Loader2 className="h-8 w-8 animate-spin mx-auto text-gray-400 mb-4" />
+                  <p className="text-gray-500">Loading deleted requests...</p>
+                </div>
+              ) : deletedRequests.length > 0 ? (
                 <div className="space-y-4">
                   <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200 mb-4">
                     <div className="flex items-center">
                       <AlertCircle className="h-5 w-5 text-yellow-600 mr-2" />
                       <p className="text-yellow-800 text-sm">
-                        These are records of responses to deleted blood
-                        requests. They cannot be modified.
+                        These are your deleted blood requests. They are kept for
+                        record purposes and cannot be restored.
                       </p>
                     </div>
                   </div>
 
-                  {deletedRequestResponses.map((response) => (
+                  {deletedRequests.map((request) => (
                     <div
-                      key={response._id}
+                      key={request.id}
                       className="border border-gray-300 rounded-lg p-4 bg-gray-50 opacity-75"
                     >
                       <div className="flex justify-between items-start">
-                        <div>
-                          <div className="flex items-center gap-2">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
                             <h4 className="font-medium text-gray-800">
-                              {response.donor.name}
+                              {request.name}
                             </h4>
                             <span className="px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs font-medium">
-                              Request Deleted
+                              Deleted
                             </span>
                             <span
                               className={`px-2.5 py-1 rounded-full text-xs font-medium
                               ${
-                                response.status === "Accepted"
-                                  ? "bg-green-100 text-green-800"
-                                  : response.status === "Declined"
-                                    ? "bg-red-100 text-red-800"
-                                    : response.status === "Completed"
-                                      ? "bg-blue-100 text-blue-800"
-                                      : "bg-yellow-100 text-yellow-800"
+                                request.urgency === "high"
+                                  ? "bg-red-100 text-red-800"
+                                  : request.urgency === "medium"
+                                    ? "bg-yellow-100 text-yellow-800"
+                                    : "bg-green-100 text-green-800"
                               }`}
                             >
-                              {response.status}
+                              {request.urgency.charAt(0).toUpperCase() +
+                                request.urgency.slice(1)}{" "}
+                              Priority
                             </span>
                           </div>
-                          <div className="text-sm text-gray-500 mt-1">
-                            {response.donor.email} | {response.contactNumber}
-                          </div>
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          {new Date(response.createdAt).toLocaleString()}
-                        </div>
-                      </div>
 
-                      <div className="mt-3 space-y-2">
-                        <div>
-                          <span className="text-xs text-gray-500 block">
-                            Original Request
-                          </span>
-                          <div className="text-sm text-gray-700">
-                            Patient: {response.bloodRequest.patientName} | Blood
-                            Type: {response.bloodRequest.bloodType} | Hospital:{" "}
-                            {response.bloodRequest.hospital}
-                          </div>
-                        </div>
-
-                        {response.message && (
-                          <div>
-                            <span className="text-xs text-gray-500 block">
-                              Response Message
-                            </span>
-                            <div className="bg-white p-3 rounded-md text-gray-700 text-sm border">
-                              {response.message}
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-gray-600">
+                            <div className="flex items-center gap-2">
+                              <Droplets className="h-4 w-4 text-red-500" />
+                              <span>
+                                Blood Type: <strong>{request.bloodType}</strong>
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Hospital className="h-4 w-4 text-blue-500" />
+                              <span>Hospital: {request.hospital}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <MapPin className="h-4 w-4 text-green-500" />
+                              <span>Location: {request.location}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Phone className="h-4 w-4 text-purple-500" />
+                              <span>Contact: {request.contactNumber}</span>
                             </div>
                           </div>
-                        )}
+
+                          <div className="mt-3">
+                            <span className="text-xs text-gray-500 block mb-1">
+                              Units Required
+                            </span>
+                            <span className="font-medium text-gray-700">
+                              {request.units} unit(s)
+                            </span>
+                          </div>
+
+                          {request.reason && (
+                            <div className="mt-3">
+                              <span className="text-xs text-gray-500 block mb-1">
+                                Reason
+                              </span>
+                              <div className="bg-white p-3 rounded-md text-gray-700 text-sm border">
+                                {request.reason}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="text-sm text-gray-500 ml-4">
+                          <div className="flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            <span>Deleted {request.postedTime}</span>
+                          </div>
+                        </div>
                       </div>
 
                       <div className="mt-4 pt-3 border-t border-gray-200">
                         <div className="text-sm text-gray-500 italic">
-                          This record cannot be modified as the original request
-                          has been deleted.
+                          This request has been permanently deleted and cannot
+                          be restored.
                         </div>
                       </div>
                     </div>
@@ -1979,8 +2044,8 @@ function RecipientComponent() {
                   </div>
                   <p className="mb-1">No deleted request records found.</p>
                   <p className="text-sm">
-                    When you delete a blood request that has responses, those
-                    responses will appear here as records.
+                    When you delete a blood request, it will appear here as a
+                    record.
                   </p>
                 </div>
               )}
