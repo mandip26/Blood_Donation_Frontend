@@ -12,9 +12,9 @@ import {
   Check,
   AlertCircle,
   Loader2,
-  Plus,
   Upload,
   Trash2,
+  Heart,
 } from "lucide-react";
 import {
   eventService,
@@ -73,13 +73,16 @@ function EventsComponent() {
   const [createEventError, setCreateEventError] = useState<string | null>(null);
   const [isRegistering, setIsRegistering] = useState(false);
   const [alreadyRegistered, setAlreadyRegistered] = useState(false);
-  const [userRegistrations, setUserRegistrations] = useState<string[]>([]); // Array of event IDs the user is registered for
+  const [userRegistrations, setUserRegistrations] = useState<{
+    [key: string]: { status: string; registrationId: string };
+  }>({}); // Object with event IDs as keys and registration details as values
   const [registrationEventId, setRegistrationEventId] = useState<string | null>(
     null
   ); // Store the ID of the event being registered for
 
   // Event registrations management states
   const [showRegistrationsModal, setShowRegistrationsModal] = useState(false);
+  const [showEventSelectionModal, setShowEventSelectionModal] = useState(false);
   const [eventRegistrations, setEventRegistrations] = useState<any[]>([]);
   const [isLoadingRegistrations, setIsLoadingRegistrations] = useState(false);
   const [registrationsError, setRegistrationsError] = useState<string | null>(
@@ -288,11 +291,17 @@ function EventsComponent() {
           const response =
             await eventRegistrationService.getUserEventRegistrations();
           if (response.success && response.registrations) {
-            // Extract event IDs from registrations
-            const eventIds = response.registrations.map(
-              (reg: any) => reg.event._id
-            );
-            setUserRegistrations(eventIds);
+            // Create object with event IDs as keys and registration details as values
+            const registrationsMap: {
+              [key: string]: { status: string; registrationId: string };
+            } = {};
+            response.registrations.forEach((reg: any) => {
+              registrationsMap[reg.event._id] = {
+                status: reg.status || "pending",
+                registrationId: reg._id,
+              };
+            });
+            setUserRegistrations(registrationsMap);
           }
         }
       } catch (error) {
@@ -585,8 +594,12 @@ function EventsComponent() {
     const isOwnEvent =
       user && event.createdBy && user._id === event.createdBy._id;
 
-    // First check local state (userRegistrations array) for faster UI response
-    const isRegisteredLocally = user && userRegistrations.includes(event._id);
+    // First check local state (userRegistrations object) for faster UI response
+    const userRegistration = user && userRegistrations[event._id];
+    const isRegisteredLocally =
+      !!userRegistration &&
+      userRegistration.status !== "Rejected" &&
+      userRegistration.status !== "rejected";
 
     if (isRegisteredLocally) {
       setAlreadyRegistered(true);
@@ -602,8 +615,14 @@ function EventsComponent() {
         setAlreadyRegistered(response.isRegistered);
 
         // If registered according to server but not in local state, update local state
-        if (response.isRegistered && !userRegistrations.includes(event._id)) {
-          setUserRegistrations((prev) => [...prev, event._id]);
+        if (response.isRegistered && !userRegistrations[event._id]) {
+          setUserRegistrations((prev) => ({
+            ...prev,
+            [event._id]: {
+              status: response.status || "pending",
+              registrationId: response.registrationId || "",
+            },
+          }));
         }
       } catch (error) {
         console.error("Error checking registration status:", error);
@@ -667,7 +686,11 @@ function EventsComponent() {
     }
 
     // Check if already registered locally first (for better UX)
-    if (userRegistrations.includes(eventId)) {
+    if (
+      userRegistrations[eventId] &&
+      userRegistrations[eventId].status !== "Rejected" &&
+      userRegistrations[eventId].status !== "rejected"
+    ) {
       setApiError("You have already registered for this event");
       setAlreadyRegistered(true);
       return;
@@ -709,7 +732,13 @@ function EventsComponent() {
       console.log("Donor registration successful:", response);
 
       // Update local state to reflect successful registration
-      setUserRegistrations((prev) => [...prev, eventId]);
+      setUserRegistrations((prev) => ({
+        ...prev,
+        [eventId]: {
+          status: "pending",
+          registrationId: eventRegistrationResponse.registration?._id || "",
+        },
+      }));
 
       // Update event registration count in the events list
       setEvents((prevEvents) =>
@@ -762,8 +791,14 @@ function EventsComponent() {
         setAlreadyRegistered(true);
 
         // Also update local state to reflect registration
-        if (!userRegistrations.includes(eventId)) {
-          setUserRegistrations((prev) => [...prev, eventId]);
+        if (!userRegistrations[eventId]) {
+          setUserRegistrations((prev) => ({
+            ...prev,
+            [eventId]: {
+              status: "pending",
+              registrationId: "",
+            },
+          }));
         }
       } else if (
         error.response?.data?.error === "Cannot register for your own event"
@@ -857,6 +892,12 @@ function EventsComponent() {
     setShowRegistrationsModal(true);
   };
 
+  // Handle selecting event from header button
+  const handleSelectEventFromHeader = (event: BloodDonationEvent) => {
+    setShowEventSelectionModal(false);
+    handleViewRegistrations(event);
+  };
+
   // Function to close registrations modal
   const handleCloseRegistrations = () => {
     setShowRegistrationsModal(false);
@@ -883,9 +924,34 @@ function EventsComponent() {
       if (response && response.success) {
         // Update the registration in the list
         setEventRegistrations((prevRegistrations) =>
-          prevRegistrations.map((reg) =>
-            reg._id === registrationId ? { ...reg, status } : reg
-          )
+          prevRegistrations.map((reg) => {
+            if (reg._id === registrationId) {
+              const updatedReg = { ...reg, status };
+
+              // Update userRegistrations state to reflect the change
+              const eventId = reg.event._id || reg.event;
+              if (status === "Rejected" || status === "rejected") {
+                // If rejected, remove from userRegistrations (vacate registration)
+                setUserRegistrations((prev) => {
+                  const newRegistrations = { ...prev };
+                  delete newRegistrations[eventId];
+                  return newRegistrations;
+                });
+              } else {
+                // Update status in userRegistrations
+                setUserRegistrations((prev) => ({
+                  ...prev,
+                  [eventId]: {
+                    status: status,
+                    registrationId: registrationId,
+                  },
+                }));
+              }
+
+              return updatedReg;
+            }
+            return reg;
+          })
         );
       }
     } catch (error) {
@@ -901,13 +967,22 @@ function EventsComponent() {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Blood Donation Events</h1>
         {canCreateEvents && (
-          <Button
-            className="bg-primary-magenta text-white hover:bg-primary-magenta/90"
-            onClick={() => setShowCreateEventModal(true)}
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Create Event
-          </Button>
+          <div className="flex gap-3">
+            <Button
+              className="bg-blue-500 text-white hover:bg-blue-600"
+              onClick={() => setShowEventSelectionModal(true)}
+            >
+              <Calendar className="h-4 w-4" />
+              View Registrations
+            </Button>
+            <Button
+              className="bg-primary-magenta text-white hover:bg-primary-magenta/90"
+              onClick={() => setShowCreateEventModal(true)}
+            >
+              <Heart className="h-4 w-4" />
+              Create Event
+            </Button>
+          </div>
         )}
       </div>
       {/* Search and Filter */}
@@ -1112,10 +1187,29 @@ function EventsComponent() {
                   {event.time}
                 </div>
                 {/* Registration Status Badge */}
-                {user && userRegistrations.includes(event._id) && (
-                  <div className="mt-2 bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs inline-flex items-center">
-                    <Check size={12} className="mr-1" />
-                    Registered
+                {user && userRegistrations[event._id] && (
+                  <div className="mt-2">
+                    {(userRegistrations[event._id].status === "Approved" ||
+                      userRegistrations[event._id].status === "approved") && (
+                      <div className="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs inline-flex items-center">
+                        <Check size={12} className="mr-1" />
+                        Approved
+                      </div>
+                    )}
+                    {(userRegistrations[event._id].status === "Pending" ||
+                      userRegistrations[event._id].status === "pending") && (
+                      <div className="bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full text-xs inline-flex items-center">
+                        <Clock size={12} className="mr-1" />
+                        Pending Approval
+                      </div>
+                    )}
+                    {(userRegistrations[event._id].status === "Rejected" ||
+                      userRegistrations[event._id].status === "rejected") && (
+                      <div className="bg-red-100 text-red-700 px-2 py-1 rounded-full text-xs inline-flex items-center">
+                        <X size={12} className="mr-1" />
+                        Registration Rejected
+                      </div>
+                    )}
                   </div>
                 )}
                 {event.registrationLimit && (
@@ -1139,27 +1233,6 @@ function EventsComponent() {
               </div>
               <div className="p-4 pt-0">
                 {user && user._id === event.createdBy?._id ? (
-                  <div className="space-y-2">
-                    <Button
-                      className="w-full bg-blue-500 text-white hover:bg-blue-600"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleViewRegistrations(event);
-                      }}
-                    >
-                      View Registrations
-                    </Button>
-                    <Button
-                      className="w-full bg-primary-magenta text-white hover:bg-primary-magenta/90"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleEventClick(event);
-                      }}
-                    >
-                      Event Details
-                    </Button>
-                  </div>
-                ) : (
                   <Button
                     className="w-full bg-primary-magenta text-white hover:bg-primary-magenta/90"
                     onClick={(e) => {
@@ -1167,8 +1240,65 @@ function EventsComponent() {
                       handleEventClick(event);
                     }}
                   >
-                    Register Now
+                    Event Details
                   </Button>
+                ) : (
+                  <>
+                    {userRegistrations[event._id] ? (
+                      // User is registered - show status-specific buttons
+                      userRegistrations[event._id].status === "Approved" ||
+                      userRegistrations[event._id].status === "approved" ? (
+                        <Button
+                          className="w-full bg-green-500 text-white hover:bg-green-600 cursor-default"
+                          disabled
+                        >
+                          <Check className="h-4 w-4 mr-2" />
+                          Registration Approved
+                        </Button>
+                      ) : userRegistrations[event._id].status === "Pending" ||
+                        userRegistrations[event._id].status === "pending" ? (
+                        <Button
+                          className="w-full bg-yellow-500 text-white hover:bg-yellow-600 cursor-default"
+                          disabled
+                        >
+                          <Clock className="h-4 w-4 mr-2" />
+                          Awaiting Approval
+                        </Button>
+                      ) : userRegistrations[event._id].status === "Rejected" ||
+                        userRegistrations[event._id].status === "rejected" ? (
+                        <Button
+                          className="w-full bg-primary-magenta text-white hover:bg-primary-magenta/90"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEventClick(event);
+                          }}
+                        >
+                          Register Now
+                        </Button>
+                      ) : (
+                        <Button
+                          className="w-full bg-primary-magenta text-white hover:bg-primary-magenta/90"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEventClick(event);
+                          }}
+                        >
+                          Register Now
+                        </Button>
+                      )
+                    ) : (
+                      // User is not registered
+                      <Button
+                        className="w-full bg-primary-magenta text-white hover:bg-primary-magenta/90"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEventClick(event);
+                        }}
+                      >
+                        Register Now
+                      </Button>
+                    )}
+                  </>
                 )}
               </div>
             </div>
@@ -2399,6 +2529,78 @@ function EventsComponent() {
                   Close
                 </Button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Event Selection Modal for Viewing Registrations */}
+      {showEventSelectionModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto shadow-xl border border-gray-100">
+            <div className="p-5 border-b bg-gradient-to-r from-blue-50 to-white">
+              <div className="flex justify-between items-center">
+                <h3 className="text-xl font-bold text-gray-800">
+                  Select Event to View Registrations
+                </h3>
+                <button
+                  onClick={() => setShowEventSelectionModal(false)}
+                  className="text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 p-1 transition-colors duration-200"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-5">
+              {events.filter(
+                (event) => user && user._id === event.createdBy?._id
+              ).length === 0 ? (
+                <div className="text-center p-8 text-gray-500">
+                  <Calendar className="h-10 w-10 mx-auto text-gray-400 mb-3" />
+                  <p className="text-lg">No events created yet</p>
+                  <p className="text-sm">
+                    Create an event first to view registrations
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {events
+                    .filter(
+                      (event) => user && user._id === event.createdBy?._id
+                    )
+                    .map((event) => (
+                      <div
+                        key={event._id}
+                        className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors duration-200"
+                        onClick={() => handleSelectEventFromHeader(event)}
+                      >
+                        <h4 className="font-semibold text-gray-800 mb-2">
+                          {event.title}
+                        </h4>
+                        <div className="flex items-center gap-4 text-sm text-gray-600">
+                          <div className="flex items-center gap-1">
+                            <Calendar className="h-4 w-4" />
+                            {new Date(event.date).toLocaleDateString()}
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Clock className="h-4 w-4" />
+                            {event.time}
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <MapPin className="h-4 w-4" />
+                            {event.venue}
+                          </div>
+                        </div>
+                        {event.registrationLimit && (
+                          <div className="mt-2 text-sm text-blue-600">
+                            {event.registeredCount || 0} /{" "}
+                            {event.registrationLimit} registered
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
