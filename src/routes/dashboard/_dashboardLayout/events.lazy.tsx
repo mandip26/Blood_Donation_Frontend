@@ -12,8 +12,11 @@ import {
   Check,
   AlertCircle,
   Loader2,
+  Plus,
+  Upload,
+  Trash2,
 } from "lucide-react";
-import { donationService } from "@/services/apiService";
+import { eventService, donationService } from "@/services/apiService";
 import { useAuth } from "@/hooks/useAuth";
 import { useResponsive } from "@/hooks/useResponsive";
 
@@ -22,16 +25,23 @@ export const Route = createLazyFileRoute("/dashboard/_dashboardLayout/events")({
 });
 
 interface BloodDonationEvent {
-  id: string;
+  _id: string;
+  id?: string;
   title: string;
+  description: string;
   date: string;
   time: string;
   venue: string;
-  organizer: string;
-  description: string;
-  image: string;
-  registeredCount: number;
-  capacity: number;
+  image?: string;
+  createdBy: {
+    _id: string;
+    name: string;
+    email: string;
+  };
+  registrationLimit?: number;
+  registeredCount?: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 function EventsComponent() {
@@ -50,7 +60,29 @@ function EventsComponent() {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showDonateForm, setShowDonateForm] = useState(false);
 
-  // Form state for donate form
+  // Event management states
+  const [events, setEvents] = useState<BloodDonationEvent[]>([]);
+  const [isLoadingEvents, setIsLoadingEvents] = useState(true);
+  const [eventsError, setEventsError] = useState<string | null>(null);
+  const [showCreateEventModal, setShowCreateEventModal] = useState(false);
+  const [isCreatingEvent, setIsCreatingEvent] = useState(false);
+  const [createEventError, setCreateEventError] = useState<string | null>(null);
+
+  // Create event form state
+  const [eventForm, setEventForm] = useState({
+    title: "",
+    description: "",
+    date: "",
+    time: "",
+    venue: "",
+    registrationLimit: "",
+    image: null as File | null,
+  });
+  const [eventFormErrors, setEventFormErrors] = useState<
+    Record<string, string>
+  >({});
+
+  // Donation form state
   const [formData, setFormData] = useState({
     fullName: "",
     dateOfBirth: "",
@@ -202,77 +234,209 @@ function EventsComponent() {
     if (!formData.declaration) {
       newErrors.declaration = "You must agree to the declaration";
     }
-
     return newErrors;
   };
 
-  const events: BloodDonationEvent[] = [
-    {
-      id: "1",
-      title: "Community Blood Drive",
-      date: "2025-05-25",
-      time: "10:00 AM - 4:00 PM",
-      venue: "City Community Center, Delhi",
-      organizer: "Delhi Blood Bank",
-      description:
-        "Join our community blood drive to help save lives. We need all blood types, especially O- and AB+. Refreshments will be provided to all donors.",
-      image: "https://placehold.co/600x400?text=Blood+Drive",
-      registeredCount: 45,
-      capacity: 100,
-    },
-    {
-      id: "2",
-      title: "Apollo Hospital Blood Donation Camp",
-      date: "2025-06-05",
-      time: "9:00 AM - 2:00 PM",
-      venue: "Apollo Hospital, Mumbai",
-      organizer: "Apollo Hospital",
-      description:
-        "Apollo Hospital is organizing a blood donation camp to replenish its blood bank supplies. All donors will receive a free basic health checkup.",
-      image: "https://placehold.co/600x400?text=Apollo+Hospital",
-      registeredCount: 32,
-      capacity: 80,
-    },
-    {
-      id: "3",
-      title: "University Blood Donation Drive",
-      date: "2025-06-12",
-      time: "11:00 AM - 5:00 PM",
-      venue: "University Campus, Bangalore",
-      organizer: "Medical Students Association",
-      description:
-        "The Medical Students Association is organizing a blood donation drive at the university campus. Come support this student-led initiative!",
-      image: "https://placehold.co/600x400?text=University+Drive",
-      registeredCount: 28,
-      capacity: 120,
-    },
-    {
-      id: "4",
-      title: "Corporate Blood Donation Event",
-      date: "2025-06-15",
-      time: "10:00 AM - 3:00 PM",
-      venue: "Tech Park, Chennai",
-      organizer: "TechCorp Inc.",
-      description:
-        "TechCorp is hosting a blood donation event as part of its CSR initiative. Open to all employees and the general public.",
-      image: "https://placehold.co/600x400?text=Corporate+Event",
-      registeredCount: 15,
-      capacity: 60,
-    },
-    {
-      id: "5",
-      title: "Summer Blood Donation Festival",
-      date: "2025-06-20",
-      time: "9:00 AM - 6:00 PM",
-      venue: "Central Park, Hyderabad",
-      organizer: "Hyderabad Blood Bank Association",
-      description:
-        "A full-day event with entertainment, food stalls, and blood donation facilities. Bring your family and make it a day of giving back!",
-      image: "https://placehold.co/600x400?text=Summer+Festival",
-      registeredCount: 67,
-      capacity: 200,
-    },
-  ];
+  // Fetch events from API
+  useEffect(() => {
+    const fetchEvents = async () => {
+      try {
+        setIsLoadingEvents(true);
+        setEventsError(null);
+        const response = await eventService.getAllEvents();
+        if (response.success && response.events) {
+          console.log("Events fetched:", response.events);
+          // Log image URLs for debugging
+          response.events.forEach((event: any, index: number) => {
+            console.log(`Event ${index + 1}: ${event.title}`);
+            console.log(`  - Image URL: "${event.image}"`);
+            console.log(`  - Image type: ${typeof event.image}`);
+            console.log(`  - Image length: ${event.image?.length || 0}`);
+            console.log(
+              `  - Is valid URL: ${event.image && event.image.startsWith("http")}`
+            );
+          });
+          setEvents(response.events);
+        } else {
+          setEventsError("Failed to load events");
+        }
+      } catch (error) {
+        console.error("Error fetching events:", error);
+        setEventsError("Error loading events. Please try again.");
+      } finally {
+        setIsLoadingEvents(false);
+      }
+    };
+
+    fetchEvents();
+  }, []);
+
+  // Check if user can create events (everyone except "user" role)
+  const canCreateEvents = user && user.role !== "user";
+  // Check if user can delete event (only event creator)
+  const canDeleteEvent = (event: BloodDonationEvent) => {
+    return user && event.createdBy && user._id === event.createdBy._id;
+  };
+
+  // Handle event form changes
+  const handleEventFormChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value, type } = e.target;
+
+    if (type === "file") {
+      const fileInput = e.target as HTMLInputElement;
+      const file = fileInput.files?.[0] || null;
+      setEventForm((prev) => ({ ...prev, [name]: file }));
+    } else {
+      setEventForm((prev) => ({ ...prev, [name]: value }));
+    }
+
+    // Clear error for this field
+    if (eventFormErrors[name]) {
+      setEventFormErrors((prev) => ({ ...prev, [name]: "" }));
+    }
+  };
+
+  // Validate event form
+  const validateEventForm = () => {
+    const errors: Record<string, string> = {};
+
+    if (!eventForm.title.trim()) {
+      errors.title = "Event title is required";
+    }
+    if (!eventForm.date) {
+      errors.date = "Event date is required";
+    }
+    if (!eventForm.time.trim()) {
+      errors.time = "Event time is required";
+    }
+    if (!eventForm.venue.trim()) {
+      errors.venue = "Event venue is required";
+    }
+    if (
+      eventForm.registrationLimit &&
+      (isNaN(Number(eventForm.registrationLimit)) ||
+        Number(eventForm.registrationLimit) <= 0)
+    ) {
+      errors.registrationLimit = "Registration limit must be a positive number";
+    }
+
+    return errors;
+  };
+
+  // Handle create event
+  const handleCreateEvent = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const errors = validateEventForm();
+    if (Object.keys(errors).length > 0) {
+      setEventFormErrors(errors);
+      return;
+    }
+
+    try {
+      setIsCreatingEvent(true);
+      setCreateEventError(null);
+      const formData = new FormData();
+      formData.append("title", eventForm.title);
+      formData.append("description", eventForm.description);
+      formData.append("date", eventForm.date);
+      formData.append("time", eventForm.time);
+      formData.append("venue", eventForm.venue);
+
+      if (eventForm.registrationLimit) {
+        formData.append("registrationLimit", eventForm.registrationLimit);
+      }
+      if (eventForm.image) {
+        console.log(
+          "Uploading image:",
+          eventForm.image.name,
+          "Type:",
+          eventForm.image.type,
+          "Size:",
+          eventForm.image.size
+        );
+        formData.append("image", eventForm.image);
+      } else {
+        console.log("No image selected for upload");
+      }
+
+      console.log("Creating event with FormData:", {
+        title: eventForm.title,
+        venue: eventForm.venue,
+        date: eventForm.date,
+        time: eventForm.time,
+        hasImage: !!eventForm.image,
+      });
+
+      const response = await eventService.createEvent(formData);
+      console.log("Create event response:", response);
+
+      if (response.success) {
+        console.log("Event created successfully:", response.event);
+        // Refresh events list
+        const eventsResponse = await eventService.getAllEvents();
+        if (eventsResponse.success && eventsResponse.events) {
+          console.log(
+            "Events refreshed, new count:",
+            eventsResponse.events.length
+          );
+          setEvents(eventsResponse.events);
+        }
+
+        // Reset form and close modal
+        setEventForm({
+          title: "",
+          description: "",
+          date: "",
+          time: "",
+          venue: "",
+          registrationLimit: "",
+          image: null,
+        });
+        setEventFormErrors({});
+        setShowCreateEventModal(false);
+      } else {
+        setCreateEventError(response.message || "Failed to create event");
+      }
+    } catch (error: any) {
+      console.error("Error creating event:", error);
+      setCreateEventError(
+        error?.response?.data?.message ||
+          "Error creating event. Please try again."
+      );
+    } finally {
+      setIsCreatingEvent(false);
+    }
+  };
+
+  // Handle delete event
+  const handleDeleteEvent = async (eventId: string) => {
+    if (!confirm("Are you sure you want to delete this event?")) {
+      return;
+    }
+
+    try {
+      const response = await eventService.deleteEvent(eventId);
+      if (response.success) {
+        // Remove event from local state
+        setEvents((prev) => prev.filter((event) => event._id !== eventId));
+        // Close event details modal if it's open
+        if (selectedEvent && selectedEvent._id === eventId) {
+          setSelectedEvent(null);
+        }
+      } else {
+        alert(response.message || "Failed to delete event");
+      }
+    } catch (error: any) {
+      console.error("Error deleting event:", error);
+      alert(
+        error?.response?.data?.message ||
+          "Error deleting event. Please try again."
+      );
+    }
+  };
 
   // Format date function
   const formatDate = (dateString: string) => {
@@ -282,13 +446,13 @@ function EventsComponent() {
       day: "numeric",
     };
     return new Date(dateString).toLocaleDateString(undefined, options);
-  };
-
-  // Filter events based on search term and filters
+  }; // Filter events based on search term and filters
   const filteredEvents = events.filter((event) => {
     const matchesSearch =
       event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      event.organizer.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (event.createdBy?.name || "")
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
       event.venue.toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesCity = selectedCity
@@ -361,17 +525,13 @@ function EventsComponent() {
         email: formData.email,
         idProofType: formData.idProofType as "PAN" | "Aadhaar" | "VoterID",
         idProofNumber: formData.idProofNumber,
-      };
-
-      // Register donor
+      }; // Register donor
       const response = await donationService.registerDonor(donorData);
-      console.log("Donation registration successful:", response);
-
-      // Record donation details if API call is successful
+      console.log("Donation registration successful:", response); // Record donation details if API call is successful
       await donationService.recordDonation({
-        donorId: response.donorId || user?.id,
+        donorId: response.donorId || user?._id,
         donationDate: new Date().toISOString().split("T")[0],
-        hospitalName: selectedEvent?.organizer || "Event Organizer",
+        hospitalName: selectedEvent?.createdBy?.name || "Event Organizer",
         units: 1,
         bloodType: formData.bloodType,
         hemoglobinLevel: formData.hemoglobinCount
@@ -413,16 +573,20 @@ function EventsComponent() {
     setSelectedEvent(null);
     setShowConfirmModal(true);
   };
-
   return (
     <div className="container mx-auto py-6 px-4">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Blood Donation Events</h1>
-        <Button className="bg-primary-magenta text-white hover:bg-primary-magenta/90">
-          Create Event
-        </Button>
+        {canCreateEvents && (
+          <Button
+            className="bg-primary-magenta text-white hover:bg-primary-magenta/90"
+            onClick={() => setShowCreateEventModal(true)}
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Create Event
+          </Button>
+        )}
       </div>
-
       {/* Search and Filter */}
       <div className="bg-white rounded-xl shadow-sm p-4 mb-6">
         <div className="flex flex-col md:flex-row gap-4">
@@ -550,61 +714,99 @@ function EventsComponent() {
             )}
           </div>
         )}
-      </div>
-
+      </div>{" "}
       {/* Event Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredEvents.length > 0 ? (
+        {isLoadingEvents ? (
+          <div className="col-span-full flex justify-center items-center py-10">
+            <Loader2 className="animate-spin mr-2" size={20} />
+            <span className="text-gray-600">Loading events...</span>
+          </div>
+        ) : eventsError ? (
+          <div className="col-span-full text-center py-10">
+            <AlertCircle className="mx-auto mb-2 text-red-500" size={24} />
+            <p className="text-red-600">{eventsError}</p>
+            <Button
+              onClick={() => window.location.reload()}
+              className="mt-4 bg-primary-magenta text-white hover:bg-primary-magenta/90"
+            >
+              Try Again
+            </Button>
+          </div>
+        ) : filteredEvents.length > 0 ? (
           filteredEvents.map((event) => (
             <div
-              key={event.id}
+              key={event._id}
               className="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
               onClick={() => handleEventClick(event)}
             >
+              {" "}
               <div className="h-40 overflow-hidden relative">
                 <img
-                  src={event.image}
+                  src={
+                    event.image ||
+                    "https://placehold.co/600x400?text=Blood+Drive"
+                  }
                   alt={event.title}
                   className="w-full h-full object-cover"
+                  onError={(e) => {
+                    console.log("Image failed to load:", event.image);
+                    (e.target as HTMLImageElement).src =
+                      "https://placehold.co/600x400?text=Blood+Drive";
+                  }}
                 />
                 <div className="absolute bottom-0 left-0 bg-primary-magenta/80 text-white px-3 py-1 rounded-tr-lg">
                   <Calendar size={14} className="inline mr-1" />
                   {formatDate(event.date)}
                 </div>
+                {canDeleteEvent(event) && (
+                  <div className="absolute top-2 right-2 flex gap-1">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteEvent(event._id);
+                      }}
+                      className="bg-red-500 hover:bg-red-600 text-white p-1.5 rounded-full transition-colors"
+                      title="Delete Event"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                )}
               </div>
-
               <div className="p-4">
+                {" "}
                 <h3 className="font-medium text-lg mb-2">{event.title}</h3>
-                <p className="text-gray-600 text-sm mb-3">{event.organizer}</p>
-
+                <p className="text-gray-600 text-sm mb-3">
+                  By {event.createdBy?.name || "Unknown Organizer"}
+                </p>
                 <div className="flex items-center text-gray-500 text-sm mb-2">
                   <MapPin size={14} className="mr-1" />
                   {event.venue}
                 </div>
-
                 <div className="flex items-center text-gray-500 text-sm">
                   <Clock size={14} className="mr-1" />
                   {event.time}
                 </div>
-
-                <div className="mt-4 pt-4 border-t border-gray-100">
-                  <div className="flex justify-between mb-2">
-                    <span className="text-sm">Registration</span>
-                    <span className="text-sm font-medium">
-                      {event.registeredCount}/{event.capacity}
-                    </span>
+                {event.registrationLimit && (
+                  <div className="mt-4 pt-4 border-t border-gray-100">
+                    <div className="flex justify-between mb-2">
+                      <span className="text-sm">Registration</span>
+                      <span className="text-sm font-medium">
+                        {event.registeredCount || 0}/{event.registrationLimit}
+                      </span>
+                    </div>
+                    <div className="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-primary-magenta transition-all duration-300"
+                        style={{
+                          width: `${Math.min(((event.registeredCount || 0) / event.registrationLimit) * 100, 100)}%`,
+                        }}
+                      ></div>
+                    </div>
                   </div>
-                  <div className="h-1.5 w-full bg-gray-200 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-primary-magenta rounded-full"
-                      style={{
-                        width: `${(event.registeredCount / event.capacity) * 100}%`,
-                      }}
-                    ></div>
-                  </div>
-                </div>
+                )}
               </div>
-
               <div className="p-4 pt-0">
                 <Button
                   className="w-full bg-primary-magenta text-white hover:bg-primary-magenta/90"
@@ -624,7 +826,6 @@ function EventsComponent() {
           </div>
         )}
       </div>
-
       {/* Event Details Modal */}
       {selectedEvent && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -634,12 +835,23 @@ function EventsComponent() {
               className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 z-10 bg-white rounded-full p-1"
             >
               <X size={24} />
-            </button>
+            </button>{" "}
             <div className="h-60 overflow-hidden">
               <img
-                src={selectedEvent.image}
+                src={
+                  selectedEvent.image ||
+                  "https://placehold.co/600x400?text=Blood+Drive"
+                }
                 alt={selectedEvent.title}
                 className="w-full h-full object-cover"
+                onError={(e) => {
+                  console.log(
+                    "Modal image failed to load:",
+                    selectedEvent.image
+                  );
+                  (e.target as HTMLImageElement).src =
+                    "https://placehold.co/600x400?text=Blood+Drive";
+                }}
               />
             </div>
             <div className="p-6">
@@ -652,12 +864,13 @@ function EventsComponent() {
                   <div className="flex justify-between items-start">
                     <h2 className="text-2xl font-semibold">
                       {selectedEvent.title}
-                    </h2>
+                    </h2>{" "}
                   </div>
-                  <p className="text-gray-600">{selectedEvent.organizer}</p>
+                  <p className="text-gray-600">
+                    By {selectedEvent.createdBy?.name || "Unknown Organizer"}
+                  </p>
                 </div>
               </div>
-
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 <div>
                   <h3 className="text-sm text-gray-500 mb-1">Date</h3>
@@ -674,32 +887,33 @@ function EventsComponent() {
                   <p className="font-medium">{selectedEvent.venue}</p>
                 </div>
               </div>
-
               <div className="mb-6">
                 <h3 className="text-sm text-gray-500 mb-2">About This Event</h3>
                 <p className="text-gray-800">{selectedEvent.description}</p>
-              </div>
-
-              <div className="mb-6">
-                <h3 className="text-sm text-gray-500 mb-2">
-                  Registration Status
-                </h3>
-                <div className="flex justify-between mb-2">
-                  <span>{selectedEvent.registeredCount} registered</span>
-                  <span>
-                    {selectedEvent.capacity - selectedEvent.registeredCount}{" "}
-                    spots left
-                  </span>
+              </div>{" "}
+              {selectedEvent.registrationLimit && (
+                <div className="mb-6">
+                  <h3 className="text-sm text-gray-500 mb-2">
+                    Registration Status
+                  </h3>
+                  <div className="flex justify-between mb-2">
+                    <span>{selectedEvent.registeredCount || 0} registered</span>
+                    <span>
+                      {selectedEvent.registrationLimit -
+                        (selectedEvent.registeredCount || 0)}{" "}
+                      spots left
+                    </span>
+                  </div>
+                  <div className="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-primary-magenta rounded-full"
+                      style={{
+                        width: `${Math.min(((selectedEvent.registeredCount || 0) / selectedEvent.registrationLimit) * 100, 100)}%`,
+                      }}
+                    ></div>
+                  </div>
                 </div>
-                <div className="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-primary-magenta rounded-full"
-                    style={{
-                      width: `${(selectedEvent.registeredCount / selectedEvent.capacity) * 100}%`,
-                    }}
-                  ></div>
-                </div>
-              </div>
+              )}
               <form onSubmit={handleRegistration}>
                 <h3 className="text-lg font-semibold mb-4">
                   Register for this Event
@@ -732,7 +946,6 @@ function EventsComponent() {
           </div>
         </div>
       )}
-
       {/* Confirmation Modal */}
       {showConfirmModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -773,7 +986,6 @@ function EventsComponent() {
           </div>
         </div>
       )}
-
       {/* Donate Form Modal */}
       {showDonateForm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -1308,6 +1520,223 @@ function EventsComponent() {
                 </form>
               </div>
             )}
+          </div>
+        </div>
+      )}
+      {/* Create Event Modal */}
+      {showCreateEventModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl w-full max-w-2xl relative max-h-[90vh] overflow-y-auto">
+            <button
+              onClick={() => {
+                setShowCreateEventModal(false);
+                setEventForm({
+                  title: "",
+                  description: "",
+                  date: "",
+                  time: "",
+                  venue: "",
+                  registrationLimit: "",
+                  image: null,
+                });
+                setEventFormErrors({});
+                setCreateEventError(null);
+              }}
+              className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 z-10 bg-white rounded-full p-1"
+            >
+              <X size={24} />
+            </button>
+
+            <div className="p-6">
+              <h2 className="text-2xl font-semibold mb-6">Create New Event</h2>
+
+              {createEventError && (
+                <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-4">
+                  <div className="flex items-center">
+                    <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
+                    <span className="text-red-700">{createEventError}</span>
+                  </div>
+                </div>
+              )}
+
+              <form onSubmit={handleCreateEvent} className="space-y-6">
+                {/* Event Title */}
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    Event Title<span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="title"
+                    value={eventForm.title}
+                    onChange={handleEventFormChange}
+                    className={`w-full rounded-lg border ${eventFormErrors.title ? "border-red-300" : "border-gray-300"} p-3`}
+                    placeholder="Enter event title"
+                  />
+                  {eventFormErrors.title && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {eventFormErrors.title}
+                    </p>
+                  )}
+                </div>
+
+                {/* Event Description */}
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    Description
+                  </label>
+                  <textarea
+                    name="description"
+                    value={eventForm.description}
+                    onChange={handleEventFormChange}
+                    rows={4}
+                    className="w-full rounded-lg border border-gray-300 p-3"
+                    placeholder="Enter event description"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Event Date */}
+                  <div>
+                    <label className="block text-sm font-medium mb-2">
+                      Date<span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="date"
+                      name="date"
+                      value={eventForm.date}
+                      onChange={handleEventFormChange}
+                      min={new Date().toISOString().split("T")[0]}
+                      className={`w-full rounded-lg border ${eventFormErrors.date ? "border-red-300" : "border-gray-300"} p-3`}
+                    />
+                    {eventFormErrors.date && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {eventFormErrors.date}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Event Time */}
+                  <div>
+                    <label className="block text-sm font-medium mb-2">
+                      Time<span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      name="time"
+                      value={eventForm.time}
+                      onChange={handleEventFormChange}
+                      className={`w-full rounded-lg border ${eventFormErrors.time ? "border-red-300" : "border-gray-300"} p-3`}
+                      placeholder="e.g., 10:00 AM - 4:00 PM"
+                    />
+                    {eventFormErrors.time && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {eventFormErrors.time}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Event Venue */}
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    Venue<span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="venue"
+                    value={eventForm.venue}
+                    onChange={handleEventFormChange}
+                    className={`w-full rounded-lg border ${eventFormErrors.venue ? "border-red-300" : "border-gray-300"} p-3`}
+                    placeholder="Enter event venue"
+                  />
+                  {eventFormErrors.venue && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {eventFormErrors.venue}
+                    </p>
+                  )}
+                </div>
+
+                {/* Registration Limit */}
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    Registration Limit (Optional)
+                  </label>
+                  <input
+                    type="number"
+                    name="registrationLimit"
+                    value={eventForm.registrationLimit}
+                    onChange={handleEventFormChange}
+                    min="1"
+                    className={`w-full rounded-lg border ${eventFormErrors.registrationLimit ? "border-red-300" : "border-gray-300"} p-3`}
+                    placeholder="Maximum number of participants"
+                  />
+                  {eventFormErrors.registrationLimit && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {eventFormErrors.registrationLimit}
+                    </p>
+                  )}
+                </div>
+
+                {/* Event Image */}
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    Event Image (Optional)
+                  </label>
+                  <div className="flex items-center justify-center w-full">
+                    <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
+                      <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                        <Upload className="w-8 h-8 mb-4 text-gray-500" />
+                        <p className="mb-2 text-sm text-gray-500">
+                          <span className="font-semibold">Click to upload</span>{" "}
+                          or drag and drop
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          PNG, JPG, GIF up to 10MB
+                        </p>
+                      </div>
+                      <input
+                        type="file"
+                        name="image"
+                        onChange={handleEventFormChange}
+                        accept="image/*"
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+                  {eventForm.image && (
+                    <p className="text-sm text-gray-600 mt-2">
+                      Selected: {eventForm.image.name}
+                    </p>
+                  )}
+                </div>
+
+                <div className="flex justify-end gap-3 pt-6">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setShowCreateEventModal(false)}
+                    disabled={isCreatingEvent}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    className="bg-primary-magenta text-white hover:bg-primary-magenta/90"
+                    disabled={isCreatingEvent}
+                  >
+                    {isCreatingEvent ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Creating...
+                      </>
+                    ) : (
+                      "Create Event"
+                    )}
+                  </Button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       )}

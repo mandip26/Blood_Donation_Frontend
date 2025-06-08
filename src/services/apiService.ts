@@ -178,11 +178,23 @@ export const authService = {
   },
 };
 
-// Event services
+// Event services - using correct base URL for events
+const EVENT_API_BASE_URL =
+  import.meta.env.VITE_BASE_API_URL?.replace("/user", "/events") ||
+  "http://localhost:8001/api/v1/events";
+
+const eventApi = axios.create({
+  baseURL: EVENT_API_BASE_URL,
+  headers: {
+    "Content-Type": "application/json",
+  },
+  withCredentials: true,
+});
+
 export const eventService = {
   getAllEvents: async () => {
     try {
-      const response = await api.get("/events");
+      const response = await eventApi.get("/");
       return response.data;
     } catch (error) {
       throw error;
@@ -191,20 +203,50 @@ export const eventService = {
 
   getEventById: async (id: string) => {
     try {
-      const response = await api.get(`/events/${id}`);
+      const response = await eventApi.get(`/${id}`);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+  createEvent: async (eventData: FormData) => {
+    try {
+      const response = await eventApi.post("/create", eventData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
       return response.data;
     } catch (error) {
       throw error;
     }
   },
 
-  createEvent: async (eventData: FormData) => {
+  getMyEvents: async () => {
     try {
-      const response = await api.post("/events", eventData, {
+      const response = await eventApi.get("/my-events");
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  updateEvent: async (id: string, eventData: FormData) => {
+    try {
+      const response = await eventApi.put(`/${id}`, eventData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
       });
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  deleteEvent: async (id: string) => {
+    try {
+      const response = await eventApi.delete(`/${id}`);
       return response.data;
     } catch (error) {
       throw error;
