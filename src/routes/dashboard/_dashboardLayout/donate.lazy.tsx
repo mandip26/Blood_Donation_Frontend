@@ -15,22 +15,21 @@ function RouteComponent() {
   const { user, isLoading: authLoading } = useAuth();
   // Get responsive design hooks
   const { isMobile: _ } = useResponsive(); // Using underscore to indicate intentionally unused variable
-
   // Form state
   const [formData, setFormData] = useState({
-    fullName: "",
-    dateOfBirth: "",
-    phoneNo: "",
+    name: "",
+    dob: "",
+    phone: "",
     bloodType: "",
-    disability: "no",
-    gender: "male",
+    disability: false,
+    gender: "Male" as "Male" | "Female" | "Other",
     email: "",
-    idProofType: "PAN",
-    idProofNumber: "",
+    idProofType: "PAN" as "PAN" | "Aadhaar" | "Vote ID",
+    idProofImage: null as File | null,
     weight: "",
     hemoglobinCount: "",
-    healthy: "yes",
-    declaration: false,
+    isHealthy: true,
+    declarationAccepted: false,
   });
 
   // Validation state
@@ -38,15 +37,14 @@ function RouteComponent() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
-
   // Populate form with user data if available
   useEffect(() => {
     if (user) {
       setFormData((prevData) => ({
         ...prevData,
-        fullName: user.name || prevData.fullName,
+        name: user.name || prevData.name,
         email: user.email || prevData.email,
-        phoneNo: user.phone || prevData.phoneNo,
+        phone: user.phone || prevData.phone,
       }));
     }
   }, [user]);
@@ -85,28 +83,23 @@ function RouteComponent() {
       });
     }
   };
-
   // Form validation
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
     // Required fields
-    if (!formData.fullName.trim()) newErrors.fullName = "Name is required";
-    if (!formData.dateOfBirth.trim())
-      newErrors.dateOfBirth = "Date of birth is required";
-    if (!formData.phoneNo.trim())
-      newErrors.phoneNo = "Phone number is required";
+    if (!formData.name.trim()) newErrors.name = "Name is required";
+    if (!formData.dob.trim()) newErrors.dob = "Date of birth is required";
+    if (!formData.phone.trim()) newErrors.phone = "Phone number is required";
     if (!formData.bloodType) newErrors.bloodType = "Blood type is required";
     if (!formData.email.trim()) newErrors.email = "Email is required";
-    if (!formData.idProofNumber?.trim())
-      newErrors.idProofNumber = "ID proof number is required";
+    if (!formData.weight.trim()) newErrors.weight = "Weight is required";
+    if (!formData.hemoglobinCount.trim())
+      newErrors.hemoglobinCount = "Hemoglobin count is required";
 
     // Phone validation
-    if (
-      formData.phoneNo &&
-      !/^\d{10}$/.test(formData.phoneNo.replace(/\s/g, ""))
-    ) {
-      newErrors.phoneNo = "Please enter a valid 10-digit phone number";
+    if (formData.phone && !/^\d{10}$/.test(formData.phone.replace(/\s/g, ""))) {
+      newErrors.phone = "Please enter a valid 10-digit phone number";
     }
 
     // Email validation
@@ -115,8 +108,8 @@ function RouteComponent() {
     }
 
     // Age validation (must be at least 18)
-    if (formData.dateOfBirth) {
-      const birthDate = new Date(formData.dateOfBirth);
+    if (formData.dob) {
+      const birthDate = new Date(formData.dob);
       const today = new Date();
       let age = today.getFullYear() - birthDate.getFullYear();
       const monthDiff = today.getMonth() - birthDate.getMonth();
@@ -127,10 +120,8 @@ function RouteComponent() {
       ) {
         age--;
       }
-
       if (age < 18) {
-        newErrors.dateOfBirth =
-          "You must be at least 18 years old to donate blood";
+        newErrors.dob = "You must be at least 18 years old to donate blood";
       }
     }
 
@@ -156,8 +147,8 @@ function RouteComponent() {
     }
 
     // Declaration required
-    if (!formData.declaration) {
-      newErrors.declaration = "You must agree to the declaration";
+    if (!formData.declarationAccepted) {
+      newErrors.declarationAccepted = "You must agree to the declaration";
     }
 
     return newErrors;
@@ -176,24 +167,21 @@ function RouteComponent() {
 
     try {
       setIsSubmitting(true);
-      setApiError(null);
-
-      // Prepare donor data
+      setApiError(null); // Prepare donor data
       const donorData = {
-        fullName: formData.fullName,
-        dateOfBirth: formData.dateOfBirth,
-        gender: formData.gender as "male" | "female" | "other",
+        name: formData.name,
+        dob: formData.dob,
+        gender: formData.gender,
         bloodType: formData.bloodType,
-        weight: formData.weight ? Number(formData.weight) : 0,
-        hemoglobinCount: formData.hemoglobinCount
-          ? Number(formData.hemoglobinCount)
-          : undefined,
-        disability: formData.disability as "yes" | "no",
-        healthy: formData.healthy as "yes" | "no",
-        phoneNo: formData.phoneNo,
+        weight: Number(formData.weight),
+        hemoglobinCount: Number(formData.hemoglobinCount),
+        disability: formData.disability,
+        isHealthy: formData.isHealthy,
+        phone: formData.phone,
         email: formData.email,
-        idProofType: formData.idProofType as "PAN" | "Aadhaar" | "VoterID",
-        idProofNumber: formData.idProofNumber,
+        idProofType: formData.idProofType,
+        idProofImage: formData.idProofImage,
+        declarationAccepted: formData.declarationAccepted,
       };
 
       // Register donor
@@ -214,27 +202,42 @@ function RouteComponent() {
       });
 
       // Set UI state to show success message
-      setIsSubmitted(true);
-
-      // Reset form after submission
+      setIsSubmitted(true); // Reset form after submission
       setFormData({
-        fullName: "",
-        dateOfBirth: "",
-        phoneNo: "",
+        name: "",
+        dob: "",
+        phone: "",
         bloodType: "",
-        disability: "no",
-        gender: "male",
+        disability: false,
+        gender: "Male",
         email: "",
         idProofType: "PAN",
-        idProofNumber: "",
+        idProofImage: null,
         weight: "",
         hemoglobinCount: "",
-        healthy: "yes",
-        declaration: false,
+        isHealthy: true,
+        declarationAccepted: false,
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error registering donation:", error);
-      setApiError("Failed to register donation. Please try again.");
+      console.error("Error details:", error.response?.data);
+      console.error("Error status:", error.response?.status);
+
+      // Set more specific error message
+      let errorMessage = "Failed to register donation. Please try again.";
+
+      if (error.response?.status === 404) {
+        errorMessage =
+          "Donor registration service is not available. Please contact support.";
+      } else if (error.message) {
+        errorMessage = error.message;
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      }
+
+      setApiError(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -308,14 +311,14 @@ function RouteComponent() {
             </label>
             <input
               type="text"
-              name="fullName"
-              value={formData.fullName}
+              name="name"
+              value={formData.name}
               onChange={handleChange}
-              className={`w-full rounded-full border ${errors.fullName ? "border-red-300" : "border-gray-300"} p-2.5 px-4`}
+              className={`w-full rounded-full border ${errors.name ? "border-red-300" : "border-gray-300"} p-2.5 px-4`}
               placeholder="Enter Full Name"
             />
-            {errors.fullName && (
-              <p className="text-red-500 text-xs mt-1">{errors.fullName}</p>
+            {errors.name && (
+              <p className="text-red-500 text-xs mt-1">{errors.name}</p>
             )}
           </div>
 
@@ -327,18 +330,16 @@ function RouteComponent() {
               </label>
               <input
                 type="text"
-                name="dateOfBirth"
-                value={formData.dateOfBirth}
+                name="dob"
+                value={formData.dob}
                 onChange={handleChange}
                 onFocus={(e) => (e.target.type = "date")}
                 max={new Date().toISOString().split("T")[0]}
-                className={`w-full rounded-full border ${errors.dateOfBirth ? "border-red-300" : "border-gray-300"} p-2.5 px-4`}
+                className={`w-full rounded-full border ${errors.dob ? "border-red-300" : "border-gray-300"} p-2.5 px-4`}
                 placeholder="DD/MM/YYYY"
               />
-              {errors.dateOfBirth && (
-                <p className="text-red-500 text-xs mt-1">
-                  {errors.dateOfBirth}
-                </p>
+              {errors.dob && (
+                <p className="text-red-500 text-xs mt-1">{errors.dob}</p>
               )}
             </div>
 
@@ -350,17 +351,17 @@ function RouteComponent() {
               <div className="flex flex-wrap gap-4">
                 <label className="flex items-center">
                   <div
-                    className={`w-5 h-5 rounded-full border ${formData.gender === "male" ? "bg-[#c14351] border-[#c14351]" : "border-gray-300"} flex items-center justify-center mr-2`}
+                    className={`w-5 h-5 rounded-full border ${formData.gender === "Male" ? "bg-[#c14351] border-[#c14351]" : "border-gray-300"} flex items-center justify-center mr-2`}
                   >
-                    {formData.gender === "male" && (
+                    {formData.gender === "Male" && (
                       <div className="w-2 h-2 bg-white rounded-full"></div>
                     )}
                   </div>
                   <input
                     type="radio"
                     name="gender"
-                    value="male"
-                    checked={formData.gender === "male"}
+                    value="Male"
+                    checked={formData.gender === "Male"}
                     onChange={handleChange}
                     className="sr-only"
                   />
@@ -368,17 +369,17 @@ function RouteComponent() {
                 </label>
                 <label className="flex items-center">
                   <div
-                    className={`w-5 h-5 rounded-full border ${formData.gender === "female" ? "bg-[#c14351] border-[#c14351]" : "border-gray-300"} flex items-center justify-center mr-2`}
+                    className={`w-5 h-5 rounded-full border ${formData.gender === "Female" ? "bg-[#c14351] border-[#c14351]" : "border-gray-300"} flex items-center justify-center mr-2`}
                   >
-                    {formData.gender === "female" && (
+                    {formData.gender === "Female" && (
                       <div className="w-2 h-2 bg-white rounded-full"></div>
                     )}
                   </div>
                   <input
                     type="radio"
                     name="gender"
-                    value="female"
-                    checked={formData.gender === "female"}
+                    value="Female"
+                    checked={formData.gender === "Female"}
                     onChange={handleChange}
                     className="sr-only"
                   />
@@ -386,17 +387,17 @@ function RouteComponent() {
                 </label>
                 <label className="flex items-center">
                   <div
-                    className={`w-5 h-5 rounded-full border ${formData.gender === "other" ? "bg-[#c14351] border-[#c14351]" : "border-gray-300"} flex items-center justify-center mr-2`}
+                    className={`w-5 h-5 rounded-full border ${formData.gender === "Other" ? "bg-[#c14351] border-[#c14351]" : "border-gray-300"} flex items-center justify-center mr-2`}
                   >
-                    {formData.gender === "other" && (
+                    {formData.gender === "Other" && (
                       <div className="w-2 h-2 bg-white rounded-full"></div>
                     )}
                   </div>
                   <input
                     type="radio"
                     name="gender"
-                    value="other"
-                    checked={formData.gender === "other"}
+                    value="Other"
+                    checked={formData.gender === "Other"}
                     onChange={handleChange}
                     className="sr-only"
                   />
@@ -414,14 +415,14 @@ function RouteComponent() {
               </label>
               <input
                 type="tel"
-                name="phoneNo"
-                value={formData.phoneNo}
+                name="phone"
+                value={formData.phone}
                 onChange={handleChange}
-                className={`w-full rounded-full border ${errors.phoneNo ? "border-red-300" : "border-gray-300"} p-2.5 px-4`}
+                className={`w-full rounded-full border ${errors.phone ? "border-red-300" : "border-gray-300"} p-2.5 px-4`}
                 placeholder="00000 00000"
               />
-              {errors.phoneNo && (
-                <p className="text-red-500 text-xs mt-1">{errors.phoneNo}</p>
+              {errors.phone && (
+                <p className="text-red-500 text-xs mt-1">{errors.phone}</p>
               )}
             </div>
 
@@ -535,17 +536,17 @@ function RouteComponent() {
                 </label>
                 <label className="flex items-center">
                   <div
-                    className={`w-5 h-5 rounded-full border ${formData.idProofType === "VoterID" ? "bg-[#c14351] border-[#c14351]" : "border-gray-300"} flex items-center justify-center mr-2`}
+                    className={`w-5 h-5 rounded-full border ${formData.idProofType === "Vote ID" ? "bg-[#c14351] border-[#c14351]" : "border-gray-300"} flex items-center justify-center mr-2`}
                   >
-                    {formData.idProofType === "VoterID" && (
+                    {formData.idProofType === "Vote ID" && (
                       <div className="w-2 h-2 bg-white rounded-full"></div>
                     )}
                   </div>
                   <input
                     type="radio"
                     name="idProofType"
-                    value="VoterID"
-                    checked={formData.idProofType === "VoterID"}
+                    value="Vote ID"
+                    checked={formData.idProofType === "Vote ID"}
                     onChange={handleChange}
                     className="sr-only"
                   />
@@ -554,16 +555,21 @@ function RouteComponent() {
               </div>
               <div className="mt-2">
                 <input
-                  type="text"
-                  name="idProofNumber"
-                  value={formData.idProofNumber}
-                  onChange={handleChange}
-                  className={`w-full rounded-full border ${errors.idProofNumber ? "border-red-300" : "border-gray-300"} p-2.5 px-4`}
-                  placeholder="Enter ID Number"
+                  type="file"
+                  name="idProofImage"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] || null;
+                    setFormData({
+                      ...formData,
+                      idProofImage: file,
+                    });
+                  }}
+                  className={`w-full rounded-full border ${errors.idProofImage ? "border-red-300" : "border-gray-300"} p-2.5 px-4`}
                 />
-                {errors.idProofNumber && (
+                {errors.idProofImage && (
                   <p className="text-red-500 text-xs mt-1">
-                    {errors.idProofNumber}
+                    {errors.idProofImage}
                   </p>
                 )}
               </div>
@@ -579,36 +585,40 @@ function RouteComponent() {
               <div className="flex flex-wrap gap-4">
                 <label className="flex items-center">
                   <div
-                    className={`w-5 h-5 rounded-full border ${formData.disability === "no" ? "bg-[#c14351] border-[#c14351]" : "border-gray-300"} flex items-center justify-center mr-2`}
+                    className={`w-5 h-5 rounded-full border ${!formData.disability ? "bg-[#c14351] border-[#c14351]" : "border-gray-300"} flex items-center justify-center mr-2`}
                   >
-                    {formData.disability === "no" && (
+                    {!formData.disability && (
                       <div className="w-2 h-2 bg-white rounded-full"></div>
                     )}
                   </div>
                   <input
                     type="radio"
                     name="disability"
-                    value="no"
-                    checked={formData.disability === "no"}
-                    onChange={handleChange}
+                    value="false"
+                    checked={!formData.disability}
+                    onChange={() =>
+                      setFormData({ ...formData, disability: false })
+                    }
                     className="sr-only"
                   />
                   No
                 </label>
                 <label className="flex items-center">
                   <div
-                    className={`w-5 h-5 rounded-full border ${formData.disability === "yes" ? "bg-[#c14351] border-[#c14351]" : "border-gray-300"} flex items-center justify-center mr-2`}
+                    className={`w-5 h-5 rounded-full border ${formData.disability ? "bg-[#c14351] border-[#c14351]" : "border-gray-300"} flex items-center justify-center mr-2`}
                   >
-                    {formData.disability === "yes" && (
+                    {formData.disability && (
                       <div className="w-2 h-2 bg-white rounded-full"></div>
                     )}
                   </div>
                   <input
                     type="radio"
                     name="disability"
-                    value="yes"
-                    checked={formData.disability === "yes"}
-                    onChange={handleChange}
+                    value="true"
+                    checked={formData.disability}
+                    onChange={() =>
+                      setFormData({ ...formData, disability: true })
+                    }
                     className="sr-only"
                   />
                   Yes
@@ -662,36 +672,40 @@ function RouteComponent() {
               <div className="flex flex-wrap gap-4">
                 <label className="flex items-center">
                   <div
-                    className={`w-5 h-5 rounded-full border ${formData.healthy === "no" ? "bg-[#c14351] border-[#c14351]" : "border-gray-300"} flex items-center justify-center mr-2`}
+                    className={`w-5 h-5 rounded-full border ${!formData.isHealthy ? "bg-[#c14351] border-[#c14351]" : "border-gray-300"} flex items-center justify-center mr-2`}
                   >
-                    {formData.healthy === "no" && (
+                    {!formData.isHealthy && (
                       <div className="w-2 h-2 bg-white rounded-full"></div>
                     )}
                   </div>
                   <input
                     type="radio"
-                    name="healthy"
-                    value="no"
-                    checked={formData.healthy === "no"}
-                    onChange={handleChange}
+                    name="isHealthy"
+                    value="false"
+                    checked={!formData.isHealthy}
+                    onChange={() =>
+                      setFormData({ ...formData, isHealthy: false })
+                    }
                     className="sr-only"
                   />
                   No
                 </label>
                 <label className="flex items-center">
                   <div
-                    className={`w-5 h-5 rounded-full border ${formData.healthy === "yes" ? "bg-[#c14351] border-[#c14351]" : "border-gray-300"} flex items-center justify-center mr-2`}
+                    className={`w-5 h-5 rounded-full border ${formData.isHealthy ? "bg-[#c14351] border-[#c14351]" : "border-gray-300"} flex items-center justify-center mr-2`}
                   >
-                    {formData.healthy === "yes" && (
+                    {formData.isHealthy && (
                       <div className="w-2 h-2 bg-white rounded-full"></div>
                     )}
                   </div>
                   <input
                     type="radio"
-                    name="healthy"
-                    value="yes"
-                    checked={formData.healthy === "yes"}
-                    onChange={handleChange}
+                    name="isHealthy"
+                    value="true"
+                    checked={formData.isHealthy}
+                    onChange={() =>
+                      setFormData({ ...formData, isHealthy: true })
+                    }
                     className="sr-only"
                   />
                   Yes
@@ -704,16 +718,16 @@ function RouteComponent() {
           <div className="mb-6">
             <label className="flex items-start">
               <div
-                className={`w-5 h-5 border rounded flex items-center justify-center mt-0.5 ${errors.declaration ? "border-red-300" : formData.declaration ? "bg-[#c14351] border-[#c14351]" : "border-gray-300"}`}
+                className={`w-5 h-5 border rounded flex items-center justify-center mt-0.5 ${errors.declarationAccepted ? "border-red-300" : formData.declarationAccepted ? "bg-[#c14351] border-[#c14351]" : "border-gray-300"}`}
               >
-                {formData.declaration && (
+                {formData.declarationAccepted && (
                   <Check className="h-3 w-3 text-white" />
                 )}
               </div>
               <input
                 type="checkbox"
-                name="declaration"
-                checked={formData.declaration}
+                name="declarationAccepted"
+                checked={formData.declarationAccepted}
                 onChange={handleChange}
                 className="sr-only"
               />
@@ -723,9 +737,9 @@ function RouteComponent() {
                 hereby declare that<span className="text-red-500">*</span>
               </span>
             </label>
-            {errors.declaration && (
+            {errors.declarationAccepted && (
               <p className="text-red-500 text-xs mt-1 ml-8">
-                {errors.declaration}
+                {errors.declarationAccepted}
               </p>
             )}
           </div>

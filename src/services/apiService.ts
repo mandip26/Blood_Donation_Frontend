@@ -13,6 +13,15 @@ const api = axios.create({
   withCredentials: true, // Critical for handling cookies/sessions
 });
 
+// Donor API configuration
+const donorApi = axios.create({
+  baseURL: `${"http://localhost:8001/api/v1"}/donor`,
+  headers: {
+    "Content-Type": "application/json",
+  },
+  withCredentials: true,
+});
+
 // Request interceptor - useful for adding auth tokens to requests
 api.interceptors.request.use(
   (config) => {
@@ -243,7 +252,6 @@ export const eventService = {
       throw error;
     }
   },
-
   deleteEvent: async (id: string) => {
     try {
       const response = await eventApi.delete(`/${id}`);
@@ -256,22 +264,19 @@ export const eventService = {
 
 // Donation services
 export interface DonorRegistrationData {
-  fullName: string;
-  dateOfBirth: string;
-  gender: "male" | "female" | "other";
-  bloodType: string;
-  weight: number;
-  hemoglobinCount?: number;
-  disability: "yes" | "no";
-  healthy: "yes" | "no";
-  phoneNo: string;
+  name: string;
+  dob: string;
+  gender: "Male" | "Female" | "Other";
+  phone: string;
   email: string;
-  idProofType: "PAN" | "Aadhaar" | "VoterID";
-  idProofNumber: string;
-  address?: string;
-  city?: string;
-  state?: string;
-  pincode?: string;
+  bloodType: string;
+  idProofType: "PAN" | "Aadhaar" | "Vote ID";
+  idProofImage?: File | null;
+  disability: boolean;
+  weight: number;
+  hemoglobinCount: number;
+  isHealthy: boolean;
+  declarationAccepted: boolean;
 }
 
 export interface DonationRecord {
@@ -292,7 +297,70 @@ export interface DonationRecord {
 export const donationService = {
   registerDonor: async (donorData: DonorRegistrationData) => {
     try {
-      const response = await api.post("/donations/register", donorData);
+      const formData = new FormData();
+      formData.append("name", donorData.name);
+      formData.append("dob", donorData.dob);
+      formData.append("gender", donorData.gender);
+      formData.append("phone", donorData.phone);
+      formData.append("email", donorData.email);
+      formData.append("bloodType", donorData.bloodType);
+      formData.append("idProofType", donorData.idProofType);
+      formData.append("disability", donorData.disability.toString());
+      formData.append("weight", donorData.weight.toString());
+      formData.append("hemoglobinCount", donorData.hemoglobinCount.toString());
+      formData.append("isHealthy", donorData.isHealthy.toString());
+      formData.append(
+        "declarationAccepted",
+        donorData.declarationAccepted.toString()
+      );
+
+      if (donorData.idProofImage) {
+        formData.append("idProofImage", donorData.idProofImage);
+      }
+      const response = await donorApi.post("/register", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+      return response.data;
+    } catch (error: any) {
+      console.error("Donor registration API error:", error);
+      console.error("Response data:", error.response?.data);
+      console.error("Response status:", error.response?.status);
+      console.error("Response headers:", error.response?.headers);
+
+      // Check if it's a 404 error (route not found)
+      if (error.response?.status === 404) {
+        throw new Error(
+          "Donor registration endpoint not found. Please check if the donor routes are properly configured in the backend."
+        );
+      }
+
+      throw error;
+    }
+  },
+
+  getMyDonorForm: async () => {
+    try {
+      const response = await donorApi.get("/me");
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  getAllDonors: async () => {
+    try {
+      const response = await donorApi.get("/all");
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  getDonorById: async (id: string) => {
+    try {
+      const response = await donorApi.get(`/${id}`);
       return response.data;
     } catch (error) {
       throw error;
@@ -361,6 +429,78 @@ export const donationService = {
   getNextDonationDate: async () => {
     try {
       const response = await api.get("/donations/next-eligible");
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+};
+
+// Event registration API base URL
+const EVENT_REGISTRATION_API_BASE_URL =
+  import.meta.env.VITE_BASE_API_URL?.replace("/user", "/event-registrations") ||
+  "http://localhost:8001/api/v1/event-registrations";
+
+const eventRegistrationApi = axios.create({
+  baseURL: EVENT_REGISTRATION_API_BASE_URL,
+  headers: {
+    "Content-Type": "application/json",
+  },
+  withCredentials: true,
+});
+
+export const eventRegistrationService = {
+  // Register for an event
+  registerForEvent: async (eventId: string) => {
+    try {
+      const response = await eventRegistrationApi.post(`/${eventId}/register`);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Check if user is registered for an event
+  checkEventRegistration: async (eventId: string) => {
+    try {
+      const response = await eventRegistrationApi.get(
+        `/${eventId}/check-registration`
+      );
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Get all registrations for an event (only for event creator)
+  getEventRegistrations: async (eventId: string) => {
+    try {
+      const response = await eventRegistrationApi.get(
+        `/${eventId}/registrations`
+      );
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Get all events a user has registered for
+  getUserEventRegistrations: async () => {
+    try {
+      const response = await eventRegistrationApi.get("/user-registrations");
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Update registration status (accept/reject)
+  updateRegistrationStatus: async (registrationId: string, status: string) => {
+    try {
+      const response = await eventRegistrationApi.patch(
+        `/${registrationId}/status`,
+        { status }
+      );
       return response.data;
     } catch (error) {
       throw error;

@@ -16,7 +16,11 @@ import {
   Upload,
   Trash2,
 } from "lucide-react";
-import { eventService, donationService } from "@/services/apiService";
+import {
+  eventService,
+  donationService,
+  eventRegistrationService,
+} from "@/services/apiService";
 import { useAuth } from "@/hooks/useAuth";
 import { useResponsive } from "@/hooks/useResponsive";
 
@@ -67,6 +71,25 @@ function EventsComponent() {
   const [showCreateEventModal, setShowCreateEventModal] = useState(false);
   const [isCreatingEvent, setIsCreatingEvent] = useState(false);
   const [createEventError, setCreateEventError] = useState<string | null>(null);
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [alreadyRegistered, setAlreadyRegistered] = useState(false);
+  const [userRegistrations, setUserRegistrations] = useState<string[]>([]); // Array of event IDs the user is registered for
+  const [registrationEventId, setRegistrationEventId] = useState<string | null>(
+    null
+  ); // Store the ID of the event being registered for
+
+  // Event registrations management states
+  const [showRegistrationsModal, setShowRegistrationsModal] = useState(false);
+  const [eventRegistrations, setEventRegistrations] = useState<any[]>([]);
+  const [isLoadingRegistrations, setIsLoadingRegistrations] = useState(false);
+  const [registrationsError, setRegistrationsError] = useState<string | null>(
+    null
+  );
+  const [selectedEventForRegistrations, setSelectedEventForRegistrations] =
+    useState<BloodDonationEvent | null>(null);
+  const [updatingRegistrationId, setUpdatingRegistrationId] = useState<
+    string | null
+  >(null);
 
   // Create event form state
   const [eventForm, setEventForm] = useState({
@@ -74,6 +97,10 @@ function EventsComponent() {
     description: "",
     date: "",
     time: "",
+    startTime: "",
+    endTime: "",
+    startAmPm: "AM" as "AM" | "PM",
+    endAmPm: "PM" as "AM" | "PM",
     venue: "",
     registrationLimit: "",
     image: null as File | null,
@@ -81,22 +108,21 @@ function EventsComponent() {
   const [eventFormErrors, setEventFormErrors] = useState<
     Record<string, string>
   >({});
-
   // Donation form state
   const [formData, setFormData] = useState({
-    fullName: "",
-    dateOfBirth: "",
-    phoneNo: "",
+    name: "",
+    dob: "",
+    phone: "",
     bloodType: "",
-    disability: "no",
-    gender: "male",
+    disability: false,
+    gender: "Male" as "Male" | "Female" | "Other",
     email: "",
-    idProofType: "PAN",
-    idProofNumber: "",
+    idProofType: "PAN" as "PAN" | "Aadhaar" | "Vote ID",
+    idProofImage: null as File | null,
     weight: "",
     hemoglobinCount: "",
-    healthy: "yes",
-    declaration: false,
+    isHealthy: true,
+    declarationAccepted: false,
   });
 
   // Validation state
@@ -113,19 +139,17 @@ function EventsComponent() {
     "Kolkata",
   ];
   const dates = ["Today", "Tomorrow", "This Week", "This Month"];
-
   // Populate form with user data if available
   useEffect(() => {
     if (user) {
       setFormData((prevData) => ({
         ...prevData,
-        fullName: user.name || prevData.fullName,
+        name: user.name || prevData.name,
         email: user.email || prevData.email,
-        phoneNo: user.phone || prevData.phoneNo,
+        phone: user.phone || prevData.phone,
       }));
     }
   }, [user]);
-
   // Handle input changes for donate form
   const handleChange = (
     e: React.ChangeEvent<
@@ -145,6 +169,13 @@ function EventsComponent() {
         ...formData,
         [name]: value,
       });
+    } else if (type === "file") {
+      const fileInput = e.target as HTMLInputElement;
+      const file = fileInput.files?.[0] || null;
+      setFormData({
+        ...formData,
+        [name]: file,
+      });
     } else {
       setFormData({
         ...formData,
@@ -160,28 +191,23 @@ function EventsComponent() {
       });
     }
   };
-
   // Form validation
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
     // Required fields
-    if (!formData.fullName.trim()) newErrors.fullName = "Name is required";
-    if (!formData.dateOfBirth.trim())
-      newErrors.dateOfBirth = "Date of birth is required";
-    if (!formData.phoneNo.trim())
-      newErrors.phoneNo = "Phone number is required";
+    if (!formData.name.trim()) newErrors.name = "Name is required";
+    if (!formData.dob.trim()) newErrors.dob = "Date of birth is required";
+    if (!formData.phone.trim()) newErrors.phone = "Phone number is required";
     if (!formData.bloodType) newErrors.bloodType = "Blood type is required";
     if (!formData.email.trim()) newErrors.email = "Email is required";
-    if (!formData.idProofNumber?.trim())
-      newErrors.idProofNumber = "ID proof number is required";
+    if (!formData.weight.trim()) newErrors.weight = "Weight is required";
+    if (!formData.hemoglobinCount.trim())
+      newErrors.hemoglobinCount = "Hemoglobin count is required";
 
     // Phone validation
-    if (
-      formData.phoneNo &&
-      !/^\d{10}$/.test(formData.phoneNo.replace(/\s/g, ""))
-    ) {
-      newErrors.phoneNo = "Please enter a valid 10-digit phone number";
+    if (formData.phone && !/^\d{10}$/.test(formData.phone.replace(/\s/g, ""))) {
+      newErrors.phone = "Please enter a valid 10-digit phone number";
     }
 
     // Email validation
@@ -190,8 +216,8 @@ function EventsComponent() {
     }
 
     // Age validation (must be at least 18)
-    if (formData.dateOfBirth) {
-      const birthDate = new Date(formData.dateOfBirth);
+    if (formData.dob) {
+      const birthDate = new Date(formData.dob);
       const today = new Date();
       let age = today.getFullYear() - birthDate.getFullYear();
       const monthDiff = today.getMonth() - birthDate.getMonth();
@@ -202,10 +228,8 @@ function EventsComponent() {
       ) {
         age--;
       }
-
       if (age < 18) {
-        newErrors.dateOfBirth =
-          "You must be at least 18 years old to donate blood";
+        newErrors.dob = "You must be at least 18 years old to donate blood";
       }
     }
 
@@ -231,13 +255,13 @@ function EventsComponent() {
     }
 
     // Declaration required
-    if (!formData.declaration) {
-      newErrors.declaration = "You must agree to the declaration";
+    if (!formData.declarationAccepted) {
+      newErrors.declarationAccepted = "You must agree to the declaration";
     }
     return newErrors;
   };
 
-  // Fetch events from API
+  // Fetch events and user registrations from API
   useEffect(() => {
     const fetchEvents = async () => {
       try {
@@ -246,16 +270,6 @@ function EventsComponent() {
         const response = await eventService.getAllEvents();
         if (response.success && response.events) {
           console.log("Events fetched:", response.events);
-          // Log image URLs for debugging
-          response.events.forEach((event: any, index: number) => {
-            console.log(`Event ${index + 1}: ${event.title}`);
-            console.log(`  - Image URL: "${event.image}"`);
-            console.log(`  - Image type: ${typeof event.image}`);
-            console.log(`  - Image length: ${event.image?.length || 0}`);
-            console.log(
-              `  - Is valid URL: ${event.image && event.image.startsWith("http")}`
-            );
-          });
           setEvents(response.events);
         } else {
           setEventsError("Failed to load events");
@@ -268,19 +282,44 @@ function EventsComponent() {
       }
     };
 
-    fetchEvents();
-  }, []);
+    const fetchUserRegistrations = async () => {
+      try {
+        if (user) {
+          const response =
+            await eventRegistrationService.getUserEventRegistrations();
+          if (response.success && response.registrations) {
+            // Extract event IDs from registrations
+            const eventIds = response.registrations.map(
+              (reg: any) => reg.event._id
+            );
+            setUserRegistrations(eventIds);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching user registrations:", error);
+      }
+    };
 
-  // Check if user can create events (everyone except "user" role)
-  const canCreateEvents = user && user.role !== "user";
-  // Check if user can delete event (only event creator)
+    fetchEvents();
+    fetchUserRegistrations();
+  }, [user]);
+
+  // Check if the user can create events
+  const canCreateEvents = user && user.role && user.role !== "user";
+
+  // Check if the user can delete an event
   const canDeleteEvent = (event: BloodDonationEvent) => {
-    return user && event.createdBy && user._id === event.createdBy._id;
+    if (!user) return false;
+
+    // Users can only delete events they created
+    return user._id === event.createdBy?._id;
   };
 
   // Handle event form changes
   const handleEventFormChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
   ) => {
     const { name, value, type } = e.target;
 
@@ -289,7 +328,32 @@ function EventsComponent() {
       const file = fileInput.files?.[0] || null;
       setEventForm((prev) => ({ ...prev, [name]: file }));
     } else {
-      setEventForm((prev) => ({ ...prev, [name]: value }));
+      setEventForm((prev) => {
+        const newForm = { ...prev, [name]: value };
+
+        // If start or end time fields change, update the combined time field
+        if (
+          name === "startTime" ||
+          name === "endTime" ||
+          name === "startAmPm" ||
+          name === "endAmPm"
+        ) {
+          const startTime = name === "startTime" ? value : prev.startTime;
+          const endTime = name === "endTime" ? value : prev.endTime;
+          const startAmPm = name === "startAmPm" ? value : prev.startAmPm;
+          const endAmPm = name === "endAmPm" ? value : prev.endAmPm;
+
+          if (startTime && endTime) {
+            newForm.time = `${startTime} ${startAmPm} - ${endTime} ${endAmPm}`;
+          } else if (startTime) {
+            newForm.time = `${startTime} ${startAmPm}`;
+          } else {
+            newForm.time = "";
+          }
+        }
+
+        return newForm;
+      });
     }
 
     // Clear error for this field
@@ -297,7 +361,6 @@ function EventsComponent() {
       setEventFormErrors((prev) => ({ ...prev, [name]: "" }));
     }
   };
-
   // Validate event form
   const validateEventForm = () => {
     const errors: Record<string, string> = {};
@@ -308,8 +371,11 @@ function EventsComponent() {
     if (!eventForm.date) {
       errors.date = "Event date is required";
     }
-    if (!eventForm.time.trim()) {
-      errors.time = "Event time is required";
+    if (!eventForm.startTime.trim()) {
+      errors.startTime = "Start time is required";
+    }
+    if (!eventForm.endTime.trim()) {
+      errors.endTime = "End time is required";
     }
     if (!eventForm.venue.trim()) {
       errors.venue = "Event venue is required";
@@ -320,6 +386,30 @@ function EventsComponent() {
         Number(eventForm.registrationLimit) <= 0)
     ) {
       errors.registrationLimit = "Registration limit must be a positive number";
+    }
+
+    // Validate time format and logic
+    if (eventForm.startTime && eventForm.endTime) {
+      const startHour = parseInt(eventForm.startTime.split(":")[0]);
+      const startMinute = parseInt(eventForm.startTime.split(":")[1] || "0");
+      const endHour = parseInt(eventForm.endTime.split(":")[0]);
+      const endMinute = parseInt(eventForm.endTime.split(":")[1] || "0");
+
+      // Convert to 24-hour format for comparison
+      let start24 = startHour === 12 ? 0 : startHour;
+      if (eventForm.startAmPm === "PM" && startHour !== 12) start24 += 12;
+      if (eventForm.startAmPm === "AM" && startHour === 12) start24 = 0;
+
+      let end24 = endHour === 12 ? 0 : endHour;
+      if (eventForm.endAmPm === "PM" && endHour !== 12) end24 += 12;
+      if (eventForm.endAmPm === "AM" && endHour === 12) end24 = 0;
+
+      const startTotal = start24 * 60 + startMinute;
+      const endTotal = end24 * 60 + endMinute;
+
+      if (startTotal >= endTotal) {
+        errors.endTime = "End time must be after start time";
+      }
     }
 
     return errors;
@@ -383,14 +473,16 @@ function EventsComponent() {
             eventsResponse.events.length
           );
           setEvents(eventsResponse.events);
-        }
-
-        // Reset form and close modal
+        } // Reset form and close modal
         setEventForm({
           title: "",
           description: "",
           date: "",
           time: "",
+          startTime: "",
+          endTime: "",
+          startAmPm: "AM",
+          endAmPm: "PM",
           venue: "",
           registrationLimit: "",
           image: null,
@@ -484,18 +576,60 @@ function EventsComponent() {
     return matchesSearch && matchesCity && matchesDate;
   });
   // Handle event click to view details
-  const handleEventClick = (event: BloodDonationEvent) => {
+  const handleEventClick = async (event: BloodDonationEvent) => {
     setSelectedEvent(event);
-  };
+    setApiError(null); // Reset any previous error messages
+    setRegistrationEventId(event._id); // Always store the event ID for registration
 
-  // Handle registration confirmation
-  const handleConfirmRegistration = () => {
+    // Check if this is the user's own event
+    const isOwnEvent =
+      user && event.createdBy && user._id === event.createdBy._id;
+
+    // First check local state (userRegistrations array) for faster UI response
+    const isRegisteredLocally = user && userRegistrations.includes(event._id);
+
+    if (isRegisteredLocally) {
+      setAlreadyRegistered(true);
+      return;
+    }
+
+    // If not found locally, check with the server for accurate status
+    if (user && !isOwnEvent) {
+      try {
+        const response = await eventRegistrationService.checkEventRegistration(
+          event._id
+        );
+        setAlreadyRegistered(response.isRegistered);
+
+        // If registered according to server but not in local state, update local state
+        if (response.isRegistered && !userRegistrations.includes(event._id)) {
+          setUserRegistrations((prev) => [...prev, event._id]);
+        }
+      } catch (error) {
+        console.error("Error checking registration status:", error);
+        setAlreadyRegistered(false);
+      }
+    } else {
+      setAlreadyRegistered(false);
+    }
+  };
+  // Handle registration confirmation (step 2)
+  const handleRegistrationConfirm = () => {
+    // Close confirmation modal and show donation form
     setShowConfirmModal(false);
-    setShowDonateForm(true);
-  };
 
-  // Form submission for donate form
-  const handleDonateFormSubmit = async (e: React.FormEvent) => {
+    // Make sure we have a selected event at this point
+    if (!selectedEvent && registrationEventId) {
+      // If we only have the ID but not the event object, find it from the events array
+      const eventToRegister = events.find((e) => e._id === registrationEventId);
+      if (eventToRegister) {
+        setSelectedEvent(eventToRegister);
+      }
+    }
+
+    setShowDonateForm(true);
+  }; // Form submission for event registration
+  const handleEventRegistrationSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     // Validate form
@@ -505,74 +639,263 @@ function EventsComponent() {
       return;
     }
 
+    // Get event ID from either selectedEvent or registrationEventId
+    const eventId = selectedEvent?._id || registrationEventId;
+
+    if (!eventId) {
+      setApiError("No event selected for registration");
+      return;
+    }
+
+    // Find the full event object if we only have the ID
+    const eventToRegister =
+      selectedEvent || events.find((e) => e._id === eventId);
+    if (!eventToRegister) {
+      setApiError("Event information not found");
+      return;
+    }
+
+    // Check if user is creator of this event
+    const isOwnEvent =
+      user &&
+      eventToRegister.createdBy &&
+      user._id === eventToRegister.createdBy._id;
+
+    if (isOwnEvent) {
+      setApiError("You cannot register for your own event");
+      return;
+    }
+
+    // Check if already registered locally first (for better UX)
+    if (userRegistrations.includes(eventId)) {
+      setApiError("You have already registered for this event");
+      setAlreadyRegistered(true);
+      return;
+    }
+
     try {
       setIsSubmitting(true);
       setApiError(null);
+      setIsRegistering(true);
 
-      // Prepare donor data
-      const donorData = {
-        fullName: formData.fullName,
-        dateOfBirth: formData.dateOfBirth,
-        gender: formData.gender as "male" | "female" | "other",
-        bloodType: formData.bloodType,
-        weight: formData.weight ? Number(formData.weight) : 0,
-        hemoglobinCount: formData.hemoglobinCount
-          ? Number(formData.hemoglobinCount)
-          : undefined,
-        disability: formData.disability as "yes" | "no",
-        healthy: formData.healthy as "yes" | "no",
-        phoneNo: formData.phoneNo,
+      // First register for the event
+      const eventRegistrationResponse =
+        await eventRegistrationService.registerForEvent(eventId);
+      if (!eventRegistrationResponse.success) {
+        throw new Error(
+          eventRegistrationResponse.message || "Failed to register for event"
+        );
+      }
+
+      // Then register as donor using the donation service
+      const registrationData = {
+        name: formData.name,
+        dob: formData.dob,
+        gender: formData.gender,
+        phone: formData.phone,
         email: formData.email,
-        idProofType: formData.idProofType as "PAN" | "Aadhaar" | "VoterID",
-        idProofNumber: formData.idProofNumber,
-      }; // Register donor
-      const response = await donationService.registerDonor(donorData);
-      console.log("Donation registration successful:", response); // Record donation details if API call is successful
-      await donationService.recordDonation({
-        donorId: response.donorId || user?._id,
-        donationDate: new Date().toISOString().split("T")[0],
-        hospitalName: selectedEvent?.createdBy?.name || "Event Organizer",
-        units: 1,
         bloodType: formData.bloodType,
-        hemoglobinLevel: formData.hemoglobinCount
-          ? Number(formData.hemoglobinCount)
-          : undefined,
-        notes: `Registered for event: ${selectedEvent?.title}`,
-      });
+        idProofType: formData.idProofType,
+        idProofImage: formData.idProofImage,
+        disability: formData.disability,
+        weight: Number(formData.weight),
+        hemoglobinCount: Number(formData.hemoglobinCount),
+        isHealthy: formData.isHealthy,
+        declarationAccepted: formData.declarationAccepted,
+      };
+
+      // Register donor using the donation service
+      const response = await donationService.registerDonor(registrationData);
+      console.log("Donor registration successful:", response);
+
+      // Update local state to reflect successful registration
+      setUserRegistrations((prev) => [...prev, eventId]);
+
+      // Update event registration count in the events list
+      setEvents((prevEvents) =>
+        prevEvents.map((event) =>
+          event._id === eventId
+            ? {
+                ...event,
+                registeredCount: (event.registeredCount || 0) + 1,
+              }
+            : event
+        )
+      );
+
+      // If selectedEvent is set, update its registration count too
+      if (selectedEvent && selectedEvent._id === eventId) {
+        setSelectedEvent({
+          ...selectedEvent,
+          registeredCount: (selectedEvent.registeredCount || 0) + 1,
+        });
+      }
 
       // Set UI state to show success message
       setIsSubmitted(true);
+      setAlreadyRegistered(true); // Update registration status
 
       // Reset form after submission
       setFormData({
-        fullName: "",
-        dateOfBirth: "",
-        phoneNo: "",
+        name: "",
+        dob: "",
+        phone: "",
         bloodType: "",
-        disability: "no",
-        gender: "male",
+        disability: false,
+        gender: "Male",
         email: "",
         idProofType: "PAN",
-        idProofNumber: "",
+        idProofImage: null,
         weight: "",
         hemoglobinCount: "",
-        healthy: "yes",
-        declaration: false,
+        isHealthy: true,
+        declarationAccepted: false,
       });
-    } catch (error) {
-      console.error("Error registering donation:", error);
-      setApiError("Failed to register donation. Please try again.");
+    } catch (error: any) {
+      console.error("Error registering:", error);
+
+      // Set more specific error message
+      let errorMessage = "Failed to register for the event. Please try again.";
+
+      if (error.response?.data?.error === "Already registered for this event") {
+        errorMessage = "You have already registered for this event.";
+        setAlreadyRegistered(true);
+
+        // Also update local state to reflect registration
+        if (!userRegistrations.includes(eventId)) {
+          setUserRegistrations((prev) => [...prev, eventId]);
+        }
+      } else if (
+        error.response?.data?.error === "Cannot register for your own event"
+      ) {
+        errorMessage = "You cannot register for your own event.";
+      } else if (error.response?.status === 401) {
+        errorMessage = "You need to be logged in to register for this event.";
+      } else if (error.message) {
+        errorMessage = error.message;
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      }
+
+      setApiError(errorMessage);
     } finally {
       setIsSubmitting(false);
+      setIsRegistering(false);
+    }
+  }; // Handle initial registration (step 1)
+  const handleRegistration = (event: React.FormEvent) => {
+    event.preventDefault();
+
+    if (!user) {
+      setApiError("You need to be logged in to register for an event");
+      return;
+    }
+
+    // Check if this is the user's own event
+    const isOwnEvent =
+      user &&
+      selectedEvent?.createdBy &&
+      user._id === selectedEvent.createdBy._id;
+    if (isOwnEvent) {
+      setApiError("You cannot register for your own event");
+      return;
+    }
+
+    // Check if event registration limit is reached
+    const isLimitReached =
+      selectedEvent?.registrationLimit !== undefined &&
+      selectedEvent.registeredCount !== undefined &&
+      selectedEvent.registeredCount >= selectedEvent.registrationLimit;
+
+    if (isLimitReached) {
+      setApiError("Registration limit for this event has been reached");
+      return;
+    }
+
+    if (alreadyRegistered) {
+      setApiError("You have already registered for this event");
+      return;
+    }
+
+    // Store the event ID for registration
+    if (selectedEvent) {
+      setRegistrationEventId(selectedEvent._id);
+    }
+
+    setShowConfirmModal(true);
+  };
+
+  // Function to fetch event registrations
+  const fetchEventRegistrations = async (eventId: string) => {
+    if (!eventId) return;
+
+    try {
+      setIsLoadingRegistrations(true);
+      setRegistrationsError(null);
+
+      const result =
+        await eventRegistrationService.getEventRegistrations(eventId);
+
+      if (result && result.success && result.registrations) {
+        setEventRegistrations(result.registrations);
+      } else {
+        setEventRegistrations([]);
+      }
+    } catch (error) {
+      console.error("Error fetching event registrations:", error);
+      setRegistrationsError("Failed to load registrations. Please try again.");
+      setEventRegistrations([]);
+    } finally {
+      setIsLoadingRegistrations(false);
     }
   };
 
-  // Handle registration form submission (original form)
-  const handleRegistration = (event: React.FormEvent) => {
-    event.preventDefault();
-    setSelectedEvent(null);
-    setShowConfirmModal(true);
+  // Handle open registrations modal
+  const handleViewRegistrations = (event: BloodDonationEvent) => {
+    setSelectedEventForRegistrations(event);
+    fetchEventRegistrations(event._id);
+    setShowRegistrationsModal(true);
   };
+
+  // Function to close registrations modal
+  const handleCloseRegistrations = () => {
+    setShowRegistrationsModal(false);
+    setSelectedEventForRegistrations(null);
+    setEventRegistrations([]);
+    setRegistrationsError(null);
+  };
+
+  // Function to update registration status
+  const handleUpdateRegistrationStatus = async (
+    registrationId: string,
+    status: string
+  ) => {
+    if (!registrationId) return;
+
+    try {
+      setUpdatingRegistrationId(registrationId);
+
+      const response = await eventRegistrationService.updateRegistrationStatus(
+        registrationId,
+        status
+      );
+
+      if (response && response.success) {
+        // Update the registration in the list
+        setEventRegistrations((prevRegistrations) =>
+          prevRegistrations.map((reg) =>
+            reg._id === registrationId ? { ...reg, status } : reg
+          )
+        );
+      }
+    } catch (error) {
+      console.error("Error updating registration status:", error);
+      alert("Failed to update registration status. Please try again.");
+    } finally {
+      setUpdatingRegistrationId(null);
+    }
+  };
+
   return (
     <div className="container mx-auto py-6 px-4">
       <div className="flex justify-between items-center mb-6">
@@ -788,6 +1111,13 @@ function EventsComponent() {
                   <Clock size={14} className="mr-1" />
                   {event.time}
                 </div>
+                {/* Registration Status Badge */}
+                {user && userRegistrations.includes(event._id) && (
+                  <div className="mt-2 bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs inline-flex items-center">
+                    <Check size={12} className="mr-1" />
+                    Registered
+                  </div>
+                )}
                 {event.registrationLimit && (
                   <div className="mt-4 pt-4 border-t border-gray-100">
                     <div className="flex justify-between mb-2">
@@ -808,15 +1138,38 @@ function EventsComponent() {
                 )}
               </div>
               <div className="p-4 pt-0">
-                <Button
-                  className="w-full bg-primary-magenta text-white hover:bg-primary-magenta/90"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleEventClick(event);
-                  }}
-                >
-                  Register Now
-                </Button>
+                {user && user._id === event.createdBy?._id ? (
+                  <div className="space-y-2">
+                    <Button
+                      className="w-full bg-blue-500 text-white hover:bg-blue-600"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleViewRegistrations(event);
+                      }}
+                    >
+                      View Registrations
+                    </Button>
+                    <Button
+                      className="w-full bg-primary-magenta text-white hover:bg-primary-magenta/90"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleEventClick(event);
+                      }}
+                    >
+                      Event Details
+                    </Button>
+                  </div>
+                ) : (
+                  <Button
+                    className="w-full bg-primary-magenta text-white hover:bg-primary-magenta/90"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleEventClick(event);
+                    }}
+                  >
+                    Register Now
+                  </Button>
+                )}
               </div>
             </div>
           ))
@@ -913,35 +1266,101 @@ function EventsComponent() {
                     ></div>
                   </div>
                 </div>
+              )}{" "}
+              {alreadyRegistered ? (
+                <div className="mt-6 bg-green-50 border border-green-200 rounded-lg p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-green-100 p-2 rounded-full">
+                      <Check className="h-5 w-5 text-green-600" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-green-700">
+                        Already Registered
+                      </h3>
+                      <p className="text-green-600">
+                        You're all set for this event!
+                      </p>
+                    </div>
+                  </div>
+                  <div className="mt-4 flex justify-end">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setSelectedEvent(null)}
+                    >
+                      Close
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <form onSubmit={handleRegistration}>
+                  <h3 className="text-lg font-semibold mb-4">
+                    Register for this Event
+                  </h3>
+
+                  {/* Show warning if this is user's own event */}
+                  {user &&
+                  selectedEvent.createdBy &&
+                  user._id === selectedEvent.createdBy._id ? (
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                      <p className="text-yellow-700">
+                        <AlertCircle className="inline-block mr-2 h-4 w-4" />
+                        You cannot register for your own event.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="text-center py-6">
+                      <p className="text-gray-600 mb-6">
+                        Ready to make a difference? Click register to begin your
+                        event registration process.
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Show API errors */}
+                  {apiError && (
+                    <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-4">
+                      <div className="flex items-center gap-2">
+                        <AlertCircle className="h-4 w-4 text-red-600" />
+                        <p className="text-red-700">{apiError}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex justify-end gap-3">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setSelectedEvent(null)}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="submit"
+                      className="bg-primary-magenta text-white hover:bg-primary-magenta/90"
+                      disabled={
+                        isRegistering ||
+                        (user &&
+                          selectedEvent.createdBy &&
+                          user._id === selectedEvent.createdBy._id) ||
+                        (selectedEvent.registrationLimit !== undefined &&
+                          selectedEvent.registeredCount !== undefined &&
+                          selectedEvent.registeredCount >=
+                            selectedEvent.registrationLimit)
+                      }
+                    >
+                      {isRegistering ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Registering...
+                        </>
+                      ) : (
+                        "Register Now"
+                      )}
+                    </Button>
+                  </div>
+                </form>
               )}
-              <form onSubmit={handleRegistration}>
-                <h3 className="text-lg font-semibold mb-4">
-                  Register for this Event
-                </h3>
-
-                <div className="text-center py-6">
-                  <p className="text-gray-600 mb-6">
-                    Ready to make a difference? Click confirm to proceed with
-                    your blood donation registration.
-                  </p>
-                </div>
-
-                <div className="flex justify-end gap-3">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setSelectedEvent(null)}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    type="submit"
-                    className="bg-primary-magenta text-white hover:bg-primary-magenta/90"
-                  >
-                    Confirm Registration
-                  </Button>
-                </div>
-              </form>
             </div>{" "}
           </div>
         </div>
@@ -955,18 +1374,15 @@ function EventsComponent() {
               className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 z-10 bg-white rounded-full p-1"
             >
               <X size={24} />
-            </button>
-
+            </button>{" "}
             <div className="p-6 text-center">
-              <div className="h-16 w-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Check className="h-8 w-8 text-green-600" />
+              <div className="h-16 w-16 bg-primary-magenta/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Calendar className="h-8 w-8 text-primary-magenta" />
               </div>
-              <h2 className="text-xl font-semibold mb-2">
-                Registration Confirmed!
-              </h2>
+              <h2 className="text-xl font-semibold mb-2">Register for Event</h2>
               <p className="text-gray-600 mb-6">
-                Great! Now let's complete your donor registration form to
-                finalize the process.
+                You're about to register for this blood donation event. Complete
+                your registration by filling out the form.
               </p>
               <div className="flex justify-center gap-3">
                 <Button
@@ -976,7 +1392,7 @@ function EventsComponent() {
                   Cancel
                 </Button>
                 <Button
-                  onClick={handleConfirmRegistration}
+                  onClick={handleRegistrationConfirm}
                   className="bg-primary-magenta text-white hover:bg-primary-magenta/90"
                 >
                   Complete Registration
@@ -1006,13 +1422,14 @@ function EventsComponent() {
               <div className="p-6 md:p-8 text-center">
                 <div className="h-16 w-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                   <Check className="h-8 w-8 text-green-600" />
-                </div>
+                </div>{" "}
                 <h2 className="text-xl md:text-2xl font-semibold mb-2">
-                  Donation Registration Complete!
-                </h2>
+                  Event Registration Complete!
+                </h2>{" "}
                 <p className="text-gray-700 mb-6">
-                  Thank you for registering for the blood donation event. Your
-                  contribution helps save lives!
+                  Thank you for registering for this event! Your registration
+                  has been confirmed and we'll contact you with further details
+                  soon.
                 </p>
                 <div className="flex justify-center gap-4">
                   <Button
@@ -1037,48 +1454,50 @@ function EventsComponent() {
               </div>
             ) : (
               <div>
+                {" "}
                 <div className="p-4 md:p-6 flex justify-between items-center border-b">
                   <h1 className="text-xl md:text-2xl font-semibold">
-                    Blood Donor Registration Form
+                    Event Registration Form
                   </h1>
                 </div>
-
-                {apiError && (
-                  <div className="p-4 m-4 bg-red-50 border border-red-200 rounded-lg flex items-start">
-                    <AlertCircle className="h-5 w-5 text-red-500 mr-3 mt-0.5" />
-                    <div>
-                      <p className="text-red-800 font-medium">Error</p>
-                      <p className="text-red-700">{apiError}</p>
+                {apiError &&
+                  apiError !== "No event selected for registration" && (
+                    <div className="p-4 m-4 bg-red-50 border border-red-200 rounded-lg flex items-start">
+                      <AlertCircle className="h-5 w-5 text-red-500 mr-3 mt-0.5" />
+                      <div>
+                        <p className="text-red-800 font-medium">Error</p>
+                        <p className="text-red-700">{apiError}</p>
+                      </div>
                     </div>
-                  </div>
-                )}
-
+                  )}{" "}
                 <form
-                  onSubmit={handleDonateFormSubmit}
+                  onSubmit={handleEventRegistrationSubmit}
                   className="p-6 md:p-8 md:pt-0 pt-0"
                 >
                   <div className="bg-white rounded-xl shadow-sm p-6 md:p-8 mb-6">
+                    {" "}
                     {/* Donor Name */}
                     <div className="mb-6">
+                      {" "}
                       <label className="block text-sm font-medium mb-2">
-                        Donor's Name<span className="text-red-500">*</span>
+                        Full Name<span className="text-red-500">*</span>
                       </label>
                       <input
                         type="text"
-                        name="fullName"
-                        value={formData.fullName}
+                        name="name"
+                        value={formData.name}
                         onChange={handleChange}
-                        className={`w-full rounded-full border ${errors.fullName ? "border-red-300" : "border-gray-300"} p-2.5 px-4`}
+                        className={`w-full rounded-full border ${errors.name ? "border-red-300" : "border-gray-300"} p-2.5 px-4`}
                         placeholder="Enter Full Name"
                       />
-                      {errors.fullName && (
+                      {errors.name && (
                         <p className="text-red-500 text-xs mt-1">
-                          {errors.fullName}
+                          {errors.name}
                         </p>
                       )}
                     </div>
-
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                      {" "}
                       {/* Date of Birth */}
                       <div>
                         <label className="block text-sm font-medium mb-2">
@@ -1086,40 +1505,39 @@ function EventsComponent() {
                         </label>
                         <input
                           type="text"
-                          name="dateOfBirth"
-                          value={formData.dateOfBirth}
+                          name="dob"
+                          value={formData.dob}
                           onChange={handleChange}
                           onFocus={(e) => (e.target.type = "date")}
                           max={new Date().toISOString().split("T")[0]}
-                          className={`w-full rounded-full border ${errors.dateOfBirth ? "border-red-300" : "border-gray-300"} p-2.5 px-4`}
+                          className={`w-full rounded-full border ${errors.dob ? "border-red-300" : "border-gray-300"} p-2.5 px-4`}
                           placeholder="DD/MM/YYYY"
                         />
-                        {errors.dateOfBirth && (
+                        {errors.dob && (
                           <p className="text-red-500 text-xs mt-1">
-                            {errors.dateOfBirth}
+                            {errors.dob}
                           </p>
                         )}
                       </div>
-
                       {/* Gender */}
                       <div>
                         <label className="block text-sm font-medium mb-2">
                           Gender<span className="text-red-500">*</span>
-                        </label>
+                        </label>{" "}
                         <div className="flex flex-wrap gap-4">
                           <label className="flex items-center">
                             <div
-                              className={`w-5 h-5 rounded-full border ${formData.gender === "male" ? "bg-[#c14351] border-[#c14351]" : "border-gray-300"} flex items-center justify-center mr-2`}
+                              className={`w-5 h-5 rounded-full border ${formData.gender === "Male" ? "bg-[#c14351] border-[#c14351]" : "border-gray-300"} flex items-center justify-center mr-2`}
                             >
-                              {formData.gender === "male" && (
+                              {formData.gender === "Male" && (
                                 <div className="w-2 h-2 bg-white rounded-full"></div>
                               )}
                             </div>
                             <input
                               type="radio"
                               name="gender"
-                              value="male"
-                              checked={formData.gender === "male"}
+                              value="Male"
+                              checked={formData.gender === "Male"}
                               onChange={handleChange}
                               className="sr-only"
                             />
@@ -1127,17 +1545,17 @@ function EventsComponent() {
                           </label>
                           <label className="flex items-center">
                             <div
-                              className={`w-5 h-5 rounded-full border ${formData.gender === "female" ? "bg-[#c14351] border-[#c14351]" : "border-gray-300"} flex items-center justify-center mr-2`}
+                              className={`w-5 h-5 rounded-full border ${formData.gender === "Female" ? "bg-[#c14351] border-[#c14351]" : "border-gray-300"} flex items-center justify-center mr-2`}
                             >
-                              {formData.gender === "female" && (
+                              {formData.gender === "Female" && (
                                 <div className="w-2 h-2 bg-white rounded-full"></div>
                               )}
                             </div>
                             <input
                               type="radio"
                               name="gender"
-                              value="female"
-                              checked={formData.gender === "female"}
+                              value="Female"
+                              checked={formData.gender === "Female"}
                               onChange={handleChange}
                               className="sr-only"
                             />
@@ -1145,17 +1563,17 @@ function EventsComponent() {
                           </label>
                           <label className="flex items-center">
                             <div
-                              className={`w-5 h-5 rounded-full border ${formData.gender === "other" ? "bg-[#c14351] border-[#c14351]" : "border-gray-300"} flex items-center justify-center mr-2`}
+                              className={`w-5 h-5 rounded-full border ${formData.gender === "Other" ? "bg-[#c14351] border-[#c14351]" : "border-gray-300"} flex items-center justify-center mr-2`}
                             >
-                              {formData.gender === "other" && (
+                              {formData.gender === "Other" && (
                                 <div className="w-2 h-2 bg-white rounded-full"></div>
                               )}
                             </div>
                             <input
                               type="radio"
                               name="gender"
-                              value="other"
-                              checked={formData.gender === "other"}
+                              value="Other"
+                              checked={formData.gender === "Other"}
                               onChange={handleChange}
                               className="sr-only"
                             />
@@ -1164,8 +1582,8 @@ function EventsComponent() {
                         </div>
                       </div>
                     </div>
-
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                      {" "}
                       {/* Phone Number */}
                       <div>
                         <label className="block text-sm font-medium mb-2">
@@ -1173,19 +1591,18 @@ function EventsComponent() {
                         </label>
                         <input
                           type="tel"
-                          name="phoneNo"
-                          value={formData.phoneNo}
+                          name="phone"
+                          value={formData.phone}
                           onChange={handleChange}
-                          className={`w-full rounded-full border ${errors.phoneNo ? "border-red-300" : "border-gray-300"} p-2.5 px-4`}
+                          className={`w-full rounded-full border ${errors.phone ? "border-red-300" : "border-gray-300"} p-2.5 px-4`}
                           placeholder="00000 00000"
                         />
-                        {errors.phoneNo && (
+                        {errors.phone && (
                           <p className="text-red-500 text-xs mt-1">
-                            {errors.phoneNo}
+                            {errors.phone}
                           </p>
                         )}
                       </div>
-
                       {/* Email */}
                       <div>
                         <label className="block text-sm font-medium mb-2">
@@ -1206,7 +1623,6 @@ function EventsComponent() {
                         )}
                       </div>
                     </div>
-
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                       {/* Blood Type */}
                       <div>
@@ -1254,8 +1670,7 @@ function EventsComponent() {
                             {errors.bloodType}
                           </p>
                         )}
-                      </div>
-
+                      </div>{" "}
                       {/* ID Proof */}
                       <div>
                         <label className="block text-sm font-medium mb-2">
@@ -1300,17 +1715,17 @@ function EventsComponent() {
                           </label>
                           <label className="flex items-center">
                             <div
-                              className={`w-5 h-5 rounded-full border ${formData.idProofType === "VoterID" ? "bg-[#c14351] border-[#c14351]" : "border-gray-300"} flex items-center justify-center mr-2`}
+                              className={`w-5 h-5 rounded-full border ${formData.idProofType === "Vote ID" ? "bg-[#c14351] border-[#c14351]" : "border-gray-300"} flex items-center justify-center mr-2`}
                             >
-                              {formData.idProofType === "VoterID" && (
+                              {formData.idProofType === "Vote ID" && (
                                 <div className="w-2 h-2 bg-white rounded-full"></div>
                               )}
                             </div>
                             <input
                               type="radio"
                               name="idProofType"
-                              value="VoterID"
-                              checked={formData.idProofType === "VoterID"}
+                              value="Vote ID"
+                              checked={formData.idProofType === "Vote ID"}
                               onChange={handleChange}
                               className="sr-only"
                             />
@@ -1319,23 +1734,22 @@ function EventsComponent() {
                         </div>
                         <div className="mt-2">
                           <input
-                            type="text"
-                            name="idProofNumber"
-                            value={formData.idProofNumber}
+                            type="file"
+                            name="idProofImage"
                             onChange={handleChange}
-                            className={`w-full rounded-full border ${errors.idProofNumber ? "border-red-300" : "border-gray-300"} p-2.5 px-4`}
-                            placeholder="Enter ID Number"
+                            accept="image/*"
+                            className={`w-full rounded-full border ${errors.idProofImage ? "border-red-300" : "border-gray-300"} p-2.5 px-4`}
                           />
-                          {errors.idProofNumber && (
+                          {errors.idProofImage && (
                             <p className="text-red-500 text-xs mt-1">
-                              {errors.idProofNumber}
+                              {errors.idProofImage}
                             </p>
                           )}
                         </div>
                       </div>
                     </div>
-
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                      {" "}
                       {/* Any Disability */}
                       <div>
                         <label className="block text-sm font-medium mb-2">
@@ -1344,47 +1758,50 @@ function EventsComponent() {
                         <div className="flex flex-wrap gap-4">
                           <label className="flex items-center">
                             <div
-                              className={`w-5 h-5 rounded-full border ${formData.disability === "no" ? "bg-[#c14351] border-[#c14351]" : "border-gray-300"} flex items-center justify-center mr-2`}
+                              className={`w-5 h-5 rounded-full border ${!formData.disability ? "bg-[#c14351] border-[#c14351]" : "border-gray-300"} flex items-center justify-center mr-2`}
                             >
-                              {formData.disability === "no" && (
+                              {!formData.disability && (
                                 <div className="w-2 h-2 bg-white rounded-full"></div>
                               )}
                             </div>
                             <input
                               type="radio"
                               name="disability"
-                              value="no"
-                              checked={formData.disability === "no"}
-                              onChange={handleChange}
+                              value="false"
+                              checked={!formData.disability}
+                              onChange={() =>
+                                setFormData({ ...formData, disability: false })
+                              }
                               className="sr-only"
                             />
                             No
                           </label>
                           <label className="flex items-center">
                             <div
-                              className={`w-5 h-5 rounded-full border ${formData.disability === "yes" ? "bg-[#c14351] border-[#c14351]" : "border-gray-300"} flex items-center justify-center mr-2`}
+                              className={`w-5 h-5 rounded-full border ${formData.disability ? "bg-[#c14351] border-[#c14351]" : "border-gray-300"} flex items-center justify-center mr-2`}
                             >
-                              {formData.disability === "yes" && (
+                              {formData.disability && (
                                 <div className="w-2 h-2 bg-white rounded-full"></div>
                               )}
                             </div>
                             <input
                               type="radio"
                               name="disability"
-                              value="yes"
-                              checked={formData.disability === "yes"}
-                              onChange={handleChange}
+                              value="true"
+                              checked={formData.disability}
+                              onChange={() =>
+                                setFormData({ ...formData, disability: true })
+                              }
                               className="sr-only"
                             />
                             Yes
                           </label>
                         </div>
-                      </div>
-
+                      </div>{" "}
                       {/* Weight */}
                       <div>
                         <label className="block text-sm font-medium mb-2">
-                          Weight
+                          Weight<span className="text-red-500">*</span>
                         </label>
                         <input
                           type="text"
@@ -1401,12 +1818,13 @@ function EventsComponent() {
                         )}
                       </div>
                     </div>
-
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                      {" "}
                       {/* Hemoglobin Count */}
                       <div>
                         <label className="block text-sm font-medium mb-2">
                           Hemoglobin Count
+                          <span className="text-red-500">*</span>
                         </label>
                         <input
                           type="text"
@@ -1422,7 +1840,6 @@ function EventsComponent() {
                           </p>
                         )}
                       </div>
-
                       {/* Are you Healthy */}
                       <div>
                         <label className="block text-sm font-medium mb-2">
@@ -1431,58 +1848,61 @@ function EventsComponent() {
                         <div className="flex flex-wrap gap-4">
                           <label className="flex items-center">
                             <div
-                              className={`w-5 h-5 rounded-full border ${formData.healthy === "no" ? "bg-[#c14351] border-[#c14351]" : "border-gray-300"} flex items-center justify-center mr-2`}
+                              className={`w-5 h-5 rounded-full border ${!formData.isHealthy ? "bg-[#c14351] border-[#c14351]" : "border-gray-300"} flex items-center justify-center mr-2`}
                             >
-                              {formData.healthy === "no" && (
+                              {!formData.isHealthy && (
                                 <div className="w-2 h-2 bg-white rounded-full"></div>
                               )}
                             </div>
                             <input
                               type="radio"
-                              name="healthy"
-                              value="no"
-                              checked={formData.healthy === "no"}
-                              onChange={handleChange}
+                              name="isHealthy"
+                              value="false"
+                              checked={!formData.isHealthy}
+                              onChange={() =>
+                                setFormData({ ...formData, isHealthy: false })
+                              }
                               className="sr-only"
                             />
                             No
                           </label>
                           <label className="flex items-center">
                             <div
-                              className={`w-5 h-5 rounded-full border ${formData.healthy === "yes" ? "bg-[#c14351] border-[#c14351]" : "border-gray-300"} flex items-center justify-center mr-2`}
+                              className={`w-5 h-5 rounded-full border ${formData.isHealthy ? "bg-[#c14351] border-[#c14351]" : "border-gray-300"} flex items-center justify-center mr-2`}
                             >
-                              {formData.healthy === "yes" && (
+                              {formData.isHealthy && (
                                 <div className="w-2 h-2 bg-white rounded-full"></div>
                               )}
                             </div>
                             <input
                               type="radio"
-                              name="healthy"
-                              value="yes"
-                              checked={formData.healthy === "yes"}
-                              onChange={handleChange}
+                              name="isHealthy"
+                              value="true"
+                              checked={formData.isHealthy}
+                              onChange={() =>
+                                setFormData({ ...formData, isHealthy: true })
+                              }
                               className="sr-only"
                             />
                             Yes
                           </label>
                         </div>
                       </div>
-                    </div>
-
+                    </div>{" "}
                     {/* Declaration */}
                     <div className="mb-6">
                       <label className="flex items-start">
                         <div
-                          className={`w-5 h-5 border rounded flex items-center justify-center mt-0.5 ${errors.declaration ? "border-red-300" : formData.declaration ? "bg-[#c14351] border-[#c14351]" : "border-gray-300"}`}
+                          className={`w-5 h-5 border rounded flex items-center justify-center mt-0.5 ${errors.declarationAccepted ? "border-red-300" : formData.declarationAccepted ? "bg-[#c14351] border-[#c14351]" : "border-gray-300"}`}
                         >
-                          {formData.declaration && (
+                          {formData.declarationAccepted && (
                             <Check className="h-3 w-3 text-white" />
                           )}
                         </div>
                         <input
                           type="checkbox"
-                          name="declaration"
-                          checked={formData.declaration}
+                          name="declarationAccepted"
+                          checked={formData.declarationAccepted}
                           onChange={handleChange}
                           className="sr-only"
                         />
@@ -1493,9 +1913,9 @@ function EventsComponent() {
                           <span className="text-red-500">*</span>
                         </span>
                       </label>
-                      {errors.declaration && (
+                      {errors.declarationAccepted && (
                         <p className="text-red-500 text-xs mt-1 ml-8">
-                          {errors.declaration}
+                          {errors.declarationAccepted}
                         </p>
                       )}
                     </div>
@@ -1507,13 +1927,14 @@ function EventsComponent() {
                       className={`rounded-full bg-[#c14351] text-white py-2.5 px-6 ${isSubmitting ? "opacity-75" : "hover:bg-[#a23543]"}`}
                       disabled={isSubmitting}
                     >
+                      {" "}
                       {isSubmitting ? (
                         <>
                           <Loader2 className="h-4 w-4 mr-2 inline animate-spin" />
-                          Submitting...
+                          Registering...
                         </>
                       ) : (
-                        "Save & Continue"
+                        "Complete Registration"
                       )}
                     </button>
                   </div>
@@ -1535,6 +1956,10 @@ function EventsComponent() {
                   description: "",
                   date: "",
                   time: "",
+                  startTime: "",
+                  endTime: "",
+                  startAmPm: "AM",
+                  endAmPm: "PM",
                   venue: "",
                   registrationLimit: "",
                   image: null,
@@ -1614,26 +2039,81 @@ function EventsComponent() {
                         {eventFormErrors.date}
                       </p>
                     )}
-                  </div>
-
+                  </div>{" "}
                   {/* Event Time */}
                   <div>
                     <label className="block text-sm font-medium mb-2">
                       Time<span className="text-red-500">*</span>
                     </label>
-                    <input
-                      type="text"
-                      name="time"
-                      value={eventForm.time}
-                      onChange={handleEventFormChange}
-                      className={`w-full rounded-lg border ${eventFormErrors.time ? "border-red-300" : "border-gray-300"} p-3`}
-                      placeholder="e.g., 10:00 AM - 4:00 PM"
-                    />
-                    {eventFormErrors.time && (
-                      <p className="text-red-500 text-sm mt-1">
-                        {eventFormErrors.time}
-                      </p>
-                    )}
+                    <div className="space-y-3">
+                      {/* Start Time */}
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-1">
+                          Start Time
+                        </label>
+                        <div className="flex gap-2">
+                          <input
+                            type="time"
+                            name="startTime"
+                            value={eventForm.startTime}
+                            onChange={handleEventFormChange}
+                            className={`flex-1 rounded-lg border ${eventFormErrors.startTime ? "border-red-300" : "border-gray-300"} p-3`}
+                          />
+                          <select
+                            name="startAmPm"
+                            value={eventForm.startAmPm}
+                            onChange={handleEventFormChange}
+                            className="rounded-lg border border-gray-300 p-3 bg-white"
+                          >
+                            <option value="AM">AM</option>
+                            <option value="PM">PM</option>
+                          </select>
+                        </div>
+                        {eventFormErrors.startTime && (
+                          <p className="text-red-500 text-sm mt-1">
+                            {eventFormErrors.startTime}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* End Time */}
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-1">
+                          End Time
+                        </label>
+                        <div className="flex gap-2">
+                          <input
+                            type="time"
+                            name="endTime"
+                            value={eventForm.endTime}
+                            onChange={handleEventFormChange}
+                            className={`flex-1 rounded-lg border ${eventFormErrors.endTime ? "border-red-300" : "border-gray-300"} p-3`}
+                          />
+                          <select
+                            name="endAmPm"
+                            value={eventForm.endAmPm}
+                            onChange={handleEventFormChange}
+                            className="rounded-lg border border-gray-300 p-3 bg-white"
+                          >
+                            <option value="AM">AM</option>
+                            <option value="PM">PM</option>
+                          </select>
+                        </div>
+                        {eventFormErrors.endTime && (
+                          <p className="text-red-500 text-sm mt-1">
+                            {eventFormErrors.endTime}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Combined time preview */}
+                      {eventForm.time && (
+                        <div className="text-sm text-gray-600 bg-gray-50 p-2 rounded">
+                          <span className="font-medium">Preview:</span>{" "}
+                          {eventForm.time}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -1736,6 +2216,189 @@ function EventsComponent() {
                   </Button>
                 </div>
               </form>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Event Registrations Modal */}
+      {showRegistrationsModal && selectedEventForRegistrations && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-xl border border-gray-100">
+            <div className="p-5 border-b bg-gradient-to-r from-blue-50 to-white">
+              <div className="flex justify-between items-center">
+                <h3 className="text-xl font-bold text-gray-800">
+                  Registrations for {selectedEventForRegistrations.title}
+                </h3>
+                <button
+                  onClick={handleCloseRegistrations}
+                  className="text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 p-1 transition-colors duration-200"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-5">
+              {isLoadingRegistrations ? (
+                <div className="flex flex-col items-center justify-center p-8">
+                  <Loader2 className="h-8 w-8 animate-spin text-blue-500 mb-2" />
+                  <p className="text-gray-600">Loading registrations...</p>
+                </div>
+              ) : registrationsError ? (
+                <div className="bg-red-50 p-6 rounded-lg text-center">
+                  <AlertCircle className="h-8 w-8 text-red-500 mx-auto mb-2" />
+                  <p className="text-red-600 mb-2">{registrationsError}</p>
+                  <Button
+                    onClick={() =>
+                      fetchEventRegistrations(selectedEventForRegistrations._id)
+                    }
+                    variant="outline"
+                    size="sm"
+                    className="mt-2"
+                  >
+                    Try Again
+                  </Button>
+                </div>
+              ) : eventRegistrations.length === 0 ? (
+                <div className="text-center p-8 text-gray-500">
+                  <div className="mb-3">
+                    <AlertCircle className="h-10 w-10 mx-auto text-gray-400" />
+                  </div>
+                  <p className="mb-1">No registrations found for this event.</p>
+                  <p className="text-sm">
+                    When users register for this event, they will appear here.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th
+                          scope="col"
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                        >
+                          User
+                        </th>
+                        <th
+                          scope="col"
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                        >
+                          Registration Date
+                        </th>
+                        <th
+                          scope="col"
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                        >
+                          Status
+                        </th>
+                        <th
+                          scope="col"
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                        >
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {eventRegistrations.map((registration) => (
+                        <tr key={registration._id}>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center">
+                              <div className="ml-4">
+                                <div className="text-sm font-medium text-gray-900">
+                                  {registration.user.name}
+                                </div>
+                                <div className="text-sm text-gray-500">
+                                  {registration.user.email}
+                                </div>
+                                {registration.user.phone && (
+                                  <div className="text-sm text-gray-500">
+                                    {registration.user.phone}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {new Date(
+                              registration.registrationDate ||
+                                registration.createdAt
+                            ).toLocaleDateString()}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span
+                              className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full 
+                              ${
+                                registration.status === "Approved"
+                                  ? "bg-green-100 text-green-800"
+                                  : registration.status === "Rejected"
+                                    ? "bg-red-100 text-red-800"
+                                    : "bg-yellow-100 text-yellow-800"
+                              }`}
+                            >
+                              {registration.status || "Pending"}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <div className="flex justify-end space-x-2">
+                              <Button
+                                onClick={() =>
+                                  handleUpdateRegistrationStatus(
+                                    registration._id,
+                                    "Approved"
+                                  )
+                                }
+                                disabled={
+                                  updatingRegistrationId === registration._id ||
+                                  registration.status === "Approved"
+                                }
+                                className="bg-green-500 hover:bg-green-600 text-white text-xs py-1 px-2"
+                                size="sm"
+                              >
+                                {updatingRegistrationId === registration._id ? (
+                                  <Loader2 className="h-3 w-3 animate-spin" />
+                                ) : (
+                                  "Approve"
+                                )}
+                              </Button>
+                              <Button
+                                onClick={() =>
+                                  handleUpdateRegistrationStatus(
+                                    registration._id,
+                                    "Rejected"
+                                  )
+                                }
+                                disabled={
+                                  updatingRegistrationId === registration._id ||
+                                  registration.status === "Rejected"
+                                }
+                                className="bg-red-500 hover:bg-red-600 text-white text-xs py-1 px-2"
+                                size="sm"
+                              >
+                                {updatingRegistrationId === registration._id ? (
+                                  <Loader2 className="h-3 w-3 animate-spin" />
+                                ) : (
+                                  "Reject"
+                                )}
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              <div className="mt-6">
+                <Button
+                  onClick={handleCloseRegistrations}
+                  className="w-full bg-gray-500 hover:bg-gray-600 text-white py-2.5 font-medium transition-all duration-200"
+                >
+                  Close
+                </Button>
+              </div>
             </div>
           </div>
         </div>
