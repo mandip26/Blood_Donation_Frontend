@@ -15,6 +15,7 @@ import {
   Upload,
   Trash2,
   Heart,
+  User,
 } from "lucide-react";
 import {
   eventService,
@@ -93,6 +94,13 @@ function EventsComponent() {
   const [updatingRegistrationId, setUpdatingRegistrationId] = useState<
     string | null
   >(null);
+
+  // User registrations count modal state
+  const [showUserRegistrationsModal, setShowUserRegistrationsModal] =
+    useState(false);
+  const [userRegistrationsData, setUserRegistrationsData] = useState<any[]>([]);
+  const [isLoadingUserRegistrations, setIsLoadingUserRegistrations] =
+    useState(false);
 
   // Create event form state
   const [eventForm, setEventForm] = useState({
@@ -885,6 +893,32 @@ function EventsComponent() {
     }
   };
 
+  // Function to fetch user registrations data
+  const fetchUserRegistrationsData = async () => {
+    if (!user) return;
+
+    try {
+      setIsLoadingUserRegistrations(true);
+      setShowUserRegistrationsModal(true);
+      setApiError(null);
+
+      const response =
+        await eventRegistrationService.getUserEventRegistrations();
+
+      if (response.success && response.registrations) {
+        setUserRegistrationsData(response.registrations);
+      } else {
+        setUserRegistrationsData([]);
+      }
+    } catch (error) {
+      console.error("Error fetching user registrations:", error);
+      setApiError("Failed to load your registrations. Please try again.");
+      setUserRegistrationsData([]);
+    } finally {
+      setIsLoadingUserRegistrations(false);
+    }
+  };
+
   // Handle open registrations modal
   const handleViewRegistrations = (event: BloodDonationEvent) => {
     setSelectedEventForRegistrations(event);
@@ -966,24 +1000,42 @@ function EventsComponent() {
     <div className="container mx-auto py-6 px-4">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Blood Donation Events</h1>
-        {canCreateEvents && (
-          <div className="flex gap-3">
+        <div className="flex gap-2">
+          {user && user.role === "user" ? (
             <Button
-              className="bg-blue-500 text-white hover:bg-blue-600"
-              onClick={() => setShowEventSelectionModal(true)}
+              onClick={fetchUserRegistrationsData}
+              className={`bg-blue-500 hover:bg-blue-600 shadow-md transition-all duration-200 flex items-center gap-2 px-4 ${isLoadingUserRegistrations ? "opacity-75 cursor-not-allowed" : ""}`}
+              disabled={isLoadingUserRegistrations}
             >
-              <Calendar className="h-4 w-4" />
-              View Registrations
+              {isLoadingUserRegistrations ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <User className="h-4 w-4" />
+              )}
+              View My Registrations
             </Button>
-            <Button
-              className="bg-primary-magenta text-white hover:bg-primary-magenta/90"
-              onClick={() => setShowCreateEventModal(true)}
-            >
-              <Heart className="h-4 w-4" />
-              Create Event
-            </Button>
-          </div>
-        )}
+          ) : (
+            ""
+          )}
+          {canCreateEvents && (
+            <>
+              <Button
+                className="bg-blue-500 text-white hover:bg-blue-600"
+                onClick={() => setShowEventSelectionModal(true)}
+              >
+                <Calendar className="h-4 w-4" />
+                View Registrations
+              </Button>
+              <Button
+                className="bg-primary-magenta text-white hover:bg-primary-magenta/90"
+                onClick={() => setShowCreateEventModal(true)}
+              >
+                <Heart className="h-4 w-4" />
+                Create Event
+              </Button>
+            </>
+          )}
+        </div>
       </div>
       {/* Search and Filter */}
       <div className="bg-white rounded-xl shadow-sm p-4 mb-6">
@@ -2036,6 +2088,7 @@ function EventsComponent() {
                           onChange={handleChange}
                           className="sr-only"
                         />
+
                         <span className="ml-3 text-sm">
                           I have read and understood all the information
                           presented above and answered all the questions to the
@@ -2601,6 +2654,183 @@ function EventsComponent() {
                     ))}
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+      {/* User Registrations Modal */}
+      {showUserRegistrationsModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto shadow-xl border border-gray-100">
+            <div className="p-5 border-b bg-gradient-to-r from-green-50 to-white">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h3 className="text-xl font-bold text-gray-800">
+                    Your Event Registrations
+                  </h3>
+                  <p className="text-sm text-gray-600 mt-1">
+                    You have registered for {userRegistrationsData.length} event
+                    {userRegistrationsData.length !== 1 ? "s" : ""}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowUserRegistrationsModal(false)}
+                  className="text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 p-1 transition-colors duration-200"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-5">
+              {isLoadingUserRegistrations ? (
+                <div className="flex flex-col items-center justify-center p-8">
+                  <Loader2 className="h-8 w-8 animate-spin text-green-500 mb-2" />
+                  <p className="text-gray-600">Loading your registrations...</p>
+                </div>
+              ) : apiError ? (
+                <div className="bg-red-50 p-6 rounded-lg text-center">
+                  <AlertCircle className="h-8 w-8 text-red-500 mx-auto mb-2" />
+                  <p className="text-red-600 mb-2">{apiError}</p>
+                  <Button
+                    onClick={fetchUserRegistrationsData}
+                    variant="outline"
+                    size="sm"
+                    className="mt-2"
+                  >
+                    Try Again
+                  </Button>
+                </div>
+              ) : userRegistrationsData.length === 0 ? (
+                <div className="text-center p-8 text-gray-500">
+                  <div className="mb-3">
+                    <AlertCircle className="h-10 w-10 mx-auto text-gray-400" />
+                  </div>
+                  <p className="mb-1">No registrations found.</p>
+                  <p className="text-sm">
+                    You have not registered for any events yet.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {/* Summary card */}
+                  <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <div className="bg-blue-500 p-2 rounded-full">
+                          <Calendar className="h-5 w-5 text-white" />
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-blue-900">
+                            Total Registrations
+                          </h4>
+                          <p className="text-blue-700">
+                            You are registered for{" "}
+                            {userRegistrationsData.length} event
+                            {userRegistrationsData.length !== 1 ? "s" : ""}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-2xl font-bold text-blue-600">
+                        {userRegistrationsData.length}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Events list */}
+                  <div className="space-y-3">
+                    {userRegistrationsData.map((registration) => (
+                      <div
+                        key={registration._id}
+                        className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+                      >
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <div className="flex items-start justify-between">
+                              <div>
+                                <h4 className="text-lg font-semibold text-gray-900 mb-1">
+                                  {registration.event?.title ||
+                                    "Event Title Not Available"}
+                                </h4>
+                                <div className="space-y-1 text-sm text-gray-600">
+                                  <div className="flex items-center space-x-2">
+                                    <MapPin className="h-4 w-4" />
+                                    <span>
+                                      {registration.event?.venue || "Venue TBA"}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center space-x-2">
+                                    <Calendar className="h-4 w-4" />
+                                    <span>
+                                      {registration.event?.date
+                                        ? new Date(
+                                            registration.event.date
+                                          ).toLocaleDateString("en-US", {
+                                            weekday: "long",
+                                            year: "numeric",
+                                            month: "long",
+                                            day: "numeric",
+                                          })
+                                        : "Date TBA"}
+                                    </span>
+                                  </div>
+                                  {registration.event?.time && (
+                                    <div className="flex items-center space-x-2">
+                                      <Clock className="h-4 w-4" />
+                                      <span>{registration.event.time}</span>
+                                    </div>
+                                  )}
+                                  <div className="flex items-center space-x-2">
+                                    <User className="h-4 w-4" />
+                                    <span>
+                                      Registered on:{" "}
+                                      {new Date(
+                                        registration.registrationDate ||
+                                          registration.createdAt
+                                      ).toLocaleDateString()}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="ml-4">
+                                <span
+                                  className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                  ${
+                                    registration.status === "Approved"
+                                      ? "bg-green-100 text-green-800"
+                                      : registration.status === "Rejected"
+                                        ? "bg-red-100 text-red-800"
+                                        : "bg-yellow-100 text-yellow-800"
+                                  }`}
+                                >
+                                  {registration.status || "Pending"}
+                                </span>
+                              </div>
+                            </div>
+
+                            {registration.event?.description && (
+                              <div className="mt-3 pt-3 border-t border-gray-100">
+                                <p className="text-sm text-gray-600 line-clamp-2">
+                                  {registration.event.description}
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="mt-6">
+                <Button
+                  onClick={() => setShowUserRegistrationsModal(false)}
+                  className="w-full bg-gray-500 hover:bg-gray-600 text-white py-2.5 font-medium transition-all duration-200"
+                >
+                  Close
+                </Button>
+              </div>
             </div>
           </div>
         </div>
