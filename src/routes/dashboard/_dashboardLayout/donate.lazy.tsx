@@ -6,6 +6,23 @@ import { donationService } from "@/services/apiService";
 import { useAuth } from "@/hooks/useAuth";
 import { useResponsive } from "@/hooks/useResponsive";
 
+// Helper function to format dates consistently in YYYY-MM-DD format
+const formatDateForInput = (date: Date | string | null | undefined): string => {
+  if (!date) return "";
+
+  try {
+    const dateObj = typeof date === "string" ? new Date(date) : date;
+    // Validate date is valid before formatting
+    if (!(dateObj instanceof Date) || isNaN(dateObj.getTime())) return "";
+
+    // Format as YYYY-MM-DD for HTML date input
+    return dateObj.toISOString().split("T")[0];
+  } catch (error) {
+    console.error("Error formatting date:", error);
+    return "";
+  }
+};
+
 export const Route = createLazyFileRoute("/dashboard/_dashboardLayout/donate")({
   component: RouteComponent,
 });
@@ -31,24 +48,102 @@ function RouteComponent() {
     isHealthy: true,
     declarationAccepted: false,
   });
-
   // Validation state
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
-  // Populate form with user data if available
+  const [dataPrefilledMessage, setDataPrefilledMessage] = useState<
+    string | null
+  >(null); // State to track if donor data is loading
+  const [isDonorDataLoading, setIsDonorDataLoading] = useState(false);
+  // Fetch donor form data if available & populate form with all available user data
   useEffect(() => {
-    if (user) {
+    const fetchUserData = async () => {
+      if (!user) return;
+
+      setDataPrefilledMessage(null);
+      let userDataPrefilled = false;
+
+      // First populate with user account data
       setFormData((prevData) => ({
         ...prevData,
         name: user.name || prevData.name,
         email: user.email || prevData.email,
         phone: user.phone || prevData.phone,
+        gender: (user.gender as "Male" | "Female" | "Other") || prevData.gender,
+        bloodType: user.bloodType || prevData.bloodType,
       }));
-    }
-  }, [user]);
 
+      if (
+        user.name ||
+        user.email ||
+        user.phone ||
+        user.gender ||
+        user.bloodType
+      ) {
+        userDataPrefilled = true;
+      } // Format date of birth if available
+      if (user.dob) {
+        const formattedDob = formatDateForInput(user.dob);
+        if (formattedDob) {
+          setFormData((prevData) => ({
+            ...prevData,
+            dob: formattedDob,
+          }));
+          userDataPrefilled = true;
+        }
+      }
+
+      // Then try to fetch donor form if the user has previously submitted one
+      try {
+        setIsDonorDataLoading(true);
+        const response = await donationService.getMyDonorForm();
+
+        if (response.success && response.donor) {
+          const donorData = response.donor; // Format the date correctly for the input field (YYYY-MM-DD)
+          const formattedDob = formatDateForInput(donorData.dob);
+
+          setFormData((prevData) => ({
+            ...prevData,
+            name: donorData.name || prevData.name,
+            dob: formattedDob || prevData.dob,
+            phone: donorData.phone || prevData.phone,
+            bloodType: donorData.bloodType || prevData.bloodType,
+            disability: donorData.disability || prevData.disability,
+            gender:
+              (donorData.gender as "Male" | "Female" | "Other") ||
+              prevData.gender,
+            email: donorData.email || prevData.email,
+            idProofType:
+              (donorData.idProofType as "PAN" | "Aadhaar" | "Vote ID") ||
+              prevData.idProofType,
+            weight: donorData.weight?.toString() || prevData.weight,
+            hemoglobinCount:
+              donorData.hemoglobinCount?.toString() || prevData.hemoglobinCount,
+            isHealthy: donorData.isHealthy || prevData.isHealthy,
+          }));
+
+          // Previous donor data found and loaded
+          setDataPrefilledMessage(
+            "Your previous donor information has been loaded. Please review and update as needed."
+          );
+        }
+      } catch (error) {
+        // If the user doesn't have a donor form yet, this error is expected and can be ignored
+        console.log("No previous donor form found, using basic user data only");
+        if (userDataPrefilled) {
+          setDataPrefilledMessage(
+            "Your account information has been pre-filled. Please complete the remaining fields."
+          );
+        }
+      } finally {
+        setIsDonorDataLoading(false);
+      }
+    };
+
+    fetchUserData();
+  }, [user]);
   // Handle input changes
   const handleChange = (
     e: React.ChangeEvent<
@@ -68,6 +163,32 @@ function RouteComponent() {
         ...formData,
         [name]: value,
       });
+    } else if (name === "dob" && value) {
+      // Special handling for date of birth to ensure consistent format
+      try {
+        // Parse the input value and reformat it to ensure consistency
+        const dateValue = new Date(value);
+        if (!isNaN(dateValue.getTime())) {
+          // Valid date - use it directly (browser input handles the format)
+          setFormData({
+            ...formData,
+            [name]: value, // Use the value as-is since HTML date inputs use YYYY-MM-DD format
+          });
+        } else {
+          // Invalid date - keep the raw input for now
+          setFormData({
+            ...formData,
+            [name]: value,
+          });
+        }
+      } catch (error) {
+        // If date parsing fails, just use the raw value
+        console.error("Error parsing date:", error);
+        setFormData({
+          ...formData,
+          [name]: value,
+        });
+      }
     } else {
       setFormData({
         ...formData,
@@ -105,23 +226,32 @@ function RouteComponent() {
     // Email validation
     if (formData.email && !/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = "Please enter a valid email address";
-    }
-
-    // Age validation (must be at least 18)
+    } // Age validation (must be at least 18)
     if (formData.dob) {
-      const birthDate = new Date(formData.dob);
-      const today = new Date();
-      let age = today.getFullYear() - birthDate.getFullYear();
-      const monthDiff = today.getMonth() - birthDate.getMonth();
+      try {
+        const birthDate = new Date(formData.dob);
 
-      if (
-        monthDiff < 0 ||
-        (monthDiff === 0 && today.getDate() < birthDate.getDate())
-      ) {
-        age--;
-      }
-      if (age < 18) {
-        newErrors.dob = "You must be at least 18 years old to donate blood";
+        // Verify we have a valid date
+        if (!isNaN(birthDate.getTime())) {
+          const today = new Date();
+          let age = today.getFullYear() - birthDate.getFullYear();
+          const monthDiff = today.getMonth() - birthDate.getMonth();
+
+          if (
+            monthDiff < 0 ||
+            (monthDiff === 0 && today.getDate() < birthDate.getDate())
+          ) {
+            age--;
+          }
+          if (age < 18) {
+            newErrors.dob = "You must be at least 18 years old to donate blood";
+          }
+        } else {
+          newErrors.dob = "Please enter a valid date in YYYY-MM-DD format";
+        }
+      } catch (error) {
+        console.error("Error validating date of birth:", error);
+        newErrors.dob = "Please enter a valid date in YYYY-MM-DD format";
       }
     }
 
@@ -242,12 +372,16 @@ function RouteComponent() {
       setIsSubmitting(false);
     }
   };
-
-  // If auth is loading, show loading state
-  if (authLoading) {
+  // If auth or donor data is loading, show loading state
+  if (authLoading || isDonorDataLoading) {
     return (
       <div className="flex justify-center items-center p-8 h-full">
         <Loader2 className="h-8 w-8 animate-spin text-primary-magenta" />
+        <span className="ml-2 text-gray-600">
+          {authLoading
+            ? "Authenticating..."
+            : "Loading your donor information..."}
+        </span>
       </div>
     );
   }
@@ -289,7 +423,7 @@ function RouteComponent() {
       <div className="p-4 md:p-6 flex justify-between items-center rounded-t-xl">
         <h1 className="text-xl md:text-2xl font-semibold">
           Blood Donors Registration Form
-        </h1>
+        </h1>{" "}
       </div>
 
       {apiError && (
@@ -298,6 +432,16 @@ function RouteComponent() {
           <div>
             <p className="text-red-800 font-medium">Error</p>
             <p className="text-red-700">{apiError}</p>
+          </div>
+        </div>
+      )}
+
+      {dataPrefilledMessage && (
+        <div className="p-4 mb-4 bg-blue-50 border border-blue-200 rounded-lg flex items-start">
+          <Check className="h-5 w-5 text-blue-500 mr-3 mt-0.5" />
+          <div>
+            <p className="text-blue-800 font-medium">Information Loaded</p>
+            <p className="text-blue-700">{dataPrefilledMessage}</p>
           </div>
         </div>
       )}
@@ -323,26 +467,25 @@ function RouteComponent() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            {" "}
             {/* Date of Birth */}
             <div>
               <label className="block text-sm font-medium mb-2">
                 Date of Birth<span className="text-red-500">*</span>
-              </label>
+              </label>{" "}
               <input
-                type="text"
+                type="date"
                 name="dob"
                 value={formData.dob}
                 onChange={handleChange}
-                onFocus={(e) => (e.target.type = "date")}
-                max={new Date().toISOString().split("T")[0]}
-                className={`w-full rounded-full border ${errors.dob ? "border-red-300" : "border-gray-300"} p-2.5 px-4`}
-                placeholder="DD/MM/YYYY"
+                max={formatDateForInput(new Date())}
+                className={`w-full px-3 py-2 border ${errors.dob ? "border-red-300" : "border-gray-300"} rounded-md focus:outline-none focus:ring-2 focus:ring-primary-magenta focus:border-transparent`}
               />
               {errors.dob && (
                 <p className="text-red-500 text-xs mt-1">{errors.dob}</p>
               )}
+              <p className="text-gray-500 text-xs mt-1">Format: YYYY-MM-DD</p>
             </div>
-
             {/* Gender */}
             <div>
               <label className="block text-sm font-medium mb-2">
