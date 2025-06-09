@@ -49,6 +49,28 @@ interface BloodDonationEvent {
   updatedAt: string;
 }
 
+interface EventRegistration {
+  _id: string;
+  event: {
+    _id: string;
+    title?: string;
+    description?: string;
+    date?: string;
+    time?: string;
+    venue?: string;
+  };
+  user: {
+    _id: string;
+    name: string;
+    email: string;
+    phone?: string;
+  };
+  status: string;
+  registrationDate: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 function EventsComponent() {
   // Get auth context
   const { user } = useAuth();
@@ -75,16 +97,18 @@ function EventsComponent() {
   const [isRegistering, setIsRegistering] = useState(false);
   const [alreadyRegistered, setAlreadyRegistered] = useState(false);
   const [userRegistrations, setUserRegistrations] = useState<{
-    [key: string]: { status: string; registrationId: string };
-  }>({}); // Object with event IDs as keys and registration details as values
+    [key: string]: boolean | { status: string; registrationId: string };
+  }>({});
   const [registrationEventId, setRegistrationEventId] = useState<string | null>(
     null
-  ); // Store the ID of the event being registered for
+  );
 
   // Event registrations management states
   const [showRegistrationsModal, setShowRegistrationsModal] = useState(false);
   const [showEventSelectionModal, setShowEventSelectionModal] = useState(false);
-  const [eventRegistrations, setEventRegistrations] = useState<any[]>([]);
+  const [eventRegistrations, setEventRegistrations] = useState<
+    EventRegistration[]
+  >([]);
   const [isLoadingRegistrations, setIsLoadingRegistrations] = useState(false);
   const [registrationsError, setRegistrationsError] = useState<string | null>(
     null
@@ -98,7 +122,9 @@ function EventsComponent() {
   // User registrations count modal state
   const [showUserRegistrationsModal, setShowUserRegistrationsModal] =
     useState(false);
-  const [userRegistrationsData, setUserRegistrationsData] = useState<any[]>([]);
+  const [userRegistrationsData, setUserRegistrationsData] = useState<
+    EventRegistration[]
+  >([]);
   const [isLoadingUserRegistrations, setIsLoadingUserRegistrations] =
     useState(false);
 
@@ -279,9 +305,60 @@ function EventsComponent() {
         setIsLoadingEvents(true);
         setEventsError(null);
         const response = await eventService.getAllEvents();
+
         if (response.success && response.events) {
-          console.log("Events fetched:", response.events);
           setEvents(response.events);
+
+          // After fetching events, check registration status for each event if user is logged in
+          if (user) {
+            const registrationChecks = response.events.map(
+              async (event: BloodDonationEvent) => {
+                try {
+                  const regResponse =
+                    await eventRegistrationService.checkEventRegistration(
+                      event._id
+                    );
+                  return {
+                    eventId: event._id,
+                    status: regResponse.status || "pending",
+                    registrationId: regResponse.registrationId || "",
+                    isRegistered:
+                      regResponse.isRegistered &&
+                      regResponse.status?.toLowerCase() !== "rejected",
+                  };
+                } catch (error) {
+                  console.error(
+                    `Error checking registration for event ${event._id}:`,
+                    error
+                  );
+                  return {
+                    eventId: event._id,
+                    isRegistered: false,
+                    status: "pending",
+                    registrationId: "",
+                  };
+                }
+              }
+            );
+
+            const registrationResults = await Promise.all(registrationChecks);
+            const registrationsMap = registrationResults.reduce(
+              (acc, result) => {
+                if (result.isRegistered) {
+                  acc[result.eventId] = {
+                    status: result.status,
+                    registrationId: result.registrationId,
+                  };
+                }
+                return acc;
+              },
+              {} as {
+                [key: string]: { status: string; registrationId: string };
+              }
+            );
+
+            setUserRegistrations(registrationsMap);
+          }
         } else {
           setEventsError("Failed to load events");
         }
@@ -293,32 +370,7 @@ function EventsComponent() {
       }
     };
 
-    const fetchUserRegistrations = async () => {
-      try {
-        if (user) {
-          const response =
-            await eventRegistrationService.getUserEventRegistrations();
-          if (response.success && response.registrations) {
-            // Create object with event IDs as keys and registration details as values
-            const registrationsMap: {
-              [key: string]: { status: string; registrationId: string };
-            } = {};
-            response.registrations.forEach((reg: any) => {
-              registrationsMap[reg.event._id] = {
-                status: reg.status || "pending",
-                registrationId: reg._id,
-              };
-            });
-            setUserRegistrations(registrationsMap);
-          }
-        }
-      } catch (error) {
-        console.error("Error fetching user registrations:", error);
-      }
-    };
-
     fetchEvents();
-    fetchUserRegistrations();
   }, [user]);
 
   // Check if the user can create events
@@ -606,6 +658,7 @@ function EventsComponent() {
     const userRegistration = user && userRegistrations[event._id];
     const isRegisteredLocally =
       !!userRegistration &&
+      typeof userRegistration !== "boolean" &&
       userRegistration.status !== "Rejected" &&
       userRegistration.status !== "rejected";
 
@@ -696,6 +749,7 @@ function EventsComponent() {
     // Check if already registered locally first (for better UX)
     if (
       userRegistrations[eventId] &&
+      typeof userRegistrations[eventId] !== "boolean" &&
       userRegistrations[eventId].status !== "Rejected" &&
       userRegistrations[eventId].status !== "rejected"
     ) {
@@ -963,7 +1017,8 @@ function EventsComponent() {
               const updatedReg = { ...reg, status };
 
               // Update userRegistrations state to reflect the change
-              const eventId = reg.event._id || reg.event;
+              const eventId =
+                typeof reg.event === "object" ? reg.event._id : reg.event;
               if (status === "Rejected" || status === "rejected") {
                 // If rejected, remove from userRegistrations (vacate registration)
                 setUserRegistrations((prev) => {
@@ -1239,31 +1294,63 @@ function EventsComponent() {
                   {event.time}
                 </div>
                 {/* Registration Status Badge */}
-                {user && userRegistrations[event._id] && (
-                  <div className="mt-2">
-                    {(userRegistrations[event._id].status === "Approved" ||
-                      userRegistrations[event._id].status === "approved") && (
-                      <div className="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs inline-flex items-center">
-                        <Check size={12} className="mr-1" />
-                        Approved
-                      </div>
-                    )}
-                    {(userRegistrations[event._id].status === "Pending" ||
-                      userRegistrations[event._id].status === "pending") && (
-                      <div className="bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full text-xs inline-flex items-center">
-                        <Clock size={12} className="mr-1" />
-                        Pending Approval
-                      </div>
-                    )}
-                    {(userRegistrations[event._id].status === "Rejected" ||
-                      userRegistrations[event._id].status === "rejected") && (
-                      <div className="bg-red-100 text-red-700 px-2 py-1 rounded-full text-xs inline-flex items-center">
-                        <X size={12} className="mr-1" />
-                        Registration Rejected
-                      </div>
-                    )}
-                  </div>
-                )}
+                {user &&
+                  userRegistrations[event._id] &&
+                  typeof userRegistrations[event._id] !== "boolean" && (
+                    <div className="mt-2">
+                      {(
+                        userRegistrations[event._id] as {
+                          status: string;
+                          registrationId: string;
+                        }
+                      ).status === "Approved" ||
+                      (
+                        userRegistrations[event._id] as {
+                          status: string;
+                          registrationId: string;
+                        }
+                      ).status === "approved" ? (
+                        <div className="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs inline-flex items-center">
+                          <Check size={12} className="mr-1" />
+                          Approved
+                        </div>
+                      ) : null}
+                      {(
+                        userRegistrations[event._id] as {
+                          status: string;
+                          registrationId: string;
+                        }
+                      ).status === "Pending" ||
+                      (
+                        userRegistrations[event._id] as {
+                          status: string;
+                          registrationId: string;
+                        }
+                      ).status === "pending" ? (
+                        <div className="bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full text-xs inline-flex items-center">
+                          <Clock size={12} className="mr-1" />
+                          Pending Approval
+                        </div>
+                      ) : null}
+                      {(
+                        userRegistrations[event._id] as {
+                          status: string;
+                          registrationId: string;
+                        }
+                      ).status === "Rejected" ||
+                      (
+                        userRegistrations[event._id] as {
+                          status: string;
+                          registrationId: string;
+                        }
+                      ).status === "rejected" ? (
+                        <div className="bg-red-100 text-red-700 px-2 py-1 rounded-full text-xs inline-flex items-center">
+                          <X size={12} className="mr-1" />
+                          Registration Rejected
+                        </div>
+                      ) : null}
+                    </div>
+                  )}
                 {event.registrationLimit && (
                   <div className="mt-4 pt-4 border-t border-gray-100">
                     <div className="flex justify-between mb-2">
@@ -1297,49 +1384,13 @@ function EventsComponent() {
                 ) : (
                   <>
                     {userRegistrations[event._id] ? (
-                      // User is registered - show status-specific buttons
-                      userRegistrations[event._id].status === "Approved" ||
-                      userRegistrations[event._id].status === "approved" ? (
-                        <Button
-                          className="w-full bg-green-500 text-white hover:bg-green-600 cursor-default"
-                          disabled
-                        >
-                          <Check className="h-4 w-4 mr-2" />
-                          Registration Approved
-                        </Button>
-                      ) : userRegistrations[event._id].status === "Pending" ||
-                        userRegistrations[event._id].status === "pending" ? (
-                        <Button
-                          className="w-full bg-yellow-500 text-white hover:bg-yellow-600 cursor-default"
-                          disabled
-                        >
-                          <Clock className="h-4 w-4 mr-2" />
-                          Awaiting Approval
-                        </Button>
-                      ) : userRegistrations[event._id].status === "Rejected" ||
-                        userRegistrations[event._id].status === "rejected" ? (
-                        <Button
-                          className="w-full bg-primary-magenta text-white hover:bg-primary-magenta/90"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleEventClick(event);
-                          }}
-                        >
-                          Register Now
-                        </Button>
-                      ) : (
-                        <Button
-                          className="w-full bg-primary-magenta text-white hover:bg-primary-magenta/90"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleEventClick(event);
-                          }}
-                        >
-                          Register Now
-                        </Button>
-                      )
+                      <Button
+                        className="w-full bg-gray-500 text-white cursor-default"
+                        disabled
+                      >
+                        Registered
+                      </Button>
                     ) : (
-                      // User is not registered
                       <Button
                         className="w-full bg-primary-magenta text-white hover:bg-primary-magenta/90"
                         onClick={(e) => {
