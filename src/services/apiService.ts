@@ -696,6 +696,25 @@ export const postService = {
     }
   },
 
+  getPaginatedPosts: async (
+    page = 1,
+    limit = 10,
+    sortBy = "createdAt",
+    order = "desc",
+    userId?: string
+  ) => {
+    try {
+      let query = `/post/paginated?page=${page}&limit=${limit}&sortBy=${sortBy}&order=${order}`;
+      if (userId) {
+        query += `&userId=${userId}`;
+      }
+      const response = await api.get(query);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
   getPostById: async (id: string) => {
     try {
       const response = await api.get(`/post/${id}`);
@@ -717,7 +736,6 @@ export const postService = {
       throw error;
     }
   },
-
   updatePost: async (id: string, postData: FormData) => {
     try {
       const response = await api.put(`/post/${id}`, postData, {
@@ -731,6 +749,44 @@ export const postService = {
     }
   },
 
+  likePost: async (id: string) => {
+    try {
+      const response = await api.post(`/post/${id}/like`);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  commentOnPost: async (id: string, text: string) => {
+    try {
+      const response = await api.post(`/post/${id}/comment`, { text });
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  replyToComment: async (postId: string, commentId: string, text: string) => {
+    try {
+      const response = await api.post(
+        `/post/${postId}/comment/${commentId}/reply`,
+        { text }
+      );
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  sharePost: async (id: string) => {
+    try {
+      const response = await api.post(`/post/${id}/share`);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
   deletePost: async (id: string) => {
     try {
       const response = await api.delete(`/post/${id}`);
