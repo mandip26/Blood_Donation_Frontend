@@ -6,13 +6,11 @@ import {
   Trash2,
   Image,
   MapPin,
-  Tag,
   AlertCircle,
   Loader2,
   RefreshCw,
   Heart,
   MessageCircle,
-  Share2,
 } from "lucide-react";
 import { postService } from "@/services/apiService";
 import { toast } from "sonner";
@@ -37,9 +35,14 @@ function CreatePostComponent() {
   const [showReplies, setShowReplies] = useState<{ [key: string]: boolean }>(
     {}
   );
+  const [currentLocation, setCurrentLocation] = useState<string>("");
+  const [isGettingLocation, setIsGettingLocation] = useState(false);
 
   const openModal = () => setIsModalOpen(true);
-  const closeModal = () => setIsModalOpen(false);
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setCurrentLocation("");
+  };
   const handlePost = async (e?: React.MouseEvent<HTMLButtonElement>) => {
     if (e) {
       e.preventDefault();
@@ -71,6 +74,11 @@ function CreatePostComponent() {
       const formData = new FormData();
       formData.append("query", postText);
 
+      // Add location if available
+      if (currentLocation) {
+        formData.append("location", currentLocation);
+      }
+
       // Add the first selected image (backend expects single image)
       if (selectedFiles.length > 0) {
         formData.append("image", selectedFiles[0]);
@@ -90,6 +98,7 @@ function CreatePostComponent() {
         setPostText("");
         setSelectedFiles([]);
         setPreviewUrls([]);
+        setCurrentLocation("");
         setRetryCount(0);
         closeModal();
         // Refresh the posts list
@@ -143,21 +152,22 @@ function CreatePostComponent() {
     }
   };
 
-  // Function to fetch recent posts
+  // Function to fetch recent posts (only user's own posts)
   const fetchRecentPosts = async () => {
     try {
       setIsLoadingPosts(true);
       const response = await postService.getAllPosts();
 
       if (response.success && response.posts) {
-        // Sort posts by creation date (most recent first) and take first 3
-        const sortedPosts = response.posts
+        // Filter posts to show only current user's posts, sort by creation date and take first 3
+        const userPosts = response.posts
+          .filter((post: any) => post.user && post.user._id === user?._id)
           .sort(
             (a: any, b: any) =>
               new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
           )
           .slice(0, 3);
-        setRecentPosts(sortedPosts);
+        setRecentPosts(userPosts);
       }
     } catch (error) {
       console.error("Error fetching posts:", error);
@@ -223,6 +233,176 @@ function CreatePostComponent() {
     // Revoke URL to prevent memory leaks
     URL.revokeObjectURL(previewUrls[index]);
     setPreviewUrls((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  // Function to get current location
+  const getCurrentLocation = () => {
+    setIsGettingLocation(true);
+
+    if (!navigator.geolocation) {
+      toast.error("Geolocation is not supported by this browser");
+      setIsGettingLocation(false);
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const { latitude, longitude } = position.coords;
+
+          // Try multiple geocoding services for best results
+          let locationData = null;
+
+          try {
+            // First try: BigDataCloud for detailed address
+            const response1 = await fetch(
+              `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`
+            );
+
+            if (response1.ok) {
+              locationData = await response1.json();
+            }
+          } catch (error) {
+            console.log("BigDataCloud API failed, trying alternative...");
+          }
+
+          // Second try: OpenStreetMap Nominatim for detailed components
+          if (!locationData || !locationData.locality) {
+            try {
+              const response2 = await fetch(
+                `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`
+              );
+
+              if (response2.ok) {
+                const osmData = await response2.json();
+                if (osmData && osmData.address) {
+                  // Convert OSM format to our format
+                  locationData = {
+                    locality:
+                      osmData.address.suburb ||
+                      osmData.address.neighbourhood ||
+                      osmData.address.city_district,
+                    city:
+                      osmData.address.city ||
+                      osmData.address.town ||
+                      osmData.address.village,
+                    principalSubdivision: osmData.address.state,
+                    countryName: osmData.address.country,
+                    postcode: osmData.address.postcode,
+                    // Additional detailed components
+                    houseNumber: osmData.address.house_number,
+                    road: osmData.address.road,
+                    suburb: osmData.address.suburb,
+                    neighbourhood: osmData.address.neighbourhood,
+                  };
+                }
+              }
+            } catch (error) {
+              console.log("OSM API also failed");
+            }
+          }
+
+          if (locationData) {
+            // Build detailed address with all available information
+            const addressParts = [];
+
+            // Add house number if available
+            if (locationData.houseNumber) {
+              addressParts.push(locationData.houseNumber);
+            }
+
+            // Add road/street name
+            if (locationData.road) {
+              addressParts.push(locationData.road);
+            }
+
+            // Add neighbourhood/area details
+            if (
+              locationData.neighbourhood &&
+              locationData.neighbourhood !== locationData.locality
+            ) {
+              addressParts.push(locationData.neighbourhood);
+            }
+
+            // Add suburb if different from neighbourhood
+            if (
+              locationData.suburb &&
+              locationData.suburb !== locationData.neighbourhood &&
+              locationData.suburb !== locationData.locality
+            ) {
+              addressParts.push(locationData.suburb);
+            }
+
+            // Add locality/area
+            if (locationData.locality) {
+              addressParts.push(locationData.locality);
+            }
+
+            // Add city
+            if (
+              locationData.city &&
+              locationData.city !== locationData.locality
+            ) {
+              addressParts.push(locationData.city);
+            }
+
+            // Add state/subdivision
+            if (locationData.principalSubdivision) {
+              addressParts.push(locationData.principalSubdivision);
+            }
+
+            // Add pincode/postal code if available
+            if (locationData.postcode) {
+              addressParts.push(locationData.postcode);
+            }
+
+            const exactLocation =
+              addressParts.length > 0
+                ? addressParts.join(", ")
+                : "Location detected";
+
+            setCurrentLocation(exactLocation);
+            toast.success("Detailed location added successfully");
+          } else {
+            // Fallback to a generic message
+            setCurrentLocation("Current location");
+            toast.success("Location added");
+          }
+        } catch (error) {
+          console.error("Error getting location name:", error);
+          // Fallback to a generic location message
+          setCurrentLocation("Current location");
+          toast.success("Location added");
+        } finally {
+          setIsGettingLocation(false);
+        }
+      },
+      (error) => {
+        console.error("Error getting location:", error);
+        let errorMessage = "Unable to get your location";
+
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            errorMessage =
+              "Location access denied. Please enable location permissions.";
+            break;
+          case error.POSITION_UNAVAILABLE:
+            errorMessage = "Location information is unavailable.";
+            break;
+          case error.TIMEOUT:
+            errorMessage = "Location request timed out.";
+            break;
+        }
+
+        toast.error(errorMessage);
+        setIsGettingLocation(false);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 15000,
+        maximumAge: 0, // Don't use cached location for exact positioning
+      }
+    );
   };
 
   // Function to handle liking a post
@@ -330,31 +510,6 @@ function CreatePostComponent() {
       toast.error("Failed to add reply");
     }
   };
-
-  // Function to handle sharing a post
-  const handleSharePost = async (postId: string) => {
-    try {
-      const response = await postService.sharePost(postId);
-      if (response.success) {
-        // Update the post in the UI
-        setRecentPosts((prevPosts) =>
-          prevPosts.map((post) => {
-            if (post._id === postId) {
-              return {
-                ...post,
-                shares: response.shares,
-              };
-            }
-            return post;
-          })
-        );
-        toast.success("Post shared successfully");
-      }
-    } catch (error) {
-      console.error("Error sharing post:", error);
-      toast.error("Failed to share post");
-    }
-  };
   // Function to handle deleting a post with confirmation
   const handleDeletePost = async (postId: string) => {
     // Show confirmation dialog
@@ -456,20 +611,12 @@ function CreatePostComponent() {
             <Image size={18} />
             Photo
           </Button>
-          <Button
-            onClick={openModal}
-            variant="ghost"
-            className="text-gray-600 gap-2 hover:bg-gray-100"
-          >
-            <AlertCircle size={18} />
-            Blood Request
-          </Button>
         </div>
       </div>
       {/* Recent activity section */}
       <div className="bg-white rounded-xl shadow-sm p-6">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold">Recent Activity</h2>
+          <h2 className="text-xl font-semibold">My Recent Posts</h2>
           <Button
             onClick={fetchRecentPosts}
             variant="ghost"
@@ -550,6 +697,13 @@ function CreatePostComponent() {
                     <div className="mt-3">
                       <p className="text-gray-800">{post.query}</p>
 
+                      {post.location && (
+                        <div className="mt-2 flex items-center gap-1 text-sm text-gray-500">
+                          <MapPin size={14} />
+                          <span>{post.location}</span>
+                        </div>
+                      )}
+
                       {post.image && (
                         <div className="mt-3 rounded-lg overflow-hidden border border-gray-100">
                           <img
@@ -590,13 +744,6 @@ function CreatePostComponent() {
                       >
                         <MessageCircle size={16} />
                         <span>{post.comments?.length || 0}</span> Comments
-                      </button>
-                      <button
-                        onClick={() => handleSharePost(post._id)}
-                        className="flex items-center gap-1 hover:text-gray-700"
-                      >
-                        <Share2 size={16} />
-                        <span>{post.shares || 0}</span> Shares
                       </button>
                     </div>
                     {/* Comment input */}
@@ -762,13 +909,9 @@ function CreatePostComponent() {
               </div>
               <h3 className="font-medium text-gray-900 mb-2">No posts yet</h3>
               <p className="text-gray-500 mb-4">
-                Be the first to share something with the community!
+                You haven't created any posts yet. Share something with the
+                community!
               </p>
-              <div className="text-xs text-gray-400 mb-4">
-                Note: If you're experiencing issues creating posts, there may be
-                a temporary server issue. Please try again later or contact
-                support.
-              </div>
               <Button
                 onClick={openModal}
                 className="bg-primary-magenta text-white hover:bg-primary-magenta/90"
@@ -797,6 +940,7 @@ function CreatePostComponent() {
                   setPostText("");
                   setSelectedFiles([]);
                   setPreviewUrls([]);
+                  setCurrentLocation("");
                 }}
                 className="text-gray-500 hover:text-gray-700"
               >
@@ -853,6 +997,19 @@ function CreatePostComponent() {
                   ))}
                 </div>
               )}
+              {/* Current Location Display */}
+              {currentLocation && (
+                <div className="mt-4 flex items-center gap-2 text-sm text-gray-600 bg-gray-50 rounded-lg p-2">
+                  <MapPin size={16} />
+                  <span>{currentLocation}</span>
+                  <button
+                    onClick={() => setCurrentLocation("")}
+                    className="ml-auto text-gray-400 hover:text-gray-600"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              )}
             </div>
             {/* Media Buttons and Post Button */}
             <div className="p-4 flex justify-between items-center border-t border-gray-100">
@@ -870,11 +1027,16 @@ function CreatePostComponent() {
                     className="hidden"
                   />
                 </label>
-                <button className="p-2 rounded-full hover:bg-gray-100">
-                  <MapPin size={20} className="text-gray-500" />
-                </button>
-                <button className="p-2 rounded-full hover:bg-gray-100">
-                  <Tag size={20} className="text-gray-500" />
+                <button
+                  onClick={getCurrentLocation}
+                  disabled={isGettingLocation}
+                  className="p-2 rounded-full hover:bg-gray-100 disabled:opacity-50"
+                >
+                  {isGettingLocation ? (
+                    <Loader2 size={20} className="text-gray-500 animate-spin" />
+                  ) : (
+                    <MapPin size={20} className="text-gray-500" />
+                  )}
                 </button>
               </div>
 
