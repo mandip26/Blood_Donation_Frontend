@@ -1,4 +1,8 @@
-import { createLazyFileRoute } from "@tanstack/react-router";
+import {
+  createLazyFileRoute,
+  useSearch,
+  useNavigate,
+} from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -24,6 +28,11 @@ import {
 } from "@/services/apiService";
 import { useAuth } from "@/hooks/useAuth";
 import { useResponsive } from "@/hooks/useResponsive";
+
+// Define search params type
+interface EventsSearchParams {
+  focusEvent?: string;
+}
 
 export const Route = createLazyFileRoute("/dashboard/_dashboardLayout/events")({
   component: EventsComponent,
@@ -76,6 +85,13 @@ function EventsComponent() {
   const { user } = useAuth();
   // Get responsive design hooks
   const { isMobile: _ } = useResponsive(); // Using underscore to indicate intentionally unused variable
+  // Get navigation function
+  const navigate = useNavigate();
+  // Get search parameters with proper typing
+  const searchParams = useSearch({
+    from: "/dashboard/_dashboardLayout/events",
+  }) as EventsSearchParams;
+  const focusEvent = searchParams.focusEvent;
 
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCity, setSelectedCity] = useState<string | null>(null);
@@ -176,6 +192,18 @@ function EventsComponent() {
     "Kolkata",
   ];
   const dates = ["Today", "Tomorrow", "This Week", "This Month"];
+
+  // Function to handle modal closing and URL cleanup
+  const handleCloseModal = () => {
+    setSelectedEvent(null);
+    // Remove focusEvent from URL if present
+    navigate({
+      to: "/dashboard/events",
+      search: (prev) => ({ ...prev, focusEvent: undefined }),
+      replace: true,
+    });
+  };
+
   // Populate form with user data if available
   useEffect(() => {
     if (user) {
@@ -693,6 +721,18 @@ function EventsComponent() {
       setAlreadyRegistered(false);
     }
   };
+
+  // Handle focusing on a specific event from URL search params
+  useEffect(() => {
+    if (focusEvent && events.length > 0 && !selectedEvent) {
+      const eventToFocus = events.find((event) => event._id === focusEvent);
+      if (eventToFocus) {
+        // Automatically open the event details modal
+        handleEventClick(eventToFocus);
+      }
+    }
+  }, [focusEvent, events]);
+
   // Handle registration confirmation (step 2)
   const handleRegistrationConfirm = () => {
     // Close confirmation modal and show donation form
@@ -1414,14 +1454,25 @@ function EventsComponent() {
       </div>
       {/* Event Details Modal */}
       {selectedEvent && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl w-full max-w-3xl relative max-h-[90vh] overflow-y-auto">
+        <div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          onClick={handleCloseModal}
+        >
+          <div
+            className="bg-white rounded-xl w-full max-w-3xl relative max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
             <button
-              onClick={() => setSelectedEvent(null)}
-              className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 z-10 bg-white rounded-full p-1"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleCloseModal();
+              }}
+              className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 z-50 bg-white rounded-full p-2 shadow-lg border border-gray-200"
+              type="button"
             >
-              <X size={24} />
-            </button>{" "}
+              <X size={20} />
+            </button>
             <div className="h-60 overflow-hidden">
               <img
                 src={
@@ -1519,7 +1570,7 @@ function EventsComponent() {
                     <Button
                       type="button"
                       variant="outline"
-                      onClick={() => setSelectedEvent(null)}
+                      onClick={handleCloseModal}
                     >
                       Close
                     </Button>
@@ -1564,7 +1615,7 @@ function EventsComponent() {
                     <Button
                       type="button"
                       variant="outline"
-                      onClick={() => setSelectedEvent(null)}
+                      onClick={handleCloseModal}
                     >
                       Cancel
                     </Button>

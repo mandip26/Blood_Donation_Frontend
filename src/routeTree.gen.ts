@@ -22,7 +22,6 @@ import { Route as DashboardDashboardLayoutVisualizationApiImport } from './route
 // Create Virtual Routes
 
 const DashboardImport = createFileRoute('/dashboard')()
-const DashboardIndexLazyImport = createFileRoute('/dashboard/')()
 const DashboardDashboardLayoutIndexLazyImport = createFileRoute(
   '/dashboard/_dashboardLayout/',
 )()
@@ -70,14 +69,6 @@ const IndexRoute = IndexImport.update({
   path: '/',
   getParentRoute: () => rootRoute,
 } as any)
-
-const DashboardIndexLazyRoute = DashboardIndexLazyImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => DashboardRoute,
-} as any).lazy(() =>
-  import('./routes/dashboard/index.lazy').then((d) => d.Route),
-)
 
 const DashboardDashboardLayoutRoute = DashboardDashboardLayoutImport.update({
   id: '/_dashboardLayout',
@@ -263,13 +254,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardDashboardLayoutImport
       parentRoute: typeof DashboardRoute
     }
-    '/dashboard/': {
-      id: '/dashboard/'
-      path: '/'
-      fullPath: '/dashboard/'
-      preLoaderRoute: typeof DashboardIndexLazyImport
-      parentRoute: typeof DashboardImport
-    }
     '/dashboard/_dashboardLayout/visualization-api': {
       id: '/dashboard/_dashboardLayout/visualization-api'
       path: '/visualization-api'
@@ -409,12 +393,10 @@ const DashboardDashboardLayoutRouteWithChildren =
 
 interface DashboardRouteChildren {
   DashboardDashboardLayoutRoute: typeof DashboardDashboardLayoutRouteWithChildren
-  DashboardIndexLazyRoute: typeof DashboardIndexLazyRoute
 }
 
 const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardDashboardLayoutRoute: DashboardDashboardLayoutRouteWithChildren,
-  DashboardIndexLazyRoute: DashboardIndexLazyRoute,
 }
 
 const DashboardRouteWithChildren = DashboardRoute._addFileChildren(
@@ -426,7 +408,6 @@ export interface FileRoutesByFullPath {
   '/login': typeof authLoginRoute
   '/sign-up': typeof authSignUpRoute
   '/dashboard': typeof DashboardDashboardLayoutRouteWithChildren
-  '/dashboard/': typeof DashboardDashboardLayoutIndexLazyRoute
   '/dashboard/visualization-api': typeof DashboardDashboardLayoutVisualizationApiRoute
   '/dashboard/analytics': typeof DashboardDashboardLayoutAnalyticsLazyRoute
   '/dashboard/bloodtests': typeof DashboardDashboardLayoutBloodtestsLazyRoute
@@ -438,6 +419,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/profile': typeof DashboardDashboardLayoutProfileLazyRoute
   '/dashboard/recipient': typeof DashboardDashboardLayoutRecipientLazyRoute
   '/dashboard/visualization': typeof DashboardDashboardLayoutVisualizationLazyRoute
+  '/dashboard/': typeof DashboardDashboardLayoutIndexLazyRoute
 }
 
 export interface FileRoutesByTo {
@@ -465,7 +447,6 @@ export interface FileRoutesById {
   '/(auth)/sign-up': typeof authSignUpRoute
   '/dashboard': typeof DashboardRouteWithChildren
   '/dashboard/_dashboardLayout': typeof DashboardDashboardLayoutRouteWithChildren
-  '/dashboard/': typeof DashboardIndexLazyRoute
   '/dashboard/_dashboardLayout/visualization-api': typeof DashboardDashboardLayoutVisualizationApiRoute
   '/dashboard/_dashboardLayout/analytics': typeof DashboardDashboardLayoutAnalyticsLazyRoute
   '/dashboard/_dashboardLayout/bloodtests': typeof DashboardDashboardLayoutBloodtestsLazyRoute
@@ -487,7 +468,6 @@ export interface FileRouteTypes {
     | '/login'
     | '/sign-up'
     | '/dashboard'
-    | '/dashboard/'
     | '/dashboard/visualization-api'
     | '/dashboard/analytics'
     | '/dashboard/bloodtests'
@@ -499,6 +479,7 @@ export interface FileRouteTypes {
     | '/dashboard/profile'
     | '/dashboard/recipient'
     | '/dashboard/visualization'
+    | '/dashboard/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -523,7 +504,6 @@ export interface FileRouteTypes {
     | '/(auth)/sign-up'
     | '/dashboard'
     | '/dashboard/_dashboardLayout'
-    | '/dashboard/'
     | '/dashboard/_dashboardLayout/visualization-api'
     | '/dashboard/_dashboardLayout/analytics'
     | '/dashboard/_dashboardLayout/bloodtests'
@@ -581,8 +561,7 @@ export const routeTree = rootRoute
     "/dashboard": {
       "filePath": "dashboard",
       "children": [
-        "/dashboard/_dashboardLayout",
-        "/dashboard/"
+        "/dashboard/_dashboardLayout"
       ]
     },
     "/dashboard/_dashboardLayout": {
@@ -602,10 +581,6 @@ export const routeTree = rootRoute
         "/dashboard/_dashboardLayout/visualization",
         "/dashboard/_dashboardLayout/"
       ]
-    },
-    "/dashboard/": {
-      "filePath": "dashboard/index.lazy.tsx",
-      "parent": "/dashboard"
     },
     "/dashboard/_dashboardLayout/visualization-api": {
       "filePath": "dashboard/_dashboardLayout/visualization-api.tsx",

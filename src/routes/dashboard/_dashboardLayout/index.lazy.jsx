@@ -12,11 +12,18 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { postService } from "@/services/apiService";
-import { Link } from "@tanstack/react-router";
+import { postService, eventService } from "@/services/apiService";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
-import { BarChart, Calendar, Activity } from "lucide-react";
+import {
+  BarChart,
+  Calendar,
+  Activity,
+  MapPin,
+  Clock,
+  Loader2,
+} from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 // Define types for our data
@@ -57,10 +64,13 @@ export const Route = createLazyFileRoute("/dashboard/_dashboardLayout/")({
 
 function RouteComponent() {
   const { user, isLoading } = useAuth();
+  const navigate = useNavigate();
   const [stats, setStats] = useState({});
   const [statsLoading, setStatsLoading] = useState(true);
   const [posts, setPosts] = useState([]);
-
+  const [events, setEvents] = useState([]);
+  const [eventsLoading, setEventsLoading] = useState(true);
+  const [eventsError, setEventsError] = useState(null);
   useEffect(() => {
     // Function to fetch dashboard stats
     const fetchDashboardStats = async () => {
@@ -96,6 +106,37 @@ function RouteComponent() {
       } catch (error) {
         console.error("Error fetching dashboard stats:", error);
         setStatsLoading(false);
+      }
+    };
+
+    // Fetch events from API
+    const fetchEvents = async () => {
+      try {
+        setEventsLoading(true);
+        setEventsError(null);
+        const response = await eventService.getAllEvents();
+
+        if (response.success && response.events) {
+          // Get the 3 most recent events
+          const recentEvents = response.events
+            .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+            .slice(0, 3);
+          setEvents(recentEvents);
+          // Update stats with actual event count
+          setStats((prev) => ({
+            ...prev,
+            upcomingEvents: response.events.length,
+          }));
+        } else {
+          setEventsError("Failed to load events");
+        }
+      } catch (error) {
+        console.error("Error fetching events:", error);
+        setEventsError("Error loading events");
+        // Fallback to empty array if API fails
+        setEvents([]);
+      } finally {
+        setEventsLoading(false);
       }
     };
 
@@ -165,12 +206,30 @@ function RouteComponent() {
         setPosts(mockPosts);
       }
     };
-
     if (user) {
       fetchDashboardStats();
       fetchPosts();
+      fetchEvents();
     }
   }, [user]);
+
+  // Format date function
+  const formatDate = (dateString) => {
+    const options = {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    };
+    return new Date(dateString).toLocaleDateString(undefined, options);
+  };
+
+  // Handle register button click - navigate to events page and focus on specific event
+  const handleRegisterClick = (eventId) => {
+    navigate({
+      to: "/dashboard/events",
+      search: { focusEvent: eventId },
+    });
+  };
 
   if (isLoading || statsLoading) {
     return <LoadingState />;
@@ -193,7 +252,6 @@ function RouteComponent() {
             Upcoming Events
           </TabsTrigger>
         </TabsList>
-
         <TabsContent value="overview">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full">
             {/* Left Sidebar - User Info and Stats */}
@@ -508,7 +566,6 @@ function RouteComponent() {
             </div>
           </div>
         </TabsContent>
-
         {/* My Donations Tab */}
         <TabsContent value="donations">
           <div className="space-y-6 w-full">
@@ -592,7 +649,6 @@ function RouteComponent() {
             </Card>
           </div>
         </TabsContent>
-
         {/* Blood Requests Tab */}
         <TabsContent value="requests">
           <div className="space-y-6 w-full">
@@ -691,8 +747,7 @@ function RouteComponent() {
               </CardFooter>
             </Card>
           </div>
-        </TabsContent>
-
+        </TabsContent>{" "}
         {/* Upcoming Events Tab */}
         <TabsContent value="events">
           <div className="space-y-6 w-full">
@@ -704,69 +759,103 @@ function RouteComponent() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  <div className="border rounded-lg overflow-hidden">
-                    <div className="aspect-video bg-gray-100 relative">
-                      <img
-                        src="https://images.unsplash.com/photo-1615461066841-6116e61058f4?ixlib=rb-1.2.1&auto=format&fit=crop&w=1000&q=80"
-                        alt="Blood Donation Camp"
-                        className="w-full h-full object-cover"
-                      />
-                      <div className="absolute top-3 right-3 bg-white text-primary-magenta font-semibold rounded-full px-3 py-1 text-sm">
-                        June 15
-                      </div>
-                    </div>
-                    <div className="p-4">
-                      <h4 className="font-bold text-lg">
-                        World Blood Donor Day Camp
-                      </h4>
-                      <p className="text-gray-600 text-sm mt-1">
-                        City Hospital, Downtown • 9:00 AM - 5:00 PM
-                      </p>
-                      <div className="mt-4 flex justify-between items-center">
-                        <span className="text-gray-500 text-sm">
-                          3.2 km away
-                        </span>
-                        <Button className="bg-primary-magenta hover:bg-primary-magenta/90">
-                          Register
-                        </Button>
-                      </div>
-                    </div>
+                {eventsLoading ? (
+                  <div className="flex justify-center items-center py-10">
+                    <Loader2 className="animate-spin mr-2" size={20} />
+                    <span className="text-gray-600">Loading events...</span>
                   </div>
-
-                  <div className="border rounded-lg overflow-hidden">
-                    <div className="aspect-video bg-gray-100 relative">
-                      <img
-                        src="https://images.unsplash.com/photo-1579154204601-01588f351e67?ixlib=rb-1.2.1&auto=format&fit=crop&w=1000&q=80"
-                        alt="Blood Donation Drive"
-                        className="w-full h-full object-cover"
-                      />
-                      <div className="absolute top-3 right-3 bg-white text-primary-magenta font-semibold rounded-full px-3 py-1 text-sm">
-                        June 22
-                      </div>
-                    </div>
-                    <div className="p-4">
-                      <h4 className="font-bold text-lg">
-                        University Blood Drive
-                      </h4>
-                      <p className="text-gray-600 text-sm mt-1">
-                        Central University Campus • 10:00 AM - 4:00 PM
-                      </p>
-                      <div className="mt-4 flex justify-between items-center">
-                        <span className="text-gray-500 text-sm">
-                          5.7 km away
-                        </span>
-                        <Button className="bg-primary-magenta hover:bg-primary-magenta/90">
-                          Register
-                        </Button>
-                      </div>
-                    </div>
+                ) : eventsError ? (
+                  <div className="text-center py-10 text-red-600">
+                    <p>{eventsError}</p>
+                    <Button
+                      onClick={() => window.location.reload()}
+                      className="mt-4 bg-primary-magenta text-white hover:bg-primary-magenta/90"
+                      size="sm"
+                    >
+                      Try Again
+                    </Button>
                   </div>
-                </div>
+                ) : events.length === 0 ? (
+                  <div className="text-center py-10 text-gray-500">
+                    <Calendar className="mx-auto h-12 w-12 text-gray-400 mb-3" />
+                    <p>No events available at the moment</p>
+                    <p className="text-sm">
+                      Check back later for upcoming events
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {events.map((event) => (
+                      <div
+                        key={event._id}
+                        className="border rounded-lg overflow-hidden"
+                      >
+                        <div className="aspect-video bg-gray-100 relative">
+                          <img
+                            src={
+                              event.image ||
+                              "https://images.unsplash.com/photo-1615461066841-6116e61058f4?ixlib=rb-1.2.1&auto=format&fit=crop&w=1000&q=80"
+                            }
+                            alt={event.title}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.target.src =
+                                "https://images.unsplash.com/photo-1615461066841-6116e61058f4?ixlib=rb-1.2.1&auto=format&fit=crop&w=1000&q=80";
+                            }}
+                          />
+                          <div className="absolute top-3 right-3 bg-white text-primary-magenta font-semibold rounded-full px-3 py-1 text-sm">
+                            {formatDate(event.date)}
+                          </div>
+                        </div>
+                        <div className="p-4">
+                          <h4 className="font-bold text-lg mb-2">
+                            {event.title}
+                          </h4>
+                          <p className="text-gray-600 text-sm mb-1">
+                            By {event.createdBy?.name || "Unknown Organizer"}
+                          </p>
+                          <div className="flex items-center text-gray-600 text-sm mb-2">
+                            <MapPin size={14} className="mr-1" />
+                            {event.venue}
+                          </div>
+                          <div className="flex items-center text-gray-600 text-sm mb-3">
+                            <Clock size={14} className="mr-1" />
+                            {event.time}
+                          </div>
+                          {event.description && (
+                            <p className="text-gray-600 text-sm mb-3 line-clamp-2">
+                              {event.description}
+                            </p>
+                          )}
+                          {event.registrationLimit && (
+                            <div className="text-sm text-blue-600 mb-3">
+                              {event.registeredCount || 0} /{" "}
+                              {event.registrationLimit} registered
+                            </div>
+                          )}
+                          <div className="mt-4 flex justify-between items-center">
+                            <span className="text-gray-500 text-sm">
+                              Created{" "}
+                              {formatDistanceToNow(new Date(event.createdAt), {
+                                addSuffix: true,
+                              })}
+                            </span>
+                            <Button
+                              className="bg-primary-magenta hover:bg-primary-magenta/90"
+                              onClick={() => handleRegisterClick(event._id)}
+                            >
+                              Register
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
               <CardFooter className="border-t pt-4">
-                <Button variant="outline" className="w-full">
-                  View All Events
+                <Button variant="outline" className="w-full" asChild>
+                  <Link to="/dashboard/events">View All Events</Link>
                 </Button>
               </CardFooter>
             </Card>
