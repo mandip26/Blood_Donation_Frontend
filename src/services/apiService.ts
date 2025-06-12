@@ -1,4 +1,5 @@
 import axios from "axios";
+import { bloodInventoryService } from "./bloodInventoryService";
 
 // Base API configuration
 const API_BASE_URL =
@@ -831,5 +832,8 @@ export const testimonialService = {
     }
   },
 };
+
+// Re-export bloodInventoryService
+export { bloodInventoryService };
 
 export default api;

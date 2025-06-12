@@ -16,6 +16,7 @@ import {
   postService,
   eventService,
   bloodRequestService,
+  bloodInventoryService,
 } from "@/services/apiService";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
@@ -28,6 +29,8 @@ import {
   Clock,
   Loader2,
   Heart,
+  X,
+  Check,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -60,7 +63,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
  * @property {string} updatedAt
  * @property {number} [likes]
  * @property {number} [comments]
- * @property {number} [shares]
+ * @property {string|Object} [location]
  */
 
 export const Route = createLazyFileRoute("/dashboard/_dashboardLayout/")({
@@ -82,6 +85,24 @@ function RouteComponent() {
   const [completedDonations, setCompletedDonations] = useState([]);
   const [donationsLoading, setDonationsLoading] = useState(true);
   const [donationsError, setDonationsError] = useState(null);
+  // Added state for hospital/organization selection and blood inventory
+  const [hospitals, setHospitals] = useState([]);
+  const [selectedHospital, setSelectedHospital] = useState("");
+  const [bloodInventory, setBloodInventory] = useState({});
+  const [loadingInventory, setLoadingInventory] = useState(false);
+  const [commentText, setCommentText] = useState("");
+  const [showCommentInput, setShowCommentInput] = useState(null);
+  const [showReplies, setShowReplies] = useState({});
+  const [replyText, setReplyText] = useState("");
+  const [replyingTo, setReplyingTo] = useState({
+    postId: null,
+    commentId: null,
+  });
+  const [showReplyInput, setShowReplyInput] = useState({
+    postId: null,
+    commentId: null,
+  });
+
   useEffect(() => {
     // Function to fetch dashboard stats
     const fetchDashboardStats = async () => {
@@ -110,6 +131,82 @@ function RouteComponent() {
       } catch (error) {
         console.error("Error fetching dashboard stats:", error);
         setStatsLoading(false);
+      }
+    }; // Function to fetch all hospitals and organizations
+    const fetchHospitalsAndOrgs = async () => {
+      try {
+        const response = await fetch(
+          "http://localhost:8001/api/v1/user/users",
+          {
+            method: "GET",
+            credentials: "include",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
+        const data = await response.json();
+        console.log("All users data:", data);
+
+        if (data.success && data.users) {
+          // Filter users to only hospitals and organizations
+          const hospsAndOrgs = data.users.filter(
+            (user) => user.role === "hospital" || user.role === "organization"
+          );
+          console.log("Filtered hospitals and organizations:", hospsAndOrgs);
+
+          setHospitals(hospsAndOrgs);
+
+          // Set default selected hospital if available
+          if (hospsAndOrgs.length > 0) {
+            setSelectedHospital(hospsAndOrgs[0]._id);
+            console.log("Default selected hospital ID:", hospsAndOrgs[0]._id);
+            fetchBloodInventoryForUser(hospsAndOrgs[0]._id);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching hospitals and organizations:", error);
+      }
+    }; // Function to fetch blood inventory for a specific hospital/org
+    const fetchBloodInventoryForUser = async (userId) => {
+      if (!userId) return;
+
+      try {
+        setLoadingInventory(true);
+        // Here we would fetch the blood inventory from the backend
+        const inventories = await bloodInventoryService.getAllInventories();
+
+        // Debug inventories
+        console.log("All inventories:", inventories);
+
+        // MongoDB ObjectId comparison requires string comparison
+        const inventory = inventories.find((inv) => {
+          // Debug each inventory userId
+          console.log(
+            `Comparing: inv.userId._id=${inv.userId?._id} with userId=${userId}`
+          );
+          return inv.userId?._id === userId || inv.userId === userId;
+        });
+
+        // If inventory found, use it; otherwise use default values
+        const inventoryData = inventory || {
+          aPositive: 0,
+          aNegative: 0,
+          bPositive: 0,
+          bNegative: 0,
+          abPositive: 0,
+          abNegative: 0,
+          oPositive: 0,
+          oNegative: 0,
+        };
+
+        console.log("Selected inventory:", inventoryData);
+        setBloodInventory(inventoryData);
+      } catch (error) {
+        console.error("Error fetching blood inventory for user:", error);
+      } finally {
+        setLoadingInventory(false);
       }
     };
 
@@ -216,9 +313,13 @@ function RouteComponent() {
         if (response.success && response.posts) {
           const postsWithUI = response.posts.map((post) => ({
             ...post,
-            likes: Math.floor(Math.random() * 50),
-            comments: Math.floor(Math.random() * 10),
-            shares: Math.floor(Math.random() * 5),
+            // Use actual counts from the API response
+            likes: post.likesCount || 0,
+            comments: post.comments ? post.comments.length : 0,
+            // Store the comments list for displaying
+            commentsList: post.comments || [],
+            // Track if current user has liked the post
+            isLikedByCurrentUser: post.likedBy?.includes(user?._id),
           }));
           setPosts(postsWithUI);
         } else {
@@ -322,6 +423,7 @@ function RouteComponent() {
       fetchPosts();
       fetchEvents();
       fetchBloodRequests();
+      fetchHospitalsAndOrgs(); // Add this line to fetch hospitals and organizations
 
       // Only fetch donation history for users with the "user" role
       if (user.role === "user") {
@@ -330,15 +432,6 @@ function RouteComponent() {
     }
   }, [user]);
 
-  // Format date function
-  const formatDate = (dateString) => {
-    const options = {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    };
-    return new Date(dateString).toLocaleDateString(undefined, options);
-  };
   // Handle register button click - navigate to events page and focus on specific event
   const handleRegisterClick = (eventId) => {
     navigate({
@@ -355,6 +448,51 @@ function RouteComponent() {
     });
   };
 
+  // Handle hospital/organization selection change
+  const handleHospitalChange = (e) => {
+    const hospitalId = e.target.value;
+    setSelectedHospital(hospitalId);
+
+    // Fetch blood inventory for selected hospital/organization
+    const fetchInventory = async () => {
+      try {
+        setLoadingInventory(true);
+        const inventories = await bloodInventoryService.getAllInventories();
+        const inventory = inventories.find(
+          (inv) => inv.userId === hospitalId
+        ) || {
+          aPositive: 0,
+          aNegative: 0,
+          bPositive: 0,
+          bNegative: 0,
+          abPositive: 0,
+          abNegative: 0,
+          oPositive: 0,
+          oNegative: 0,
+        };
+
+        setBloodInventory(inventory);
+      } catch (error) {
+        console.error("Error fetching blood inventory for user:", error);
+        toast.error("Failed to load inventory data");
+      } finally {
+        setLoadingInventory(false);
+      }
+    };
+
+    fetchInventory();
+  };
+
+  // Format date function
+  const formatDate = (dateString) => {
+    const options = {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    };
+    return new Date(dateString).toLocaleDateString(undefined, options);
+  };
+
   // Helper function to get urgency color
   const getUrgencyColor = (urgency) => {
     switch (urgency?.toLowerCase()) {
@@ -368,7 +506,160 @@ function RouteComponent() {
         return "bg-blue-50 border-blue-500 text-blue-800";
     }
   };
+  // Handle liking a post
+  const handleLikePost = async (postId) => {
+    try {
+      const response = await postService.likePost(postId);
+      if (response.success) {
+        // Update the post in the UI
+        setPosts((prevPosts) =>
+          prevPosts.map((post) => {
+            if (post._id === postId) {
+              // If the user already liked the post, this is an unlike action
+              const newLikesCount = post.isLikedByCurrentUser
+                ? Math.max(0, post.likes - 1)
+                : post.likes + 1;
 
+              return {
+                ...post,
+                likes: newLikesCount,
+                isLikedByCurrentUser: !post.isLikedByCurrentUser,
+              };
+            }
+            return post;
+          })
+        );
+        toast.success(response.message || "Post liked!");
+      }
+    } catch (error) {
+      console.error("Error liking post:", error);
+      toast.error("Failed to like post");
+    }
+  };
+  // Function to handle commenting on a post
+  const handleCommentSubmit = async (postId) => {
+    if (!commentText.trim()) {
+      toast.error("Comment cannot be empty");
+      return;
+    }
+
+    try {
+      const response = await postService.commentOnPost(postId, commentText);
+      if (response.success) {
+        // Update the post in the UI with the new comment
+        setPosts((prevPosts) =>
+          prevPosts.map((post) => {
+            if (post._id === postId) {
+              const newComment = {
+                _id: response.comment?._id || `temp-${Date.now()}`,
+                text: commentText,
+                user: user,
+                createdAt: new Date().toISOString(),
+                replies: [],
+              };
+
+              return {
+                ...post,
+                comments: (post.comments || 0) + 1,
+                commentsList: [...(post.commentsList || []), newComment],
+              };
+            }
+            return post;
+          })
+        );
+        setCommentText("");
+        setShowCommentInput(null);
+        toast.success("Comment added successfully");
+      }
+    } catch (error) {
+      console.error("Error adding comment:", error);
+      toast.error("Failed to add comment");
+    }
+  };
+
+  // Function to handle replying to a comment
+  const handleReplySubmit = async (postId, commentId) => {
+    if (!replyText.trim()) {
+      toast.error("Reply cannot be empty");
+      return;
+    }
+
+    try {
+      const response = await postService.replyToComment(
+        postId,
+        commentId,
+        replyText
+      );
+      if (response.success) {
+        // Update the post and its comments in the UI
+        setPosts((prevPosts) =>
+          prevPosts.map((post) => {
+            if (post._id === postId) {
+              // Find and update the comment with the new reply
+              const updatedCommentsList = post.commentsList.map((comment) => {
+                if (comment._id === commentId) {
+                  return {
+                    ...comment,
+                    replies: [
+                      ...(comment.replies || []),
+                      {
+                        _id: response.reply._id || `temp-${Date.now()}`,
+                        text: replyText,
+                        user: user,
+                        createdAt: new Date().toISOString(),
+                      },
+                    ],
+                  };
+                }
+                return comment;
+              });
+
+              return {
+                ...post,
+                commentsList: updatedCommentsList,
+              };
+            }
+            return post;
+          })
+        );
+
+        // Reset state
+        setReplyText("");
+        setShowReplyInput({ postId: null, commentId: null });
+        toast.success("Reply added successfully");
+      }
+    } catch (error) {
+      console.error("Error adding reply:", error);
+      toast.error("Failed to add reply");
+    }
+  };
+
+  // Toggle reply input for a comment
+  const toggleReplyInput = (postId, commentId) => {
+    if (
+      showReplyInput.postId === postId &&
+      showReplyInput.commentId === commentId
+    ) {
+      setShowReplyInput({ postId: null, commentId: null });
+    } else {
+      setShowReplyInput({ postId, commentId });
+    }
+    setReplyText("");
+  };
+
+  // Toggle comment input for a post
+  const toggleCommentInput = (postId) => {
+    setShowCommentInput(showCommentInput === postId ? null : postId);
+    setCommentText("");
+  };
+
+  // Toggle replies visibility for a comment
+  const toggleReplies = (commentId) => {
+    setShowReplies((prev) => ({
+      ...prev,
+      [commentId]: !prev[commentId],
+    }));
+  };
   // Helper function to format time ago
   const getTimeAgo = (date) => {
     const now = new Date();
@@ -385,6 +676,11 @@ function RouteComponent() {
     if (diffDay < 30) return `${diffDay} days ago`;
 
     return new Date(date).toLocaleDateString();
+  };
+  // Function to refresh posts
+  const refreshPosts = () => {
+    fetchPosts();
+    toast.info("Refreshing posts...");
   };
 
   if (isLoading || statsLoading) {
@@ -462,34 +758,6 @@ function RouteComponent() {
                   </p>
                 </CardContent>
               </Card>
-              {/* Stats Cards */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Your Dashboard</CardTitle>
-                </CardHeader>{" "}
-                <CardContent className="space-y-4">
-                  {user?.role === "user" && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-600">Total Donations</span>
-                      <span className="text-lg font-bold text-primary-magenta">
-                        {stats.totalDonations || 0}
-                      </span>
-                    </div>
-                  )}
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-600">Upcoming Events</span>
-                    <span className="text-lg font-bold text-primary-magenta">
-                      {stats.upcomingEvents || 0}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-600">Pending Requests</span>
-                    <span className="text-lg font-bold text-primary-magenta">
-                      {stats.pendingRequests || 0}
-                    </span>
-                  </div>
-                </CardContent>
-              </Card>{" "}
               {/* Quick Actions */}
               <Card>
                 <CardHeader>
@@ -533,37 +801,151 @@ function RouteComponent() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    {stats.availableBloodTypes &&
-                      Object.entries(stats.availableBloodTypes).map(
-                        ([type, units]) => (
-                          <div
-                            key={type}
-                            className="flex flex-col items-center justify-center p-3 rounded-lg border border-gray-100"
-                          >
-                            <span className="text-2xl font-bold text-primary-magenta">
-                              {type}
-                            </span>
-                            <span className="text-sm text-gray-500">
-                              {units} units
-                            </span>
-                          </div>
-                        )
+                  {/* Add hospital/organization selector */}
+                  <div className="mb-4">
+                    <label
+                      htmlFor="hospital-selector"
+                      className="block text-sm font-medium text-gray-700 mb-1"
+                    >
+                      Select Hospital/Organization
+                    </label>
+                    <select
+                      id="hospital-selector"
+                      value={selectedHospital}
+                      onChange={handleHospitalChange}
+                      disabled={loadingInventory}
+                      className="w-full rounded-md border border-gray-300 py-2 px-3 shadow-sm focus:border-primary-magenta focus:outline-none focus:ring-primary-magenta"
+                    >
+                      {hospitals.length === 0 && (
+                        <option value="">No hospitals available</option>
                       )}
+                      {hospitals.map((hospital) => (
+                        <option key={hospital._id} value={hospital._id}>
+                          {hospital.hospitalName ||
+                            hospital.organizationName ||
+                            hospital.name}
+                        </option>
+                      ))}
+                    </select>
                   </div>
+
+                  {/* Display loading indicator if inventory is loading */}
+                  {loadingInventory && (
+                    <div className="flex justify-center items-center py-4">
+                      <Loader2 className="h-6 w-6 animate-spin text-primary-magenta" />
+                      <span className="ml-2 text-gray-600">
+                        Loading inventory...
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Display blood inventory grid */}
+                  {!loadingInventory && (
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="flex flex-col items-center justify-center p-3 rounded-lg border border-gray-100">
+                        <span className="text-2xl font-bold text-primary-magenta">
+                          A+
+                        </span>
+                        <span className="text-sm text-gray-500">
+                          {bloodInventory.aPositive || 0} units
+                        </span>
+                      </div>
+                      <div className="flex flex-col items-center justify-center p-3 rounded-lg border border-gray-100">
+                        <span className="text-2xl font-bold text-primary-magenta">
+                          A-
+                        </span>
+                        <span className="text-sm text-gray-500">
+                          {bloodInventory.aNegative || 0} units
+                        </span>
+                      </div>
+                      <div className="flex flex-col items-center justify-center p-3 rounded-lg border border-gray-100">
+                        <span className="text-2xl font-bold text-primary-magenta">
+                          B+
+                        </span>
+                        <span className="text-sm text-gray-500">
+                          {bloodInventory.bPositive || 0} units
+                        </span>
+                      </div>
+                      <div className="flex flex-col items-center justify-center p-3 rounded-lg border border-gray-100">
+                        <span className="text-2xl font-bold text-primary-magenta">
+                          B-
+                        </span>
+                        <span className="text-sm text-gray-500">
+                          {bloodInventory.bNegative || 0} units
+                        </span>
+                      </div>
+                      <div className="flex flex-col items-center justify-center p-3 rounded-lg border border-gray-100">
+                        <span className="text-2xl font-bold text-primary-magenta">
+                          AB+
+                        </span>
+                        <span className="text-sm text-gray-500">
+                          {bloodInventory.abPositive || 0} units
+                        </span>
+                      </div>
+                      <div className="flex flex-col items-center justify-center p-3 rounded-lg border border-gray-100">
+                        <span className="text-2xl font-bold text-primary-magenta">
+                          AB-
+                        </span>
+                        <span className="text-sm text-gray-500">
+                          {bloodInventory.abNegative || 0} units
+                        </span>
+                      </div>
+                      <div className="flex flex-col items-center justify-center p-3 rounded-lg border border-gray-100">
+                        <span className="text-2xl font-bold text-primary-magenta">
+                          O+
+                        </span>
+                        <span className="text-sm text-gray-500">
+                          {bloodInventory.oPositive || 0} units
+                        </span>
+                      </div>
+                      <div className="flex flex-col items-center justify-center p-3 rounded-lg border border-gray-100">
+                        <span className="text-2xl font-bold text-primary-magenta">
+                          O-
+                        </span>
+                        <span className="text-sm text-gray-500">
+                          {bloodInventory.oNegative || 0} units
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
-
-              {/* Latest Activity and Post Creation */}
+              {/* Latest Activity and Post Creation */}{" "}
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <Activity className="w-5 h-5 mr-2" />
-                    Community Activity
-                  </CardTitle>
-                  <CardDescription>
-                    Share updates and connect with the community
-                  </CardDescription>
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <CardTitle className="flex items-center">
+                        <Activity className="w-5 h-5 mr-2" />
+                        Community Activity
+                      </CardTitle>
+                      <CardDescription>
+                        Share updates and connect with the community
+                      </CardDescription>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-primary-magenta"
+                      onClick={refreshPosts}
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-4 w-4 mr-1"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                        />
+                      </svg>
+                      Refresh
+                    </Button>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <div className="mb-6">
@@ -624,7 +1006,6 @@ function RouteComponent() {
                   </div>
                 </CardContent>
               </Card>
-
               {/* Posts Feed */}
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold">
@@ -661,8 +1042,19 @@ function RouteComponent() {
                       </div>
                     </CardHeader>
                     <CardContent>
+                      {" "}
                       <div className="mb-4">
                         <p className="text-gray-700 mb-4">{post.query}</p>
+                        {post.location && (
+                          <div className="flex items-center gap-1 text-sm text-gray-500 mb-3">
+                            <MapPin size={14} className="flex-shrink-0" />
+                            <span>
+                              {typeof post.location === "object"
+                                ? post.location.address
+                                : post.location}
+                            </span>
+                          </div>
+                        )}
                         {post.image && (
                           <img
                             src={post.image}
@@ -671,27 +1063,21 @@ function RouteComponent() {
                           />
                         )}
                       </div>
-
                       <div className="flex items-center justify-between text-sm text-gray-500 pt-3 border-t">
-                        <button className="flex items-center gap-1 hover:text-primary-magenta transition-colors">
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="h-5 w-5"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-                            />
-                          </svg>
+                        <button
+                          className={`flex items-center gap-1 hover:text-primary-magenta transition-colors ${post.isLikedByCurrentUser ? "text-primary-magenta" : ""}`}
+                          onClick={() => handleLikePost(post._id)}
+                        >
+                          <Heart
+                            className={`h-5 w-5 ${post.isLikedByCurrentUser ? "fill-primary-magenta" : ""}`}
+                            strokeWidth={post.isLikedByCurrentUser ? 0 : 2}
+                          />
                           <span>{post.likes || 0}</span>
-                        </button>
-
-                        <button className="flex items-center gap-1 hover:text-primary-magenta transition-colors">
+                        </button>{" "}
+                        <button
+                          className="flex items-center gap-1 hover:text-primary-magenta transition-colors"
+                          onClick={() => toggleCommentInput(post._id)}
+                        >
                           <svg
                             xmlns="http://www.w3.org/2000/svg"
                             className="h-5 w-5"
@@ -708,25 +1094,239 @@ function RouteComponent() {
                           </svg>
                           <span>Comment ({post.comments || 0})</span>
                         </button>
-
-                        <button className="flex items-center gap-1 hover:text-primary-magenta transition-colors">
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="h-5 w-5"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
-                            />
-                          </svg>
-                          <span>Share ({post.shares || 0})</span>
-                        </button>
                       </div>
+                      {/* Comment input section */}
+                      {showCommentInput === post._id && (
+                        <div className="mt-4 pt-3 border-t">
+                          <div className="flex gap-3">
+                            <Avatar className="h-8 w-8">
+                              <AvatarImage
+                                src={
+                                  user?.profile?.profilePhoto ||
+                                  "https://i.pravatar.cc/150?img=12"
+                                }
+                                alt={user?.name || "User"}
+                              />
+                              <AvatarFallback>
+                                {(user?.name || "U").charAt(0)}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1">
+                              <textarea
+                                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-magenta text-sm"
+                                placeholder="Write a comment..."
+                                rows={2}
+                                value={commentText}
+                                onChange={(e) => setCommentText(e.target.value)}
+                              />
+                              <div className="flex justify-end mt-2">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="mr-2"
+                                  onClick={() => setShowCommentInput(null)}
+                                >
+                                  Cancel
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  className="bg-primary-magenta hover:bg-primary-magenta/90"
+                                  onClick={() => handleCommentSubmit(post._id)}
+                                  disabled={!commentText.trim()}
+                                >
+                                  Comment
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}{" "}
+                      {/* Display comments if post has any */}
+                      {post.commentsList && post.commentsList.length > 0 && (
+                        <div className="mt-4 pt-3 border-t space-y-3">
+                          {post.commentsList.map((comment) => (
+                            <div key={comment._id} className="flex gap-2">
+                              <Avatar className="h-6 w-6">
+                                <AvatarImage
+                                  src={
+                                    comment.user?.profile?.profilePhoto ||
+                                    "https://i.pravatar.cc/150?img=12"
+                                  }
+                                  alt={comment.user?.name || "User"}
+                                />
+                                <AvatarFallback>
+                                  {(comment.user?.name || "U").charAt(0)}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="flex-1">
+                                <div className="bg-gray-100 rounded-lg px-3 py-2">
+                                  <p className="text-xs font-semibold">
+                                    {comment.user?.name ||
+                                      comment.user?.email ||
+                                      "User"}
+                                  </p>
+                                  <p className="text-sm">{comment.text}</p>
+                                </div>
+                                <div className="flex gap-4 text-xs text-gray-500 mt-1 ml-1">
+                                  <button>Like</button>
+                                  <button
+                                    onClick={() =>
+                                      toggleReplyInput(post._id, comment._id)
+                                    }
+                                  >
+                                    Reply
+                                  </button>
+                                  <span>
+                                    {formatDistanceToNow(
+                                      new Date(comment.createdAt),
+                                      {
+                                        addSuffix: true,
+                                      }
+                                    )}
+                                  </span>
+                                </div>
+
+                                {/* Show reply input when toggled */}
+                                {showReplyInput.postId === post._id &&
+                                  showReplyInput.commentId === comment._id && (
+                                    <div className="mt-2 ml-6">
+                                      <div className="flex gap-2">
+                                        <Avatar className="h-5 w-5">
+                                          <AvatarImage
+                                            src={
+                                              user?.profile?.profilePhoto ||
+                                              "https://i.pravatar.cc/150?img=12"
+                                            }
+                                            alt={user?.name || "User"}
+                                          />
+                                          <AvatarFallback>
+                                            {(user?.name || "U").charAt(0)}
+                                          </AvatarFallback>
+                                        </Avatar>
+                                        <div className="flex-1">
+                                          <textarea
+                                            className="w-full px-2 py-1 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-magenta"
+                                            placeholder="Write a reply..."
+                                            rows={1}
+                                            value={replyText}
+                                            onChange={(e) =>
+                                              setReplyText(e.target.value)
+                                            }
+                                          />
+                                          <div className="flex justify-end mt-1">
+                                            <Button
+                                              size="sm"
+                                              variant="ghost"
+                                              className="h-6 text-xs mr-1"
+                                              onClick={() =>
+                                                setShowReplyInput({
+                                                  postId: null,
+                                                  commentId: null,
+                                                })
+                                              }
+                                            >
+                                              Cancel
+                                            </Button>
+                                            <Button
+                                              size="sm"
+                                              className="bg-primary-magenta hover:bg-primary-magenta/90 h-6 text-xs"
+                                              onClick={() =>
+                                                handleReplySubmit(
+                                                  post._id,
+                                                  comment._id
+                                                )
+                                              }
+                                              disabled={!replyText.trim()}
+                                            >
+                                              Reply
+                                            </Button>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  )}
+
+                                {/* Show replies toggle if comment has replies */}
+                                {comment.replies &&
+                                  comment.replies.length > 0 && (
+                                    <div className="mt-2 ml-1">
+                                      <button
+                                        className="text-xs text-primary-magenta font-medium flex items-center gap-1"
+                                        onClick={() =>
+                                          toggleReplies(comment._id)
+                                        }
+                                      >
+                                        {showReplies[comment._id] ? (
+                                          <>Hide replies</>
+                                        ) : (
+                                          <>
+                                            Show {comment.replies.length}{" "}
+                                            {comment.replies.length === 1
+                                              ? "reply"
+                                              : "replies"}
+                                          </>
+                                        )}
+                                      </button>
+
+                                      {/* Display replies */}
+                                      {showReplies[comment._id] && (
+                                        <div className="mt-2 space-y-2 ml-4">
+                                          {comment.replies.map((reply) => (
+                                            <div
+                                              key={reply._id}
+                                              className="flex gap-2"
+                                            >
+                                              <Avatar className="h-5 w-5">
+                                                <AvatarImage
+                                                  src={
+                                                    reply.user?.profile
+                                                      ?.profilePhoto ||
+                                                    "https://i.pravatar.cc/150?img=12"
+                                                  }
+                                                  alt={
+                                                    reply.user?.name || "User"
+                                                  }
+                                                />
+                                                <AvatarFallback>
+                                                  {(
+                                                    reply.user?.name || "U"
+                                                  ).charAt(0)}
+                                                </AvatarFallback>
+                                              </Avatar>
+                                              <div className="flex-1">
+                                                <div className="bg-gray-100 rounded-lg px-3 py-2">
+                                                  <p className="text-xs font-semibold">
+                                                    {reply.user?.name ||
+                                                      reply.user?.email ||
+                                                      "User"}
+                                                  </p>
+                                                  <p className="text-sm">
+                                                    {reply.text}
+                                                  </p>
+                                                </div>
+                                                <div className="flex gap-4 text-xs text-gray-500 mt-1 ml-1">
+                                                  <button>Like</button>
+                                                  <span>
+                                                    {formatDistanceToNow(
+                                                      new Date(reply.createdAt),
+                                                      {
+                                                        addSuffix: true,
+                                                      }
+                                                    )}
+                                                  </span>
+                                                </div>
+                                              </div>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 ))}

@@ -700,7 +700,11 @@ function CreatePostComponent() {
                       {post.location && (
                         <div className="mt-2 flex items-center gap-1 text-sm text-gray-500">
                           <MapPin size={14} />
-                          <span>{post.location}</span>
+                          <span>
+                            {typeof post.location === "object"
+                              ? post.location.address
+                              : post.location}
+                          </span>
                         </div>
                       )}
 
