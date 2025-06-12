@@ -1,5 +1,9 @@
-import { createLazyFileRoute } from "@tanstack/react-router";
-import { useState, useEffect } from "react";
+import {
+  createLazyFileRoute,
+  useSearch,
+  useNavigate,
+} from "@tanstack/react-router";
+import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Search,
@@ -73,6 +77,14 @@ function RecipientComponent() {
 
   // Responsive design
   const { isMobile } = useResponsive();
+
+  // Navigation hook for URL manipulation
+  const navigate = useNavigate();
+
+  // Get search parameters to handle navigation from home page
+  const searchParams = useSearch({
+    from: "/dashboard/_dashboardLayout/recipient",
+  }) as { focusRequest?: string };
 
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedBloodType, setSelectedBloodType] = useState<string | null>(
@@ -150,7 +162,34 @@ function RecipientComponent() {
     useState(false);
   const [updatingResponseId, setUpdatingResponseId] = useState<string | null>(
     null
-  ); // Function to check if user has already responded to a request
+  ); // Function to handle modal closing and URL cleanup
+  const handleCloseModal = () => {
+    // Set the flag to prevent immediate reopening
+    wasJustClosed.current = true;
+
+    // First close the modal
+    setSelectedRequest(null);
+
+    // If there's a focusRequest in the URL, clear it
+    if (searchParams.focusRequest) {
+      navigate({
+        to: "/dashboard/recipient",
+        search: (prev) => {
+          const newSearch = { ...prev };
+          delete (newSearch as any).focusRequest;
+          return newSearch;
+        },
+        replace: true,
+      });
+    }
+
+    // Reset the flag after a delay
+    setTimeout(() => {
+      wasJustClosed.current = false;
+    }, 300);
+  };
+
+  // Function to check if user has already responded to a request
   const checkExistingResponse = async (requestId: string) => {
     if (!user) return false;
 
@@ -187,11 +226,30 @@ function RecipientComponent() {
     } finally {
       setLoadingResponseCheck(null);
     }
-  };
-  // Fetch blood requests from API
+  }; // Fetch blood requests from API
   useEffect(() => {
     fetchBloodRequests();
   }, [selectedBloodType, selectedUrgency]);
+
+  // Create a ref to track modal close state
+  const wasJustClosed = useRef(false);
+
+  // Auto-focus on request when navigating from home page
+  useEffect(() => {
+    if (
+      searchParams.focusRequest &&
+      bloodRequests.length > 0 &&
+      !selectedRequest &&
+      !wasJustClosed.current
+    ) {
+      const targetRequest = bloodRequests.find(
+        (req: BloodRequest) => req.id === searchParams.focusRequest
+      );
+      if (targetRequest) {
+        setSelectedRequest(targetRequest);
+      }
+    }
+  }, [searchParams.focusRequest, bloodRequests, selectedRequest]);
   // Fetch blood requests function (for refreshing data)
   const fetchBloodRequests = async () => {
     try {
@@ -278,7 +336,6 @@ function RecipientComponent() {
             (req: BloodRequest) => req.urgency === filters.urgency
           );
         }
-
         setBloodRequests(filteredRequests);
       } else {
         setError("Failed to load blood requests");
@@ -1156,9 +1213,9 @@ function RecipientComponent() {
               <div className="flex justify-between items-center">
                 <h3 className="text-xl font-bold text-gray-800">
                   Blood Request Details
-                </h3>
+                </h3>{" "}
                 <button
-                  onClick={() => setSelectedRequest(null)}
+                  onClick={handleCloseModal}
                   className="text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 p-1 transition-colors duration-200"
                 >
                   <X className="h-5 w-5" />
@@ -1267,7 +1324,7 @@ function RecipientComponent() {
                 <Button
                   variant="outline"
                   className="flex-1 border-gray-200 hover:bg-gray-50 transition-all duration-200"
-                  onClick={() => setSelectedRequest(null)}
+                  onClick={handleCloseModal}
                 >
                   Close
                 </Button>

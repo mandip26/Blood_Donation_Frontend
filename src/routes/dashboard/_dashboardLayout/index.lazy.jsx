@@ -12,7 +12,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { postService, eventService } from "@/services/apiService";
+import {
+  postService,
+  eventService,
+  bloodRequestService,
+} from "@/services/apiService";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
@@ -23,6 +27,7 @@ import {
   MapPin,
   Clock,
   Loader2,
+  Heart,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -71,6 +76,12 @@ function RouteComponent() {
   const [events, setEvents] = useState([]);
   const [eventsLoading, setEventsLoading] = useState(true);
   const [eventsError, setEventsError] = useState(null);
+  const [bloodRequests, setBloodRequests] = useState([]);
+  const [bloodRequestsLoading, setBloodRequestsLoading] = useState(true);
+  const [bloodRequestsError, setBloodRequestsError] = useState(null);
+  const [completedDonations, setCompletedDonations] = useState([]);
+  const [donationsLoading, setDonationsLoading] = useState(true);
+  const [donationsError, setDonationsError] = useState(null);
   useEffect(() => {
     // Function to fetch dashboard stats
     const fetchDashboardStats = async () => {
@@ -80,7 +91,7 @@ function RouteComponent() {
         // For now using mock data
         setTimeout(() => {
           setStats({
-            totalDonations: 5,
+            totalDonations: 0, // Will be updated with completed donations count
             upcomingEvents: 2,
             pendingRequests: 1,
             availableBloodTypes: {
@@ -93,13 +104,6 @@ function RouteComponent() {
               "O+": 30,
               "O-": 15,
             },
-            recentDonations: [
-              { date: "2023-01-15", units: 2 },
-              { date: "2023-02-22", units: 1 },
-              { date: "2023-04-05", units: 1 },
-              { date: "2023-05-18", units: 3 },
-              { date: "2023-06-30", units: 2 },
-            ],
           });
           setStatsLoading(false);
         }, 800);
@@ -138,9 +142,73 @@ function RouteComponent() {
       } finally {
         setEventsLoading(false);
       }
+    }; // Function to check if a blood request has completed responses
+    const checkForCompletedResponses = async (requestId) => {
+      try {
+        const responseData =
+          await bloodRequestService.getRequestResponses(requestId);
+        if (responseData.success && responseData.responses) {
+          return responseData.responses.some(
+            (response) => response.status === "Completed"
+          );
+        }
+        return false;
+      } catch (error) {
+        console.error(
+          `Error checking responses for request ${requestId}:`,
+          error
+        );
+        return false;
+      }
     };
 
-    // Fetch posts from API
+    // Fetch blood requests from API
+    const fetchBloodRequests = async () => {
+      try {
+        setBloodRequestsLoading(true);
+        setBloodRequestsError(null);
+        const response = await bloodRequestService.getActiveRequests();
+
+        if (response.success && response.bloodRequests) {
+          // First filter out requests with Fulfilled status
+          const nonFulfilledRequests = response.bloodRequests.filter(
+            (request) => request.status !== "Fulfilled"
+          );
+
+          // Then check each remaining request for completed responses
+          const requestsWithCompletionStatus = await Promise.all(
+            nonFulfilledRequests.map(async (request) => {
+              const hasCompletedResponse = await checkForCompletedResponses(
+                request._id
+              );
+              return {
+                ...request,
+                hasCompletedResponse,
+              };
+            })
+          );
+
+          // Filter out requests with completed responses
+          const activeRequests = requestsWithCompletionStatus.filter(
+            (request) => !request.hasCompletedResponse
+          );
+
+          // Get the 3 most recent active blood requests
+          const recentRequests = activeRequests
+            .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+            .slice(0, 3);
+          setBloodRequests(recentRequests);
+        } else {
+          setBloodRequestsError("Failed to load blood requests");
+        }
+      } catch (error) {
+        console.error("Error fetching blood requests:", error);
+        setBloodRequestsError("Error loading blood requests");
+        setBloodRequests([]);
+      } finally {
+        setBloodRequestsLoading(false);
+      }
+    };
     const fetchPosts = async () => {
       try {
         const response = await postService.getAllPosts();
@@ -206,10 +274,59 @@ function RouteComponent() {
         setPosts(mockPosts);
       }
     };
+    // Fetch user's completed blood donations
+    const fetchCompletedDonations = async () => {
+      try {
+        setDonationsLoading(true);
+        setDonationsError(null);
+
+        // Get all user's responses
+        const response = await bloodRequestService.getUserResponses();
+
+        if (response.success && response.responses) {
+          // Filter to get only completed responses
+          const completedResponses = response.responses.filter(
+            (resp) => resp.status === "Completed"
+          );
+
+          // Map responses to the donation format
+          const mappedDonations = completedResponses.map((resp) => ({
+            date: resp.createdAt,
+            units: resp.bloodRequest?.unitsRequired || 1,
+            hospital: resp.bloodRequest?.hospital || "General Hospital",
+            bloodType: resp.bloodRequest?.bloodType || "Unknown",
+            isCompleted: true,
+            id: resp._id,
+          }));
+          setCompletedDonations(mappedDonations);
+
+          // Update total donations count in stats with only completed responses
+          setStats((prev) => ({
+            ...prev,
+            totalDonations: completedResponses.length,
+          }));
+        } else {
+          setDonationsError("Failed to load donation history");
+          setCompletedDonations([]);
+        }
+      } catch (error) {
+        console.error("Error fetching completed donations:", error);
+        setDonationsError("Error loading donation history");
+        setCompletedDonations([]);
+      } finally {
+        setDonationsLoading(false);
+      }
+    };
     if (user) {
       fetchDashboardStats();
       fetchPosts();
       fetchEvents();
+      fetchBloodRequests();
+
+      // Only fetch donation history for users with the "user" role
+      if (user.role === "user") {
+        fetchCompletedDonations();
+      }
     }
   }, [user]);
 
@@ -222,13 +339,52 @@ function RouteComponent() {
     };
     return new Date(dateString).toLocaleDateString(undefined, options);
   };
-
   // Handle register button click - navigate to events page and focus on specific event
   const handleRegisterClick = (eventId) => {
     navigate({
       to: "/dashboard/events",
       search: { focusEvent: eventId },
     });
+  };
+
+  // Handle respond to blood request - navigate to recipient page with specific request
+  const handleRespondToRequest = (requestId) => {
+    navigate({
+      to: "/dashboard/recipient",
+      search: { focusRequest: requestId },
+    });
+  };
+
+  // Helper function to get urgency color
+  const getUrgencyColor = (urgency) => {
+    switch (urgency?.toLowerCase()) {
+      case "high":
+        return "bg-red-50 border-red-500 text-red-800";
+      case "medium":
+        return "bg-yellow-50 border-yellow-500 text-yellow-800";
+      case "low":
+        return "bg-green-50 border-green-500 text-green-800";
+      default:
+        return "bg-blue-50 border-blue-500 text-blue-800";
+    }
+  };
+
+  // Helper function to format time ago
+  const getTimeAgo = (date) => {
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffSec = Math.round(diffMs / 1000);
+    const diffMin = Math.round(diffSec / 60);
+    const diffHour = Math.round(diffMin / 60);
+    const diffDay = Math.round(diffHour / 24);
+
+    if (diffSec < 60) return `${diffSec} seconds ago`;
+    if (diffMin < 60) return `${diffMin} minutes ago`;
+    if (diffHour < 24) return `${diffHour} hours ago`;
+    if (diffDay === 1) return "Yesterday";
+    if (diffDay < 30) return `${diffDay} days ago`;
+
+    return new Date(date).toLocaleDateString();
   };
 
   if (isLoading || statsLoading) {
@@ -242,9 +398,11 @@ function RouteComponent() {
           <TabsTrigger value="overview" className="px-4">
             Overview
           </TabsTrigger>
-          <TabsTrigger value="donations" className="px-4">
-            My Donations
-          </TabsTrigger>
+          {user?.role === "user" && (
+            <TabsTrigger value="donations" className="px-4">
+              My Donations
+            </TabsTrigger>
+          )}
           <TabsTrigger value="requests" className="px-4">
             Blood Requests
           </TabsTrigger>
@@ -304,19 +462,20 @@ function RouteComponent() {
                   </p>
                 </CardContent>
               </Card>
-
               {/* Stats Cards */}
               <Card>
                 <CardHeader>
                   <CardTitle className="text-lg">Your Dashboard</CardTitle>
-                </CardHeader>
+                </CardHeader>{" "}
                 <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-600">Total Donations</span>
-                    <span className="text-lg font-bold text-primary-magenta">
-                      {stats.totalDonations || 0}
-                    </span>
-                  </div>
+                  {user?.role === "user" && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-600">Total Donations</span>
+                      <span className="text-lg font-bold text-primary-magenta">
+                        {stats.totalDonations || 0}
+                      </span>
+                    </div>
+                  )}
                   <div className="flex items-center justify-between">
                     <span className="text-gray-600">Upcoming Events</span>
                     <span className="text-lg font-bold text-primary-magenta">
@@ -330,23 +489,32 @@ function RouteComponent() {
                     </span>
                   </div>
                 </CardContent>
-              </Card>
-
+              </Card>{" "}
               {/* Quick Actions */}
               <Card>
                 <CardHeader>
                   <CardTitle className="text-lg">Quick Actions</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  <Button className="w-full bg-primary-magenta hover:bg-primary-magenta/90">
-                    Donate Blood
-                  </Button>
+                  {user?.role === "user" && (
+                    <Button className="w-full bg-primary-magenta hover:bg-primary-magenta/90">
+                      Donate Blood
+                    </Button>
+                  )}
                   <Button className="w-full" variant="outline">
                     Find Donation Events
                   </Button>
-                  <Button className="w-full" variant="outline">
-                    Request Blood
-                  </Button>
+                  {(user?.role === "hospital" ||
+                    user?.role === "organization") && (
+                    <Button className="w-full bg-primary-magenta hover:bg-primary-magenta/90">
+                      Create Blood Request
+                    </Button>
+                  )}
+                  {user?.role === "user" && (
+                    <Button className="w-full" variant="outline">
+                      Request Blood
+                    </Button>
+                  )}
                 </CardContent>
               </Card>
             </div>
@@ -564,91 +732,114 @@ function RouteComponent() {
                 ))}
               </div>
             </div>
-          </div>
+          </div>{" "}
         </TabsContent>
-        {/* My Donations Tab */}
-        <TabsContent value="donations">
-          <div className="space-y-6 w-full">
-            <Card>
-              <CardHeader>
-                <CardTitle>My Donation History</CardTitle>
-                <CardDescription>
-                  Track your blood donation journey
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {stats.recentDonations && stats.recentDonations.length > 0 ? (
-                  <div className="space-y-4">
-                    {stats.recentDonations.map((donation, index) => (
-                      <div
-                        key={index}
-                        className="flex justify-between items-center p-3 border-b"
+        {/* My Donations Tab - Only shown for users with role "user" */}
+        {user?.role === "user" && (
+          <TabsContent value="donations">
+            <div className="space-y-6 w-full">
+              <Card>
+                <CardHeader>
+                  <CardTitle>My Donation History</CardTitle>
+                  <CardDescription>
+                    Track your blood donation journey
+                  </CardDescription>
+                </CardHeader>{" "}
+                <CardContent>
+                  {" "}
+                  {donationsLoading ? (
+                    <div className="flex justify-center items-center py-10">
+                      <Loader2 className="animate-spin mr-2" size={20} />
+                      <span className="text-gray-600">
+                        Loading donation history...
+                      </span>
+                    </div>
+                  ) : donationsError ? (
+                    <div className="text-center py-10 text-red-600">
+                      <p>{donationsError}</p>
+                      <Button
+                        onClick={() => fetchCompletedDonations()}
+                        className="mt-4 bg-primary-magenta text-white hover:bg-primary-magenta/90"
+                        size="sm"
                       >
-                        <div>
-                          <p className="font-medium">
-                            {new Date(donation.date).toLocaleDateString()}
-                          </p>
-                          <p className="text-gray-500 text-sm">
-                            General Hospital
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-primary-magenta font-bold">
-                            {donation.units} unit{donation.units > 1 ? "s" : ""}
-                          </p>
-                          <p className="text-gray-500 text-sm">
-                            Blood Donation
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-10">
-                    <Calendar className="mx-auto h-12 w-12 text-gray-400 mb-3" />
-                    <h3 className="text-lg font-medium text-gray-900">
-                      No donations yet
-                    </h3>
-                    <p className="mt-1 text-sm text-gray-500">
-                      Start your donation journey today!
-                    </p>
-                    <div className="mt-6">
-                      <Button className="bg-primary-magenta hover:bg-primary-magenta/90">
-                        Schedule Donation
+                        Try Again
                       </Button>
                     </div>
-                  </div>
-                )}
-              </CardContent>
-              <CardFooter className="border-t pt-4">
-                <Button variant="outline" className="ml-auto">
-                  View All Donations
-                </Button>
-              </CardFooter>
-            </Card>
+                  ) : completedDonations.length > 0 ? (
+                    <div className="space-y-4">
+                      {/* Show completed blood request responses */}
+                      {completedDonations.map((donation, index) => (
+                        <div
+                          key={`completed-${donation.id}-${index}`}
+                          className="flex justify-between items-center p-3 border-b"
+                        >
+                          <div>
+                            <p className="font-medium">
+                              {new Date(donation.date).toLocaleDateString()}
+                            </p>
+                            <p className="text-gray-500 text-sm">
+                              {donation.hospital}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-primary-magenta font-bold">
+                              {donation.units} unit
+                              {donation.units > 1 ? "s" : ""}
+                            </p>
+                            <p className="text-gray-500 text-sm">
+                              Blood Donation ({donation.bloodType || "Unknown"})
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-10">
+                      <Calendar className="mx-auto h-12 w-12 text-gray-400 mb-3" />
+                      <h3 className="text-lg font-medium text-gray-900">
+                        No donations yet
+                      </h3>
+                      <p className="mt-1 text-sm text-gray-500">
+                        Start your donation journey today!
+                      </p>
+                      <div className="mt-6">
+                        <Button className="bg-primary-magenta hover:bg-primary-magenta/90">
+                          Schedule Donation
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+                <CardFooter className="border-t pt-4">
+                  <Button variant="outline" className="ml-auto">
+                    View All Donations
+                  </Button>
+                </CardFooter>
+              </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Your Impact</CardTitle>
-                <CardDescription>
-                  See how your donations have made a difference
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-8">
-                  <div className="text-4xl font-bold text-primary-magenta mb-2">
-                    {stats.totalDonations || 0}
-                  </div>
-                  <p className="text-gray-700 mb-6">Total Donations</p>
-                  <div className="text-4xl font-bold text-primary-magenta mb-2">
-                    {(stats.totalDonations || 0) * 3}
-                  </div>
-                  <p className="text-gray-700">Lives Potentially Saved</p>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Your Impact</CardTitle>
+                  <CardDescription>
+                    See how your donations have made a difference
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-center py-8">
+                    <div className="text-4xl font-bold text-primary-magenta mb-2">
+                      {stats.totalDonations || 0}
+                    </div>
+                    <p className="text-gray-700 mb-6">Total Donations</p>
+                    <div className="text-4xl font-bold text-primary-magenta mb-2">
+                      {(stats.totalDonations || 0) * 3}
+                    </div>
+                    <p className="text-gray-700">Lives Potentially Saved</p>
+                  </div>{" "}
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+        )}{" "}
         {/* Blood Requests Tab */}
         <TabsContent value="requests">
           <div className="space-y-6 w-full">
@@ -660,89 +851,85 @@ function RouteComponent() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  <div className="bg-amber-50 border-l-4 border-amber-500 p-4 rounded-r-md">
-                    <div className="flex justify-between mb-2">
-                      <h4 className="font-semibold text-amber-800">
-                        URGENT: O-negative needed
-                      </h4>
-                      <span className="bg-amber-200 text-amber-800 text-xs px-2 py-1 rounded-full">
-                        Critical
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-600 mb-2">
-                      City Hospital requires O-negative blood urgently for
-                      accident victims. 3 units needed.
-                    </p>
-                    <div className="flex justify-between items-center">
-                      <div className="text-xs text-gray-500">
-                        2 hours ago • 3.2 km away
-                      </div>
-                      <Button
-                        size="sm"
-                        className="bg-primary-magenta hover:bg-primary-magenta/90 h-8"
-                      >
-                        Respond
-                      </Button>
-                    </div>
+                {bloodRequestsLoading ? (
+                  <div className="flex justify-center items-center py-10">
+                    <Loader2 className="animate-spin mr-2" size={20} />
+                    <span className="text-gray-600">
+                      Loading blood requests...
+                    </span>
                   </div>
-
-                  <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-md">
-                    <div className="flex justify-between mb-2">
-                      <h4 className="font-semibold text-blue-800">
-                        A-positive needed
-                      </h4>
-                      <span className="bg-blue-200 text-blue-800 text-xs px-2 py-1 rounded-full">
-                        Regular
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-600 mb-2">
-                      Memorial Hospital needs A-positive blood for scheduled
-                      surgeries. 2 units requested.
-                    </p>
-                    <div className="flex justify-between items-center">
-                      <div className="text-xs text-gray-500">
-                        1 day ago • 5.7 km away
-                      </div>
-                      <Button
-                        size="sm"
-                        className="bg-primary-magenta hover:bg-primary-magenta/90 h-8"
-                      >
-                        Respond
-                      </Button>
-                    </div>
+                ) : bloodRequestsError ? (
+                  <div className="text-center py-10 text-red-600">
+                    <p>{bloodRequestsError}</p>
+                    <Button
+                      onClick={() => window.location.reload()}
+                      className="mt-4 bg-primary-magenta text-white hover:bg-primary-magenta/90"
+                      size="sm"
+                    >
+                      Try Again
+                    </Button>
                   </div>
-
-                  <div className="bg-green-50 border-l-4 border-green-500 p-4 rounded-r-md">
-                    <div className="flex justify-between mb-2">
-                      <h4 className="font-semibold text-green-800">
-                        B-positive needed
-                      </h4>
-                      <span className="bg-green-200 text-green-800 text-xs px-2 py-1 rounded-full">
-                        Regular
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-600 mb-2">
-                      General Hospital requires B-positive blood for regular
-                      supply. 1 unit requested.
-                    </p>
-                    <div className="flex justify-between items-center">
-                      <div className="text-xs text-gray-500">
-                        2 days ago • 4.3 km away
-                      </div>
-                      <Button
-                        size="sm"
-                        className="bg-primary-magenta hover:bg-primary-magenta/90 h-8"
-                      >
-                        Respond
-                      </Button>
-                    </div>
+                ) : bloodRequests.length === 0 ? (
+                  <div className="text-center py-10 text-gray-500">
+                    <Heart className="mx-auto h-12 w-12 text-gray-400 mb-3" />
+                    <p>No blood requests available at the moment</p>
+                    <p className="text-sm">Check back later for new requests</p>
                   </div>
-                </div>
+                ) : (
+                  <div className="space-y-4">
+                    {bloodRequests.map((request) => (
+                      <div
+                        key={request._id}
+                        className={`border-l-4 p-4 rounded-r-md ${getUrgencyColor(request.urgency)}`}
+                      >
+                        <div className="flex justify-between mb-2">
+                          <h4 className="font-semibold">
+                            {request.urgency?.toUpperCase() === "HIGH"
+                              ? "URGENT: "
+                              : ""}
+                            {request.bloodType} blood needed
+                          </h4>
+                          <span
+                            className={`text-xs px-2 py-1 rounded-full ${
+                              request.urgency?.toLowerCase() === "high"
+                                ? "bg-red-200 text-red-800"
+                                : request.urgency?.toLowerCase() === "medium"
+                                  ? "bg-yellow-200 text-yellow-800"
+                                  : "bg-green-200 text-green-800"
+                            }`}
+                          >
+                            {request.urgency || "Medium"}
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-600 mb-2">
+                          {request.hospital} requires {request.bloodType} blood
+                          for {request.patientName}. {request.unitsRequired}{" "}
+                          unit{request.unitsRequired > 1 ? "s" : ""} needed.
+                        </p>
+                        <div className="flex items-center text-gray-600 text-sm mb-2">
+                          <MapPin size={14} className="mr-1" />
+                          {request.location}
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <div className="text-xs text-gray-500">
+                            {getTimeAgo(new Date(request.createdAt))}
+                          </div>
+                          <Button
+                            size="sm"
+                            className="bg-primary-magenta hover:bg-primary-magenta/90 h-8"
+                            onClick={() => handleRespondToRequest(request._id)}
+                          >
+                            Respond
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
               <CardFooter className="border-t pt-4">
-                <Button variant="outline" className="w-full">
-                  Create New Request
+                <Button variant="outline" className="w-full" asChild>
+                  <Link to="/dashboard/recipient">View All Requests</Link>
                 </Button>
               </CardFooter>
             </Card>
