@@ -807,23 +807,30 @@ function RouteComponent() {
                           user?.profile?.profilePhoto ||
                           "https://i.pravatar.cc/150?img=12"
                         }
-                        alt={user?.name || "User"}
+                        alt={
+                          user?.role === "hospital"
+                            ? user?.hospitalName || user?.name || "User"
+                            : user?.role === "organization"
+                              ? user?.organizationName || user?.name || "User"
+                              : user?.name || "User"
+                        }
                       />
                       <AvatarFallback>
-                        {(
-                          user?.name ||
-                          user?.hospitalName ||
-                          user?.organizationName ||
-                          "U"
+                        {(user?.role === "hospital"
+                          ? user?.hospitalName || user?.name || "U"
+                          : user?.role === "organization"
+                            ? user?.organizationName || user?.name || "U"
+                            : user?.name || "U"
                         ).charAt(0)}
                       </AvatarFallback>
                     </Avatar>
                     <div>
                       <CardTitle>
-                        {user?.name ||
-                          user?.hospitalName ||
-                          user?.organizationName ||
-                          "User"}
+                        {user?.role === "hospital"
+                          ? user?.hospitalName || user?.name || "User"
+                          : user?.role === "organization"
+                            ? user?.organizationName || user?.name || "User"
+                            : user?.name || "User"}
                       </CardTitle>
                       <CardDescription>
                         {user?.role === "user"
@@ -1119,14 +1126,20 @@ function RouteComponent() {
                             user?.profile?.profilePhoto ||
                             "https://i.pravatar.cc/150?img=12"
                           }
-                          alt={user?.name || "User"}
+                          alt={
+                            user?.role === "hospital"
+                              ? user?.hospitalName || user?.name || "User"
+                              : user?.role === "organization"
+                                ? user?.organizationName || user?.name || "User"
+                                : user?.name || "User"
+                          }
                         />
                         <AvatarFallback>
-                          {(
-                            user?.name ||
-                            user?.hospitalName ||
-                            user?.organizationName ||
-                            "U"
+                          {(user?.role === "hospital"
+                            ? user?.hospitalName || user?.name || "U"
+                            : user?.role === "organization"
+                              ? user?.organizationName || user?.name || "U"
+                              : user?.name || "U"
                           ).charAt(0)}
                         </AvatarFallback>
                       </Avatar>
@@ -1268,10 +1281,25 @@ function RouteComponent() {
                                   user?.profile?.profilePhoto ||
                                   "https://i.pravatar.cc/150?img=12"
                                 }
-                                alt={user?.name || "User"}
+                                alt={
+                                  user?.role === "hospital"
+                                    ? user?.hospitalName || user?.name || "User"
+                                    : user?.role === "organization"
+                                      ? user?.organizationName ||
+                                        user?.name ||
+                                        "User"
+                                      : user?.name || "User"
+                                }
                               />
                               <AvatarFallback>
-                                {(user?.name || "U").charAt(0)}
+                                {(user?.role === "hospital"
+                                  ? user?.hospitalName || user?.name || "U"
+                                  : user?.role === "organization"
+                                    ? user?.organizationName ||
+                                      user?.name ||
+                                      "U"
+                                    : user?.name || "U"
+                                ).charAt(0)}
                               </AvatarFallback>
                             </Avatar>
                             <div className="flex-1">
@@ -1353,6 +1381,7 @@ function RouteComponent() {
                                 {showReplyInput.postId === post._id &&
                                   showReplyInput.commentId === comment._id && (
                                     <div className="mt-2 ml-6">
+                                      {" "}
                                       <div className="flex gap-2">
                                         <Avatar className="h-5 w-5">
                                           <AvatarImage
@@ -1360,10 +1389,29 @@ function RouteComponent() {
                                               user?.profile?.profilePhoto ||
                                               "https://i.pravatar.cc/150?img=12"
                                             }
-                                            alt={user?.name || "User"}
+                                            alt={
+                                              user?.role === "hospital"
+                                                ? user?.hospitalName ||
+                                                  user?.name ||
+                                                  "User"
+                                                : user?.role === "organization"
+                                                  ? user?.organizationName ||
+                                                    user?.name ||
+                                                    "User"
+                                                  : user?.name || "User"
+                                            }
                                           />
                                           <AvatarFallback>
-                                            {(user?.name || "U").charAt(0)}
+                                            {(user?.role === "hospital"
+                                              ? user?.hospitalName ||
+                                                user?.name ||
+                                                "U"
+                                              : user?.role === "organization"
+                                                ? user?.organizationName ||
+                                                  user?.name ||
+                                                  "U"
+                                                : user?.name || "U"
+                                            ).charAt(0)}
                                           </AvatarFallback>
                                         </Avatar>
                                         <div className="flex-1">

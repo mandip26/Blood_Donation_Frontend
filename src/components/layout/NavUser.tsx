@@ -25,13 +25,24 @@ export function NavUser({
   user,
 }: {
   user: {
-    name: string;
+    name?: string;
+    organizationName?: string;
+    hospitalName?: string;
+    role?: string;
     email: string;
     avatar: string;
   };
 }) {
   const { isMobile } = useSidebar();
   const { logout } = useAuth();
+
+  // Get the appropriate display name based on role
+  const displayName =
+    user.role === "hospital"
+      ? user.hospitalName
+      : user.role === "organization"
+        ? user.organizationName
+        : user.name;
 
   const options = [
     {
@@ -59,19 +70,20 @@ export function NavUser({
     <SidebarMenu>
       <SidebarMenuItem>
         <DropdownMenu>
+          {" "}
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
               size="lg"
               className="data-[state=open]:bg-white/15 data-[state=open]:text-white shadow-even-sm text-white bg-white/10 hover:bg-white/15 hover:text-white"
             >
               <Avatar className="h-8 w-8 rounded-lg">
-                <AvatarImage src={user.avatar} alt={user.name} />
+                <AvatarImage src={user.avatar} alt={displayName} />
                 <AvatarFallback className="rounded-lg text-black">
-                  {user.name.charAt(0).toUpperCase()}
+                  {displayName?.charAt(0).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-semibold">{user.name}</span>
+                <span className="truncate font-semibold">{displayName}</span>
                 <span className="truncate text-xs">{user.email}</span>
               </div>
               <ChevronsUpDown className="ml-auto size-4" />
@@ -83,16 +95,17 @@ export function NavUser({
             align="end"
             sideOffset={4}
           >
+            {" "}
             <DropdownMenuLabel className="p-0 font-normal">
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <Avatar className="h-8 w-8 rounded-lg">
-                  <AvatarImage src={user.avatar} alt={user.name} />
+                  <AvatarImage src={user.avatar} alt={displayName} />
                   <AvatarFallback className="rounded-lg text-black">
-                    {user.name.charAt(0).toUpperCase()}
+                    {displayName?.charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold">{user.name}</span>
+                  <span className="truncate font-semibold">{displayName}</span>
                   <span className="truncate text-xs">{user.email}</span>
                 </div>
               </div>

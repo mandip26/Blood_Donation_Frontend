@@ -207,9 +207,16 @@ function EventsComponent() {
   // Populate form with user data if available
   useEffect(() => {
     if (user) {
+      const userName =
+        user.role === "hospital"
+          ? user.hospitalName
+          : user.role === "organization"
+            ? user.organizationName
+            : user.name;
+
       setFormData((prevData) => ({
         ...prevData,
-        name: user.name || prevData.name,
+        name: userName || prevData.name,
         email: user.email || prevData.email,
         phone: user.phone || prevData.phone,
       }));

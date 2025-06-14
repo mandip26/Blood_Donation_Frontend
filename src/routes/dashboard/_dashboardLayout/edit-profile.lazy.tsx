@@ -32,6 +32,8 @@ interface MedicalDetail {
 // Extending the User interface to add health-related properties needed in this component
 interface ExtendedUser {
   name?: string;
+  organizationName?: string;
+  hospitalName?: string;
   email?: string;
   phone?: string;
   bloodType?: string;
@@ -58,6 +60,14 @@ function EditProfileComponent() {
   const [editingPersonal, setEditingPersonal] = useState(false);
   const [editingMedical, setEditingMedical] = useState(false);
   const [editingInventory, setEditingInventory] = useState(false);
+  // Profile picture upload states
+  const [selectedProfilePicture, setSelectedProfilePicture] =
+    useState<File | null>(null);
+  const [profilePicturePreview, setProfilePicturePreview] =
+    useState<string>("");
+  const [isUploadingProfilePicture, setIsUploadingProfilePicture] =
+    useState(false);
+
   const { user } = useAuth();
   // Cast user to ExtendedUser to access health-related properties
   const loggedInUser = user as unknown as ExtendedUser;
@@ -79,9 +89,13 @@ function EditProfileComponent() {
 
   // Loading state for inventory
   const [isLoadingInventory, setIsLoadingInventory] = useState(false);
-
   const [personalInfo, setPersonalInfo] = useState({
-    name: loggedInUser?.name || "",
+    name:
+      loggedInUser?.role === "organization"
+        ? (loggedInUser as any)?.organizationName || ""
+        : loggedInUser?.role === "hospital"
+          ? (loggedInUser as any)?.hospitalName || ""
+          : loggedInUser?.name || "",
     phone: loggedInUser?.phone || "",
     email: loggedInUser?.email || "",
     bloodType: !isHospitalOrOrg ? loggedInUser?.bloodType || "" : "",
@@ -203,38 +217,87 @@ function EditProfileComponent() {
     };
     return new Date(dateString).toLocaleDateString(undefined, options);
   };
+
+  // Profile picture handlers
+  const handleProfilePictureChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith("image/")) {
+        toast.error("Please select a valid image file");
+        return;
+      }
+
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error("Image size should be less than 5MB");
+        return;
+      }
+
+      setSelectedProfilePicture(file);
+
+      // Create preview URL
+      const reader = new FileReader();
+      reader.onload = () => {
+        setProfilePicturePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleProfilePictureUpload = async () => {
+    if (!selectedProfilePicture) {
+      toast.error("Please select an image first");
+      return;
+    }
+
+    try {
+      setIsUploadingProfilePicture(true);
+      const formData = new FormData();
+      formData.append("profilePhoto", selectedProfilePicture);
+
+      await authService.updateProfile(formData);
+
+      // Reset states
+      setSelectedProfilePicture(null);
+      setProfilePicturePreview("");
+
+      toast.success("Profile picture updated successfully");
+
+      // Refresh user data if possible
+      window.location.reload();
+    } catch (error: any) {
+      toast.error(error.message || "Failed to update profile picture");
+    } finally {
+      setIsUploadingProfilePicture(false);
+    }
+  };
   const handlePersonalFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       const formData = new FormData();
 
-      // Map the form fields to match the backend schema
-      // Use different name field based on user role
-      const fieldMapping: { [key: string]: string } = {
-        name:
-          loggedInUser?.role === "hospital"
-            ? "hospitalName"
-            : loggedInUser?.role === "organization"
-              ? "organizationName"
-              : "name",
-        phone: "phone",
-        email: "email",
-        bloodType: "bloodType",
-        dob: "dateOfBirth", // Changed to match backend field name
-        gender: "gender",
-        address: "address",
-        emergencyContact: "emergencyContact",
-      };
-
-      // Filter which fields to include based on user role
-      const fieldsToInclude = isHospitalOrOrg
-        ? ["name", "phone", "email", "address", "emergencyContact"]
-        : Object.keys(fieldMapping);
-
+      // Map the form fields to match the backend schema based on user role
       Object.entries(personalInfo).forEach(([key, value]) => {
-        if (value && fieldsToInclude.includes(key)) {
-          const backendField = fieldMapping[key] || key;
-          formData.append(backendField, value.toString());
+        if (value) {
+          if (key === "name") {
+            // Send the name field based on user role
+            if (loggedInUser?.role === "organization") {
+              formData.append("organizationName", value.toString());
+            } else if (loggedInUser?.role === "hospital") {
+              formData.append("hospitalName", value.toString());
+            } else {
+              formData.append("name", value.toString());
+            }
+          } else if (key === "dob") {
+            // Map dob to dateOfBirth
+            formData.append("dateOfBirth", value.toString());
+          } else {
+            // For other fields, use the same name
+            formData.append(key, value.toString());
+          }
         }
       });
 
@@ -315,13 +378,18 @@ function EditProfileComponent() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {" "}
         <div className="lg:col-span-1">
           {/* Profile Photo Section */}
           <div className="bg-white rounded-xl shadow-sm p-6 flex flex-col items-center">
             <div className="relative mb-4 group">
               <div className="w-32 h-32 rounded-full bg-blue-100 overflow-hidden border-4 border-white shadow-md">
                 <img
-                  src="/placeholder-avatar.svg"
+                  src={
+                    profilePicturePreview ||
+                    loggedInUser?.profile?.profilePhoto ||
+                    "/placeholder-avatar.svg"
+                  }
                   alt="Profile"
                   className="w-full h-full object-cover"
                   onError={(e) => {
@@ -330,10 +398,54 @@ function EditProfileComponent() {
                   }}
                 />
               </div>
-              <div className="absolute inset-0 bg-black/30 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+              <div
+                className="absolute inset-0 bg-black/30 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                onClick={() =>
+                  document.getElementById("profilePictureInput")?.click()
+                }
+              >
                 <Camera className="text-white" size={24} />
               </div>
+              <input
+                id="profilePictureInput"
+                type="file"
+                accept="image/*"
+                onChange={handleProfilePictureChange}
+                className="hidden"
+              />
             </div>
+
+            {/* Profile Picture Upload Controls */}
+            {selectedProfilePicture && (
+              <div className="w-full mb-4">
+                <div className="flex flex-col gap-2">
+                  <p className="text-sm text-gray-600 text-center">
+                    Selected: {selectedProfilePicture.name}
+                  </p>
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={handleProfilePictureUpload}
+                      disabled={isUploadingProfilePicture}
+                      className="flex-1 bg-primary-magenta text-white hover:bg-primary-magenta/90"
+                      size="sm"
+                    >
+                      {isUploadingProfilePicture ? "Uploading..." : "Upload"}
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        setSelectedProfilePicture(null);
+                        setProfilePicturePreview("");
+                      }}
+                      variant="outline"
+                      className="flex-1"
+                      size="sm"
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
             <h2 className="text-xl font-semibold mb-1">{personalInfo.name}</h2>
 
             <div className="w-full">
@@ -426,7 +538,6 @@ function EditProfileComponent() {
             </div>
           )}
         </div>
-
         <div className="lg:col-span-2">
           {/* Personal Info Section */}
           <div className="bg-white rounded-xl shadow-sm p-6 mb-6">

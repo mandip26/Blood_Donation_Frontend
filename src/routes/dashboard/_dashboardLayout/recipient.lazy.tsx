@@ -523,12 +523,19 @@ function RecipientComponent() {
       alert("You cannot respond to your own blood request.");
       return;
     }
-
     try {
+      // Get the appropriate display name based on role
+      const displayName =
+        user.role === "hospital"
+          ? user.hospitalName
+          : user.role === "organization"
+            ? user.organizationName
+            : user.name;
+
       // Prepare response data - only send what the backend expects
       const requestResponseData = {
         contactNumber: user.phone || "Contact via platform",
-        message: `Hi, I'm ${user.name || "a donor"} and I'm available to help with your blood request. Please contact me for further details.`,
+        message: `Hi, I'm ${displayName || "a donor"} and I'm available to help with your blood request. Please contact me for further details.`,
       };
 
       // Send response to API and get response data

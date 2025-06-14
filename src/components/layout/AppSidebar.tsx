@@ -185,13 +185,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarContent>
       <SidebarFooter className={"bg-primary-magenta"}>
+        {" "}
         <NavUser
           user={{
-            name:
-              loggedInUser?.name ||
-              loggedInUser?.hospitalName ||
-              loggedInUser?.organizationName ||
-              "User",
+            name: loggedInUser?.name,
+            organizationName: loggedInUser?.organizationName,
+            hospitalName: loggedInUser?.hospitalName,
+            role: loggedInUser?.role,
             avatar: "",
             email: loggedInUser ? loggedInUser.email : "user@example.com",
           }}

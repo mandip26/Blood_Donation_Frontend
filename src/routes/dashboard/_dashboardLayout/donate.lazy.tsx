@@ -63,12 +63,17 @@ function RouteComponent() {
       if (!user) return;
 
       setDataPrefilledMessage(null);
-      let userDataPrefilled = false;
+      let userDataPrefilled = false; // First populate with user account data
+      const userName =
+        user.role === "hospital"
+          ? user.hospitalName
+          : user.role === "organization"
+            ? user.organizationName
+            : user.name;
 
-      // First populate with user account data
       setFormData((prevData) => ({
         ...prevData,
-        name: user.name || prevData.name,
+        name: userName || prevData.name,
         email: user.email || prevData.email,
         phone: user.phone || prevData.phone,
         gender: (user.gender as "Male" | "Female" | "Other") || prevData.gender,
@@ -76,7 +81,7 @@ function RouteComponent() {
       }));
 
       if (
-        user.name ||
+        userName ||
         user.email ||
         user.phone ||
         user.gender ||
