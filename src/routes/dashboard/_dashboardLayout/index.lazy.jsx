@@ -102,6 +102,11 @@ function RouteComponent() {
     postId: null,
     commentId: null,
   });
+  // State for active donors section
+  const [activeDonors, setActiveDonors] = useState([]);
+  const [activeDonorsLoading, setActiveDonorsLoading] = useState(true);
+  const [selectedDonor, setSelectedDonor] = useState(null);
+  const [showDonorDetails, setShowDonorDetails] = useState(false);
 
   useEffect(() => {
     // Function to fetch dashboard stats
@@ -440,6 +445,9 @@ function RouteComponent() {
       if (user.role === "user") {
         fetchCompletedDonations();
       }
+
+      // Fetch active donors for all users
+      fetchActiveDonors();
     }
   }, [user]);
 
@@ -692,6 +700,19 @@ function RouteComponent() {
       [commentId]: !prev[commentId],
     }));
   };
+
+  // Handle clicking on a donor to show details
+  const handleDonorClick = (donor) => {
+    setSelectedDonor(donor);
+    setShowDonorDetails(true);
+  };
+
+  // Close donor details modal
+  const closeDonorDetails = () => {
+    setShowDonorDetails(false);
+    setSelectedDonor(null);
+  };
+
   // Helper function to format time ago
   const getTimeAgo = (date) => {
     const now = new Date();
@@ -717,6 +738,35 @@ function RouteComponent() {
     } else {
       console.error("fetchPosts function is not defined");
       toast.error("Could not refresh posts");
+    }
+  };
+
+  // Function to fetch active donors
+  const fetchActiveDonors = async () => {
+    try {
+      setActiveDonorsLoading(true);
+      const response = await fetch("http://localhost:8001/api/v1/user/users", {
+        method: "GET",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      const data = await response.json();
+
+      if (data.success && data.users) {
+        // Filter users to only active donors (role = "user" and donationStatus = "active")
+        const activeUserDonors = data.users.filter(
+          (user) => user.role === "user" && user.donationStatus === "active"
+        );
+        setActiveDonors(activeUserDonors);
+      }
+    } catch (error) {
+      console.error("Error fetching active donors:", error);
+      setActiveDonors([]);
+    } finally {
+      setActiveDonorsLoading(false);
     }
   };
 
@@ -824,6 +874,77 @@ function RouteComponent() {
                     >
                       Create Blood Request
                     </Button>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Active Donors Section */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center">
+                    <Heart className="w-5 h-5 mr-2 text-red-500" />
+                    Active Donors
+                  </CardTitle>
+                  <CardDescription>
+                    Available donors ready to help
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {activeDonorsLoading ? (
+                    <div className="flex justify-center items-center py-4">
+                      <Loader2 className="h-6 w-6 animate-spin text-primary-magenta" />
+                      <span className="ml-2 text-gray-600">
+                        Loading donors...
+                      </span>
+                    </div>
+                  ) : activeDonors.length === 0 ? (
+                    <p className="text-gray-500 text-center py-4">
+                      No active donors available at the moment.
+                    </p>
+                  ) : (
+                    <div className="space-y-3 max-h-80 overflow-y-auto">
+                      {activeDonors.slice(0, 5).map((donor) => (
+                        <div
+                          key={donor._id}
+                          className="flex items-center justify-between p-3 border border-gray-100 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+                          onClick={() => handleDonorClick(donor)}
+                        >
+                          <div className="flex items-center space-x-3">
+                            <Avatar className="h-10 w-10">
+                              <AvatarImage
+                                src={
+                                  donor.profile?.profilePhoto ||
+                                  "/placeholder-avatar.svg"
+                                }
+                                alt={donor.name}
+                              />
+                              <AvatarFallback>
+                                {donor.name?.charAt(0)?.toUpperCase() || "?"}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <p className="font-medium text-sm">
+                                {donor.name}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                {donor.bloodType || "Unknown"} •{" "}
+                                {donor.gender || "Not specified"}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-700">
+                              Active
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                      {activeDonors.length > 5 && (
+                        <p className="text-xs text-gray-500 text-center pt-2">
+                          Showing 5 of {activeDonors.length} active donors
+                        </p>
+                      )}
+                    </div>
                   )}
                 </CardContent>
               </Card>
@@ -1688,9 +1809,112 @@ function RouteComponent() {
                 </Button>
               </CardFooter>
             </Card>
-          </div>
+          </div>{" "}
         </TabsContent>
-      </Tabs>
+      </Tabs>{" "}
+      {/* Donor Details Modal */}
+      {showDonorDetails && selectedDonor && (
+        <div className="fixed inset-0 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg max-w-md w-full mx-4 p-6 shadow-2xl border">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">Donor Details</h3>
+              <button
+                onClick={closeDonorDetails}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex items-center space-x-4">
+                <Avatar className="h-16 w-16">
+                  <AvatarImage
+                    src={
+                      selectedDonor.profile?.profilePhoto ||
+                      "/placeholder-avatar.svg"
+                    }
+                    alt={selectedDonor.name}
+                  />
+                  <AvatarFallback className="text-lg">
+                    {selectedDonor.name?.charAt(0)?.toUpperCase() || "?"}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <h4 className="font-semibold text-lg">
+                    {selectedDonor.name}
+                  </h4>
+                  <p className="text-gray-600">
+                    {selectedDonor.bloodType || "Unknown"} •{" "}
+                    {selectedDonor.gender || "Not specified"}
+                  </p>
+                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-700">
+                    <Check size={12} className="mr-1" />
+                    Active Donor
+                  </span>
+                </div>
+              </div>
+
+              <div className="border-t pt-4 space-y-3">
+                <div>
+                  <label className="text-sm font-medium text-gray-500">
+                    Phone Number
+                  </label>
+                  <p className="text-gray-900">
+                    {selectedDonor.phone || "Not provided"}
+                  </p>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-gray-500">
+                    Email
+                  </label>
+                  <p className="text-gray-900">
+                    {selectedDonor.email || "Not provided"}
+                  </p>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-gray-500">
+                    Address
+                  </label>
+                  <p className="text-gray-900">
+                    {selectedDonor.address || "Not provided"}
+                  </p>
+                </div>
+
+                {selectedDonor.lastDonationDate && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">
+                      Last Donation
+                    </label>
+                    <p className="text-gray-900">
+                      {formatDate(selectedDonor.lastDonationDate)}
+                    </p>
+                  </div>
+                )}
+
+                {selectedDonor.nextEligibleDate && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">
+                      Next Eligible Date
+                    </label>
+                    <p className="text-gray-900">
+                      {formatDate(selectedDonor.nextEligibleDate)}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="mt-6 flex justify-end space-x-3">
+              <Button variant="outline" onClick={closeDonorDetails}>
+                Close
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

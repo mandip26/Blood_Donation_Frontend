@@ -49,6 +49,9 @@ interface ExtendedUser {
     profilePhoto?: string;
   };
   role?: "admin" | "organization" | "user" | "hospital";
+  donationStatus?: "active" | "inactive";
+  lastDonationDate?: string;
+  nextEligibleDate?: string;
 }
 
 function EditProfileComponent() {
@@ -354,18 +357,70 @@ function EditProfileComponent() {
               <h3 className="font-medium mb-4">Next Eligible Donation</h3>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="bg-primary-magenta/10 p-3 rounded-lg">
-                    <Calendar className="h-6 w-6 text-primary-magenta" />
+                  <div
+                    className={`p-3 rounded-lg ${
+                      loggedInUser?.donationStatus === "active"
+                        ? "bg-green-100"
+                        : "bg-red-100"
+                    }`}
+                  >
+                    <Calendar
+                      className={`h-6 w-6 ${
+                        loggedInUser?.donationStatus === "active"
+                          ? "text-green-600"
+                          : "text-red-600"
+                      }`}
+                    />
                   </div>
                   <div>
-                    <p className="text-sm text-gray-500">
-                      You can donate again on
-                    </p>
-                    <p className="font-medium">July 15, 2025</p>
+                    {loggedInUser?.donationStatus === "active" ? (
+                      <>
+                        <p className="text-sm text-gray-500">
+                          You are eligible to donate
+                        </p>
+                        <p className="font-medium text-green-600">
+                          Ready to donate
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-sm text-gray-500">
+                          You can donate again on
+                        </p>
+                        <p className="font-medium">
+                          {loggedInUser?.nextEligibleDate
+                            ? formatDate(loggedInUser.nextEligibleDate)
+                            : "Date not available"}
+                        </p>
+                      </>
+                    )}
                   </div>
                 </div>
-                <span className="px-3 py-1 rounded-full bg-gray-100 text-gray-700 text-xs">
-                  In 60 days
+                <span
+                  className={`px-3 py-1 rounded-full text-xs ${
+                    loggedInUser?.donationStatus === "active"
+                      ? "bg-green-100 text-green-700"
+                      : "bg-red-100 text-red-700"
+                  }`}
+                >
+                  {loggedInUser?.donationStatus === "active"
+                    ? "Active"
+                    : (() => {
+                        if (loggedInUser?.nextEligibleDate) {
+                          const today = new Date();
+                          const nextDate = new Date(
+                            loggedInUser.nextEligibleDate
+                          );
+                          const diffTime = nextDate.getTime() - today.getTime();
+                          const diffDays = Math.ceil(
+                            diffTime / (1000 * 60 * 60 * 24)
+                          );
+                          return diffDays > 0
+                            ? `In ${diffDays} days`
+                            : "Inactive";
+                        }
+                        return "Inactive";
+                      })()}
                 </span>
               </div>
             </div>

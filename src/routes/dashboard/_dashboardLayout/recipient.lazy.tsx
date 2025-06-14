@@ -495,6 +495,28 @@ function RecipientComponent() {
       return;
     }
 
+    // Check donation status for regular users
+    if (user.role === "user" && user.donationStatus === "inactive") {
+      if (user.nextEligibleDate) {
+        const nextDate = new Date(user.nextEligibleDate);
+        const today = new Date();
+        const diffTime = nextDate.getTime() - today.getTime();
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+        if (diffDays > 0) {
+          alert(
+            `You cannot respond to blood requests. You can donate again in ${diffDays} days (${nextDate.toLocaleDateString()}).`
+          );
+          return;
+        }
+      } else {
+        alert(
+          "You cannot respond to blood requests due to recent donation activity."
+        );
+        return;
+      }
+    }
+
     // Check if user is trying to respond to their own request
     const requestToRespond = bloodRequests.find((req) => req.id === requestId);
     if (requestToRespond && requestToRespond.createdBy === user._id) {
@@ -772,8 +794,7 @@ function RecipientComponent() {
         setDeletingRequestId(null);
       }
     }
-  };
-  // Fetch initial data
+  }; // Fetch initial data
   useEffect(() => {
     fetchBloodRequests();
     if (user) {
@@ -781,7 +802,7 @@ function RecipientComponent() {
       fetchUserCreatedRequests();
       fetchDeletedRequests();
     }
-  }, [user]);
+  }, [user?._id]); // Only depend on user ID, not the entire user object
 
   // Render loading state
   if (isLoading) {
@@ -929,6 +950,23 @@ function RecipientComponent() {
           <p className="text-gray-600 mt-1">
             Find and respond to blood donation requests in your area
           </p>
+          {user && user.role === "user" && (
+            <div
+              className={`inline-block mt-2 px-3 py-1 rounded-full text-xs font-medium ${
+                user.donationStatus === "active"
+                  ? "bg-green-100 text-green-700"
+                  : "bg-red-100 text-red-700"
+              }`}
+            >
+              Donation Status: {user.donationStatus || "Unknown"}
+              {user.donationStatus === "inactive" && user.nextEligibleDate && (
+                <span className="ml-2">
+                  (Eligible:{" "}
+                  {new Date(user.nextEligibleDate).toLocaleDateString()})
+                </span>
+              )}
+            </div>
+          )}
         </div>{" "}
         <div className="flex gap-2">
           {user && (

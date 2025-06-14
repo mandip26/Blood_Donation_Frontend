@@ -38,6 +38,10 @@ export interface User {
   mission?: string;
   createdAt?: string;
   updatedAt?: string;
+  // Donation status properties
+  donationStatus?: "active" | "inactive";
+  lastDonationDate?: string;
+  nextEligibleDate?: string;
 }
 
 interface AuthState {
@@ -56,7 +60,6 @@ export function useAuth() {
       error: null,
     };
   });
-
   // Define checkUserSession function outside of useEffect for reuse
   const checkUserSession = useCallback(async () => {
     try {
@@ -88,6 +91,39 @@ export function useAuth() {
       return null;
     }
   }, []);
+
+  // Fetch fresh user data from server
+  const fetchFreshUserData = useCallback(async () => {
+    try {
+      const cachedUser = localStorage.getItem("bloodDonationUser");
+      if (!cachedUser) return null;
+
+      const userData = JSON.parse(cachedUser);
+      if (!userData.id && !userData._id) return null;
+
+      const userId = userData.id || userData._id;
+      const freshUserData = await authService.getUserProfile(userId);
+
+      if (freshUserData) {
+        // Update localStorage with fresh data
+        localStorage.setItem(
+          "bloodDonationUser",
+          JSON.stringify(freshUserData)
+        );
+        setAuthState({
+          user: freshUserData,
+          isLoading: false,
+          error: null,
+        });
+        return freshUserData;
+      }
+      return userData;
+    } catch (error) {
+      console.error("Error fetching fresh user data:", error);
+      // Fall back to cached data if API fails
+      return await checkUserSession();
+    }
+  }, [checkUserSession]);
 
   // Check user session on mount - this is very fast now
   useEffect(() => {
@@ -225,11 +261,10 @@ export function useAuth() {
   // Clear authentication errors
   const clearError = useCallback(() => {
     setAuthState((prev) => ({ ...prev, error: null }));
-  }, []);
-  // Reload user data
+  }, []); // Reload user data
   const reloadUser = useCallback(async () => {
-    return await checkUserSession();
-  }, [checkUserSession]);
+    return await fetchFreshUserData();
+  }, [fetchFreshUserData]);
 
   return {
     user: authState.user,

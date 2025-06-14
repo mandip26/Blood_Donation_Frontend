@@ -186,6 +186,27 @@ export const authService = {
       throw error;
     }
   },
+
+  // Get fresh user data from server
+  getUserProfile: async (userId: string) => {
+    try {
+      const response = await api.get(`/users/${userId}`);
+
+      if (response.data.user) {
+        // Update the cached user data with fresh data including donation status
+        localStorage.setItem(
+          "bloodDonationUser",
+          JSON.stringify(response.data.user)
+        );
+        return response.data.user;
+      }
+
+      return null;
+    } catch (error) {
+      console.error("Error fetching user profile:", error);
+      throw error;
+    }
+  },
 };
 
 // Event services - using correct base URL for events

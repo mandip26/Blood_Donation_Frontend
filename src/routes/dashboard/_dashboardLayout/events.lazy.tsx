@@ -399,7 +399,7 @@ function EventsComponent() {
     };
 
     fetchEvents();
-  }, [user]);
+  }, [user?._id]); // Only depend on user ID, not the entire user object
 
   // Check if the user can create events
   const canCreateEvents = user && user.role && user.role !== "user";
@@ -928,6 +928,28 @@ function EventsComponent() {
       return;
     }
 
+    // Check donation status for regular users
+    if (user.role === "user" && user.donationStatus === "inactive") {
+      if (user.nextEligibleDate) {
+        const nextDate = new Date(user.nextEligibleDate);
+        const today = new Date();
+        const diffTime = nextDate.getTime() - today.getTime();
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+        if (diffDays > 0) {
+          setApiError(
+            `You cannot register for events. You can donate again in ${diffDays} days (${nextDate.toLocaleDateString()}).`
+          );
+          return;
+        }
+      } else {
+        setApiError(
+          "You cannot register for events due to recent donation activity."
+        );
+        return;
+      }
+    }
+
     // Check if this is the user's own event
     const isOwnEvent =
       user &&
@@ -1094,7 +1116,26 @@ function EventsComponent() {
   return (
     <div className="container mx-auto py-6 px-4">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Blood Donation Events</h1>
+        <div>
+          <h1 className="text-2xl font-bold">Blood Donation Events</h1>
+          {user && user.role === "user" && (
+            <div
+              className={`inline-block mt-2 px-3 py-1 rounded-full text-xs font-medium ${
+                user.donationStatus === "active"
+                  ? "bg-green-100 text-green-700"
+                  : "bg-red-100 text-red-700"
+              }`}
+            >
+              Donation Status: {user.donationStatus || "Unknown"}
+              {user.donationStatus === "inactive" && user.nextEligibleDate && (
+                <span className="ml-2">
+                  (Eligible:{" "}
+                  {new Date(user.nextEligibleDate).toLocaleDateString()})
+                </span>
+              )}
+            </div>
+          )}
+        </div>
         <div className="flex gap-2">
           {user && user.role === "user" ? (
             <Button
