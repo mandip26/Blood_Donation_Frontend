@@ -186,7 +186,11 @@ function RouteComponent() {
           console.log(
             `Comparing: inv.userId._id=${inv.userId?._id} with userId=${userId}`
           );
-          return inv.userId?._id === userId || inv.userId === userId;
+          // Convert both to strings to ensure proper comparison
+          return (
+            String(inv.userId?._id) === String(userId) ||
+            String(inv.userId) === String(userId)
+          );
         });
 
         // If inventory found, use it; otherwise use default values
@@ -420,10 +424,17 @@ function RouteComponent() {
     };
     if (user) {
       fetchDashboardStats();
-      fetchPosts();
+
+      // Make sure fetchPosts exists and is defined before calling it
+      if (typeof fetchPosts === "function") {
+        fetchPosts();
+      } else {
+        console.error("fetchPosts function is not defined in useEffect");
+      }
+
       fetchEvents();
       fetchBloodRequests();
-      fetchHospitalsAndOrgs(); // Add this line to fetch hospitals and organizations
+      fetchHospitalsAndOrgs(); // This will also trigger fetchBloodInventoryForUser
 
       // Only fetch donation history for users with the "user" role
       if (user.role === "user") {
@@ -437,6 +448,20 @@ function RouteComponent() {
     navigate({
       to: "/dashboard/events",
       search: { focusEvent: eventId },
+    });
+  };
+
+  // Handle navigation to events page from Quick Actions
+  const navigateToEvents = () => {
+    navigate({
+      to: "/dashboard/events",
+    });
+  };
+
+  // Handle navigation to recipient page from Quick Actions
+  const navigateToRecipient = () => {
+    navigate({
+      to: "/dashboard/recipient",
     });
   };
 
@@ -458,8 +483,13 @@ function RouteComponent() {
       try {
         setLoadingInventory(true);
         const inventories = await bloodInventoryService.getAllInventories();
+        console.log("All inventories:", inventories);
+
+        // Compare as strings to handle MongoDB ObjectId comparisons
         const inventory = inventories.find(
-          (inv) => inv.userId === hospitalId
+          (inv) =>
+            String(inv.userId?._id) === String(hospitalId) ||
+            String(inv.userId) === String(hospitalId)
         ) || {
           aPositive: 0,
           aNegative: 0,
@@ -471,6 +501,7 @@ function RouteComponent() {
           oNegative: 0,
         };
 
+        console.log("Selected inventory for hospital:", hospitalId, inventory);
         setBloodInventory(inventory);
       } catch (error) {
         console.error("Error fetching blood inventory for user:", error);
@@ -480,6 +511,7 @@ function RouteComponent() {
       }
     };
 
+    // Call the function immediately
     fetchInventory();
   };
 
@@ -679,8 +711,13 @@ function RouteComponent() {
   };
   // Function to refresh posts
   const refreshPosts = () => {
-    fetchPosts();
-    toast.info("Refreshing posts...");
+    if (typeof fetchPosts === "function") {
+      fetchPosts();
+      toast.info("Refreshing posts...");
+    } else {
+      console.error("fetchPosts function is not defined");
+      toast.error("Could not refresh posts");
+    }
   };
 
   if (isLoading || statsLoading) {
@@ -765,22 +802,27 @@ function RouteComponent() {
                 </CardHeader>
                 <CardContent className="space-y-3">
                   {user?.role === "user" && (
-                    <Button className="w-full bg-primary-magenta hover:bg-primary-magenta/90">
+                    <Button
+                      className="w-full bg-primary-magenta hover:bg-primary-magenta/90"
+                      onClick={navigateToRecipient}
+                    >
                       Donate Blood
                     </Button>
                   )}
-                  <Button className="w-full" variant="outline">
+                  <Button
+                    className="w-full"
+                    variant="outline"
+                    onClick={navigateToEvents}
+                  >
                     Find Donation Events
-                  </Button>
+                  </Button>{" "}
                   {(user?.role === "hospital" ||
                     user?.role === "organization") && (
-                    <Button className="w-full bg-primary-magenta hover:bg-primary-magenta/90">
+                    <Button
+                      className="w-full bg-primary-magenta hover:bg-primary-magenta/90"
+                      onClick={navigateToRecipient}
+                    >
                       Create Blood Request
-                    </Button>
-                  )}
-                  {user?.role === "user" && (
-                    <Button className="w-full" variant="outline">
-                      Request Blood
                     </Button>
                   )}
                 </CardContent>

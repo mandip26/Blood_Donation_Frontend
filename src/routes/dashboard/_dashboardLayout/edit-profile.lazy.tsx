@@ -206,8 +206,14 @@ function EditProfileComponent() {
       const formData = new FormData();
 
       // Map the form fields to match the backend schema
+      // Use different name field based on user role
       const fieldMapping: { [key: string]: string } = {
-        name: "name",
+        name:
+          loggedInUser?.role === "hospital"
+            ? "hospitalName"
+            : loggedInUser?.role === "organization"
+              ? "organizationName"
+              : "name",
         phone: "phone",
         email: "email",
         bloodType: "bloodType",
