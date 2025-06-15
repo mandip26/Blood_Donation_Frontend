@@ -49,6 +49,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
  * @property {string} _id
  * @property {string} name
  * @property {string} email
+ * @property {string} [hospitalName]
+ * @property {string} [organizationName]
+ * @property {string} [role]
  * @property {Object} [profile]
  * @property {string} [profile.profilePhoto]
  */
@@ -770,6 +773,19 @@ function RouteComponent() {
     }
   };
 
+  // Helper function to get display name based on user role
+  const getDisplayName = (user) => {
+    if (!user) return "User";
+
+    if (user.role === "hospital" && user.hospitalName) {
+      return user.hospitalName;
+    } else if (user.role === "organization" && user.organizationName) {
+      return user.organizationName;
+    } else {
+      return user.name || user.email || "User";
+    }
+  };
+
   if (isLoading || statsLoading) {
     return <LoadingState />;
   }
@@ -1197,15 +1213,15 @@ function RouteComponent() {
                               post.user?.profile?.profilePhoto ||
                               "https://i.pravatar.cc/150?img=12"
                             }
-                            alt={post.user?.name || "User"}
+                            alt={getDisplayName(post.user)}
                           />
                           <AvatarFallback>
-                            {(post.user?.name || "U").charAt(0)}
+                            {getDisplayName(post.user).charAt(0).toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
                         <div>
                           <h4 className="font-semibold">
-                            {post.user?.name || post.user?.email || "User"}
+                            {getDisplayName(post.user)}
                           </h4>
                           <p className="text-xs text-gray-500">
                             {post.createdAt
@@ -1343,18 +1359,19 @@ function RouteComponent() {
                                     comment.user?.profile?.profilePhoto ||
                                     "https://i.pravatar.cc/150?img=12"
                                   }
-                                  alt={comment.user?.name || "User"}
+                                  alt={getDisplayName(comment.user)}
                                 />
                                 <AvatarFallback>
-                                  {(comment.user?.name || "U").charAt(0)}
+                                  {getDisplayName(comment.user)
+                                    .charAt(0)
+                                    .toUpperCase()}
                                 </AvatarFallback>
                               </Avatar>
                               <div className="flex-1">
                                 <div className="bg-gray-100 rounded-lg px-3 py-2">
+                                  {" "}
                                   <p className="text-xs font-semibold">
-                                    {comment.user?.name ||
-                                      comment.user?.email ||
-                                      "User"}
+                                    {getDisplayName(comment.user)}
                                   </p>
                                   <p className="text-sm">{comment.text}</p>
                                 </div>
@@ -1494,22 +1511,21 @@ function RouteComponent() {
                                                       ?.profilePhoto ||
                                                     "https://i.pravatar.cc/150?img=12"
                                                   }
-                                                  alt={
-                                                    reply.user?.name || "User"
-                                                  }
+                                                  alt={getDisplayName(
+                                                    reply.user
+                                                  )}
                                                 />
                                                 <AvatarFallback>
-                                                  {(
-                                                    reply.user?.name || "U"
-                                                  ).charAt(0)}
+                                                  {getDisplayName(reply.user)
+                                                    .charAt(0)
+                                                    .toUpperCase()}
                                                 </AvatarFallback>
                                               </Avatar>
                                               <div className="flex-1">
                                                 <div className="bg-gray-100 rounded-lg px-3 py-2">
+                                                  {" "}
                                                   <p className="text-xs font-semibold">
-                                                    {reply.user?.name ||
-                                                      reply.user?.email ||
-                                                      "User"}
+                                                    {getDisplayName(reply.user)}
                                                   </p>
                                                   <p className="text-sm">
                                                     {reply.text}

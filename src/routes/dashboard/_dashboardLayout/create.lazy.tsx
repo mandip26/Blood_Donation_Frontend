@@ -665,7 +665,15 @@ function CreatePostComponent() {
                         user?.profile?.profilePhoto ||
                         "https://placehold.co/200x200?text=User"
                       }
-                      alt={post.user?.name || "User"}
+                      alt={
+                        post.user?.role === "hospital"
+                          ? post.user?.hospitalName || post.user?.name || "User"
+                          : post.user?.role === "organization"
+                            ? post.user?.organizationName ||
+                              post.user?.name ||
+                              "User"
+                            : post.user?.name || "User"
+                      }
                       className="w-full h-full object-cover"
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;
@@ -678,7 +686,13 @@ function CreatePostComponent() {
                     {" "}
                     <div className="flex justify-between">
                       <h3 className="font-medium">
-                        {post.user?.name || "Anonymous User"}
+                        {post.user?.role === "hospital"
+                          ? post.user?.hospitalName || post.user?.name || "User"
+                          : post.user?.role === "organization"
+                            ? post.user?.organizationName ||
+                              post.user?.name ||
+                              "User"
+                            : post.user?.name || "User"}
                       </h3>
                       {user && post.user && user._id === post.user._id && (
                         <Button
@@ -785,7 +799,17 @@ function CreatePostComponent() {
                                     comment.user?.profile?.profilePhoto ||
                                     "https://placehold.co/200x200?text=User"
                                   }
-                                  alt={comment.user?.name || "User"}
+                                  alt={
+                                    comment.user?.role === "hospital"
+                                      ? comment.user?.hospitalName ||
+                                        comment.user?.name ||
+                                        "User"
+                                      : comment.user?.role === "organization"
+                                        ? comment.user?.organizationName ||
+                                          comment.user?.name ||
+                                          "User"
+                                        : comment.user?.name || "User"
+                                  }
                                   className="w-full h-full object-cover"
                                   onError={(e) => {
                                     const target = e.target as HTMLImageElement;
@@ -796,7 +820,15 @@ function CreatePostComponent() {
                               </div>
                               <div className="flex-1">
                                 <div className="font-medium text-sm">
-                                  {comment.user?.name || "Anonymous"}
+                                  {comment.user?.role === "hospital"
+                                    ? comment.user?.hospitalName ||
+                                      comment.user?.name ||
+                                      "User"
+                                    : comment.user?.role === "organization"
+                                      ? comment.user?.organizationName ||
+                                        comment.user?.name ||
+                                        "User"
+                                      : comment.user?.name || "User"}
                                 </div>
                                 <p className="text-sm">{comment.text}</p>
                                 <div className="flex gap-3 mt-1 text-xs text-gray-500">
@@ -871,7 +903,22 @@ function CreatePostComponent() {
                                                     ?.profilePhoto ||
                                                   "https://placehold.co/200x200?text=User"
                                                 }
-                                                alt={reply.user?.name || "User"}
+                                                alt={
+                                                  reply.user?.role ===
+                                                  "hospital"
+                                                    ? reply.user
+                                                        ?.hospitalName ||
+                                                      reply.user?.name ||
+                                                      "User"
+                                                    : reply.user?.role ===
+                                                        "organization"
+                                                      ? reply.user
+                                                          ?.organizationName ||
+                                                        reply.user?.name ||
+                                                        "User"
+                                                      : reply.user?.name ||
+                                                        "User"
+                                                }
                                                 className="w-full h-full object-cover"
                                                 onError={(e) => {
                                                   const target =
@@ -883,8 +930,18 @@ function CreatePostComponent() {
                                             </div>
                                             <div>
                                               <div className="font-medium text-xs">
-                                                {reply.user?.name ||
-                                                  "Anonymous"}
+                                                {reply.user?.role === "hospital"
+                                                  ? reply.user?.hospitalName ||
+                                                    reply.user?.name ||
+                                                    "User"
+                                                  : reply.user?.role ===
+                                                      "organization"
+                                                    ? reply.user
+                                                        ?.organizationName ||
+                                                      reply.user?.name ||
+                                                      "User"
+                                                    : reply.user?.name ||
+                                                      "User"}
                                               </div>
                                               <p className="text-xs">
                                                 {reply.text}

@@ -51,6 +51,9 @@ interface BloodDonationEvent {
     _id: string;
     name: string;
     email: string;
+    hospitalName?: string;
+    organizationName?: string;
+    role?: string;
   };
   registrationLimit?: number;
   registeredCount?: number;
@@ -73,6 +76,9 @@ interface EventRegistration {
     name: string;
     email: string;
     phone?: string;
+    hospitalName?: string;
+    organizationName?: string;
+    role?: string;
   };
   status: string;
   registrationDate: string;
@@ -208,11 +214,11 @@ function EventsComponent() {
   useEffect(() => {
     if (user) {
       const userName =
-        user.role === "hospital"
-          ? user.hospitalName
-          : user.role === "organization"
-            ? user.organizationName
-            : user.name;
+        user?.role === "hospital"
+          ? user?.hospitalName || user?.name || "User"
+          : user?.role === "organization"
+            ? user?.organizationName || user?.name || "User"
+            : user?.name || "User";
 
       setFormData((prevData) => ({
         ...prevData,
@@ -649,6 +655,9 @@ function EventsComponent() {
       (event.createdBy?.name || "")
         .toLowerCase()
         .includes(searchTerm.toLowerCase()) ||
+      getDisplayName(event.createdBy || { name: "", role: "" })
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
       event.venue.toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesCity = selectedCity
@@ -989,6 +998,41 @@ function EventsComponent() {
     }
 
     setShowConfirmModal(true);
+  };
+
+  // Helper function to get display name based on user role
+  const getDisplayName = (createdBy: {
+    name: string;
+    hospitalName?: string;
+    organizationName?: string;
+    role?: string;
+  }) => {
+    if (createdBy.role === "hospital" && createdBy.hospitalName) {
+      return createdBy.hospitalName;
+    } else if (
+      createdBy.role === "organization" &&
+      createdBy.organizationName
+    ) {
+      return createdBy.organizationName;
+    } else {
+      return createdBy.name || "Unknown Organizer";
+    }
+  };
+
+  // Helper function to get user display name for registrations
+  const getUserDisplayName = (user: {
+    name: string;
+    hospitalName?: string;
+    organizationName?: string;
+    role?: string;
+  }) => {
+    if (user.role === "hospital" && user.hospitalName) {
+      return user.hospitalName;
+    } else if (user.role === "organization" && user.organizationName) {
+      return user.organizationName;
+    } else {
+      return user.name || "Unknown User";
+    }
   };
 
   // Function to fetch event registrations
@@ -1371,7 +1415,10 @@ function EventsComponent() {
                 {" "}
                 <h3 className="font-medium text-lg mb-2">{event.title}</h3>
                 <p className="text-gray-600 text-sm mb-3">
-                  By {event.createdBy?.name || "Unknown Organizer"}
+                  By{" "}
+                  {getDisplayName(
+                    event.createdBy || { name: "Unknown Organizer", role: "" }
+                  )}
                 </p>
                 <div className="flex items-center text-gray-500 text-sm mb-2">
                   <MapPin size={14} className="mr-1" />
@@ -1552,7 +1599,13 @@ function EventsComponent() {
                     </h2>{" "}
                   </div>
                   <p className="text-gray-600">
-                    By {selectedEvent.createdBy?.name || "Unknown Organizer"}
+                    By{" "}
+                    {getDisplayName(
+                      selectedEvent.createdBy || {
+                        name: "Unknown Organizer",
+                        role: "",
+                      }
+                    )}
                   </p>
                 </div>
               </div>
@@ -2291,8 +2344,8 @@ function EventsComponent() {
                   time: "",
                   startTime: "",
                   endTime: "",
-                  startAmPm: "AM",
-                  endAmPm: "PM",
+                  startAmPm: "AM" as "AM" | "PM",
+                  endAmPm: "PM" as "AM" | "PM",
                   venue: "",
                   registrationLimit: "",
                   image: null,
@@ -2640,7 +2693,12 @@ function EventsComponent() {
                             <div className="flex items-center">
                               <div className="ml-4">
                                 <div className="text-sm font-medium text-gray-900">
-                                  {registration.user.name}
+                                  {getUserDisplayName(
+                                    registration.user || {
+                                      name: "Unknown User",
+                                      role: "",
+                                    }
+                                  )}
                                 </div>
                                 <div className="text-sm text-gray-500">
                                   {registration.user.email}
