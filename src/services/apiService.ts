@@ -857,4 +857,43 @@ export const testimonialService = {
 // Re-export bloodInventoryService
 export { bloodInventoryService };
 
+// User history services
+export const userHistoryService = {
+  getHospitalHistory: async () => {
+    try {
+      const response = await api.get("/hospital-history");
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  getOrganizationHistory: async () => {
+    try {
+      const response = await api.get("/organization-history");
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  getHospitalUserInteractions: async () => {
+    try {
+      const response = await api.get("/hospital-user-interactions");
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  getOrganizationUserInteractions: async () => {
+    try {
+      const response = await api.get("/organization-user-interactions");
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+};
+
 export default api;
