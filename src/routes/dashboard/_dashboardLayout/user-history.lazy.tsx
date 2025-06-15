@@ -1,107 +1,123 @@
-import { Button } from "@/components/ui/button";
-import { useAuth } from "@/hooks/useAuth";
 import { createLazyFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
 import {
-  ChevronDown,
-  Filter,
   Search,
-  X
+  Filter,
+  Download,
+  ChevronDown,
+  X,
+  ArrowRight,
 } from "lucide-react";
-import { useEffect, useState } from "react";
 
 export const Route = createLazyFileRoute(
-  "/dashboard/_dashboardLayout/hospital-history"
+  "/dashboard/_dashboardLayout/user-history"
 )({
   component: HospitalHistoryComponent,
 });
 
-interface HospitalInteraction {
+interface DonationRecord {
   id: string;
-  type: "donation" | "blood_request" | "blood_response" | "event_registration";
   hospitalName: string;
-  interactionDate: string;
+  donationDate: string;
   bloodType: string;
   units: number;
-  status:
-    | "completed"
-    | "processing"
-    | "verified"
-    | "pending"
-    | "approved"
-    | "rejected";
-  details: {
-    donorName?: string;
-    patientName?: string;
-    urgency?: string;
-    reason?: string;
-    contactNumber?: string;
-    location?: string;
-    eventTitle?: string;
-    eventDate?: string;
-    eventVenue?: string;
-    responseMessage?: string;
-    weight?: number;
-    hemoglobin?: number;
-    phone?: string;
-  };
+  certificateAvailable: boolean;
+  status: "completed" | "processing" | "verified";
+  reportAvailable: boolean;
 }
 
 function HospitalHistoryComponent() {
-  const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
   const [selectedYear, setSelectedYear] = useState<string | null>(null);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [interactions, setInteractions] = useState<HospitalInteraction[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
-  const statuses = [
-    "Completed",
-    "Processing",
-    "Verified",
-    "Pending",
-    "Approved",
-    "Rejected",
+  const statuses = ["Completed", "Processing", "Verified"];
+  const years = ["2025", "2024", "2023", "2022"];
+
+  const donationRecords: DonationRecord[] = [
+    {
+      id: "1",
+      hospitalName: "Apollo Hospital",
+      donationDate: "2025-03-15",
+      bloodType: "O+",
+      units: 1,
+      certificateAvailable: true,
+      status: "verified",
+      reportAvailable: true,
+    },
+    {
+      id: "2",
+      hospitalName: "Fortis Hospital",
+      donationDate: "2024-12-10",
+      bloodType: "O+",
+      units: 1,
+      certificateAvailable: true,
+      status: "verified",
+      reportAvailable: true,
+    },
+    {
+      id: "3",
+      hospitalName: "City Blood Bank",
+      donationDate: "2024-08-22",
+      bloodType: "O+",
+      units: 1,
+      certificateAvailable: true,
+      status: "verified",
+      reportAvailable: false,
+    },
+    {
+      id: "4",
+      hospitalName: "University Medical Center",
+      donationDate: "2024-04-05",
+      bloodType: "O+",
+      units: 1,
+      certificateAvailable: true,
+      status: "completed",
+      reportAvailable: true,
+    },
+    {
+      id: "5",
+      hospitalName: "Community Blood Drive",
+      donationDate: "2023-11-18",
+      bloodType: "O+",
+      units: 1,
+      certificateAvailable: false,
+      status: "completed",
+      reportAvailable: false,
+    },
+    {
+      id: "6",
+      hospitalName: "Apollo Hospital",
+      donationDate: "2023-07-03",
+      bloodType: "O+",
+      units: 1,
+      certificateAvailable: true,
+      status: "verified",
+      reportAvailable: true,
+    },
+    {
+      id: "7",
+      hospitalName: "Red Cross Blood Drive",
+      donationDate: "2023-02-14",
+      bloodType: "O+",
+      units: 1,
+      certificateAvailable: true,
+      status: "verified",
+      reportAvailable: true,
+    },
+    {
+      id: "8",
+      hospitalName: "Apollo Hospital",
+      donationDate: "2025-05-01",
+      bloodType: "O+",
+      units: 1,
+      certificateAvailable: false,
+      status: "processing",
+      reportAvailable: false,
+    },
   ];
-  const years = ["2025", "2024", "2023", "2022"]; // Fetch hospital interactions
-  useEffect(() => {
-    const fetchHospitalHistory = async () => {
-      if (!user) return;
-
-      try {
-        setIsLoading(true);
-        setError(null);
-
-        // Use cookies for authentication - no need to manually send token
-        const response = await fetch(
-          "http://localhost:8001/api/v1/user/hospital-history",
-          {
-            method: "GET",
-            credentials: "include", // This ensures cookies are sent with the request
-            headers: {
-              "Content-Type": "application/json",
-            },
-          }
-        );
-
-        const data = await response.json();
-
-        if (data.success) {
-          setInteractions(data.data || []);
-        } else {
-          setError(data.message || "Failed to fetch hospital history");
-        }
-      } catch (err) {
-        console.error("Error fetching hospital history:", err);
-        setError("Failed to load hospital history. Please try again.");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchHospitalHistory();
-  }, [user]);
 
   // Format date function
   const formatDate = (dateString: string) => {
@@ -113,24 +129,8 @@ function HospitalHistoryComponent() {
     return new Date(dateString).toLocaleDateString(undefined, options);
   };
 
-  // Get interaction type display text
-  const getInteractionTypeText = (type: string) => {
-    switch (type) {
-      case "donation":
-        return "Blood Donation";
-      case "blood_request":
-        return "Blood Request";
-      case "blood_response":
-        return "Response to Request";
-      case "event_registration":
-        return "Event Registration";
-      default:
-        return "Unknown";
-    }
-  };
-
   // Filter records based on search term and filters
-  const filteredRecords = interactions.filter((record) => {
+  const filteredRecords = donationRecords.filter((record) => {
     const matchesSearch = record.hospitalName
       .toLowerCase()
       .includes(searchTerm.toLowerCase());
@@ -140,8 +140,7 @@ function HospitalHistoryComponent() {
       : true;
 
     const matchesYear = selectedYear
-      ? new Date(record.interactionDate).getFullYear().toString() ===
-        selectedYear
+      ? new Date(record.donationDate).getFullYear().toString() === selectedYear
       : true;
 
     return matchesSearch && matchesStatus && matchesYear;
@@ -150,51 +149,35 @@ function HospitalHistoryComponent() {
   // Sort records by date (newest first)
   filteredRecords.sort(
     (a, b) =>
-      new Date(b.interactionDate).getTime() -
-      new Date(a.interactionDate).getTime()
+      new Date(b.donationDate).getTime() - new Date(a.donationDate).getTime()
   );
-
-  // Loading state
-  if (isLoading) {
-    return (
-      <div className="container mx-auto py-6 px-4">
-        <div className="flex justify-center items-center h-64">
-          <div className="text-lg">Loading hospital history...</div>
-        </div>
-      </div>
-    );
-  }
-
-  // Error state
-  if (error) {
-    return (
-      <div className="container mx-auto py-6 px-4">
-        <div className="flex justify-center items-center h-64">
-          <div className="text-lg text-red-600">{error}</div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="container mx-auto py-6 px-4">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Hospital Interaction History</h1>
+        <h1 className="text-2xl font-bold">Donation History</h1>
+        <div>
+          <Button
+            variant="outline"
+            className="border-primary-magenta text-primary-magenta hover:bg-primary-magenta/10"
+          >
+            <Download size={18} className="mr-2" />
+            Export Records
+          </Button>
+        </div>
       </div>
+
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <div className="bg-white rounded-xl shadow-sm p-4">
-          <h3 className="text-gray-500 text-sm mb-1">Total Interactions</h3>
-          <p className="text-2xl font-bold">{interactions.length}</p>
+          <h3 className="text-gray-500 text-sm mb-1">Total Donations</h3>
+          <p className="text-2xl font-bold">{donationRecords.length}</p>
         </div>
 
         <div className="bg-white rounded-xl shadow-sm p-4">
           <h3 className="text-gray-500 text-sm mb-1">Total Units</h3>
           <p className="text-2xl font-bold">
-            {interactions.reduce(
-              (total: number, record) => total + record.units,
-              0
-            )}
+            {donationRecords.reduce((total, record) => total + record.units, 0)}
           </p>
         </div>
 
@@ -202,21 +185,24 @@ function HospitalHistoryComponent() {
           <h3 className="text-gray-500 text-sm mb-1">This Year</h3>
           <p className="text-2xl font-bold">
             {
-              interactions.filter(
-                (record) =>
-                  new Date(record.interactionDate).getFullYear() === 2025
+              donationRecords.filter(
+                (record) => new Date(record.donationDate).getFullYear() === 2025
               ).length
             }
           </p>
         </div>
 
         <div className="bg-white rounded-xl shadow-sm p-4">
-          <h3 className="text-gray-500 text-sm mb-1">Donations</h3>
+          <h3 className="text-gray-500 text-sm mb-1">Certificates</h3>
           <p className="text-2xl font-bold">
-            {interactions.filter((record) => record.type === "donation").length}
+            {
+              donationRecords.filter((record) => record.certificateAvailable)
+                .length
+            }
           </p>
         </div>
       </div>
+
       {/* Search and Filter */}
       <div className="bg-white rounded-xl shadow-sm p-4 mb-6">
         <div className="flex flex-col md:flex-row gap-4">
@@ -347,17 +333,14 @@ function HospitalHistoryComponent() {
           </div>
         )}
       </div>
+
       {/* Records Table */}
       <div className="bg-white rounded-xl shadow-sm overflow-hidden mb-6">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              {" "}
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Hospital
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Type
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Date
@@ -370,6 +353,9 @@ function HospitalHistoryComponent() {
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Status
+              </th>
+              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Actions
               </th>
             </tr>
           </thead>
@@ -387,12 +373,7 @@ function HospitalHistoryComponent() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-900">
-                      {getInteractionTypeText(record.type)}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">
-                      {formatDate(record.interactionDate)}
+                      {formatDate(record.donationDate)}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -407,21 +388,34 @@ function HospitalHistoryComponent() {
                     <span
                       className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full
                       ${
-                        record.status === "completed" ||
                         record.status === "verified"
                           ? "bg-green-100 text-green-800"
-                          : record.status === "processing" ||
-                              record.status === "pending"
+                          : record.status === "processing"
                             ? "bg-yellow-100 text-yellow-800"
-                            : record.status === "approved"
-                              ? "bg-blue-100 text-blue-800"
-                              : "bg-red-100 text-red-800"
+                            : "bg-blue-100 text-blue-800"
                       }
                     `}
                     >
                       {record.status.charAt(0).toUpperCase() +
                         record.status.slice(1)}
                     </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <div className="flex justify-end space-x-2">
+                      {record.certificateAvailable && (
+                        <button className="text-primary-magenta hover:text-primary-magenta/80">
+                          <Download size={16} />
+                        </button>
+                      )}{" "}
+                      {/* <Link to={`/dashboard/hospital-history/${record.id}`}>
+                        <span className="text-gray-600 hover:text-gray-900">
+                          <ArrowRight size={16} />
+                        </span>
+                      </Link> */}
+                      <button className="text-gray-600 hover:text-gray-900">
+                        <ArrowRight size={16} />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))
@@ -434,12 +428,14 @@ function HospitalHistoryComponent() {
             )}
           </tbody>
         </table>
-      </div>{" "}
+      </div>
+
       {/* Pagination */}
       <div className="flex justify-between items-center">
         <div className="text-sm text-gray-500">
           Showing <span className="font-medium">{filteredRecords.length}</span>{" "}
-          of <span className="font-medium">{interactions.length}</span> records
+          of <span className="font-medium">{donationRecords.length}</span>{" "}
+          records
         </div>
 
         <div className="flex space-x-2">

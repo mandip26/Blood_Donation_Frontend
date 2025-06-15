@@ -10,15 +10,15 @@ import {
 import { useEffect, useState } from "react";
 
 export const Route = createLazyFileRoute(
-  "/dashboard/_dashboardLayout/hospital-history"
+  "/dashboard/_dashboardLayout/organization-history"
 )({
-  component: HospitalHistoryComponent,
+  component: OrganizationHistoryComponent,
 });
 
-interface HospitalInteraction {
+interface OrganizationInteraction {
   id: string;
-  type: "donation" | "blood_request" | "blood_response" | "event_registration";
-  hospitalName: string;
+  type: "blood_response" | "event_registration";
+  organizationName: string;
   interactionDate: string;
   bloodType: string;
   units: number;
@@ -30,29 +30,25 @@ interface HospitalInteraction {
     | "approved"
     | "rejected";
   details: {
-    donorName?: string;
     patientName?: string;
     urgency?: string;
-    reason?: string;
+    responseMessage?: string;
     contactNumber?: string;
-    location?: string;
     eventTitle?: string;
     eventDate?: string;
     eventVenue?: string;
-    responseMessage?: string;
-    weight?: number;
-    hemoglobin?: number;
-    phone?: string;
   };
 }
 
-function HospitalHistoryComponent() {
+function OrganizationHistoryComponent() {
   const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
   const [selectedYear, setSelectedYear] = useState<string | null>(null);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [interactions, setInteractions] = useState<HospitalInteraction[]>([]);
+  const [interactions, setInteractions] = useState<OrganizationInteraction[]>(
+    []
+  );
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -64,9 +60,11 @@ function HospitalHistoryComponent() {
     "Approved",
     "Rejected",
   ];
-  const years = ["2025", "2024", "2023", "2022"]; // Fetch hospital interactions
+  const years = ["2025", "2024", "2023", "2022"];
+
+  // Fetch organization interactions
   useEffect(() => {
-    const fetchHospitalHistory = async () => {
+    const fetchOrganizationHistory = async () => {
       if (!user) return;
 
       try {
@@ -75,7 +73,7 @@ function HospitalHistoryComponent() {
 
         // Use cookies for authentication - no need to manually send token
         const response = await fetch(
-          "http://localhost:8001/api/v1/user/hospital-history",
+          "http://localhost:8001/api/v1/user/organization-history",
           {
             method: "GET",
             credentials: "include", // This ensures cookies are sent with the request
@@ -90,17 +88,17 @@ function HospitalHistoryComponent() {
         if (data.success) {
           setInteractions(data.data || []);
         } else {
-          setError(data.message || "Failed to fetch hospital history");
+          setError(data.message || "Failed to fetch organization history");
         }
       } catch (err) {
-        console.error("Error fetching hospital history:", err);
-        setError("Failed to load hospital history. Please try again.");
+        console.error("Error fetching organization history:", err);
+        setError("Failed to load organization history. Please try again.");
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchHospitalHistory();
+    fetchOrganizationHistory();
   }, [user]);
 
   // Format date function
@@ -116,10 +114,6 @@ function HospitalHistoryComponent() {
   // Get interaction type display text
   const getInteractionTypeText = (type: string) => {
     switch (type) {
-      case "donation":
-        return "Blood Donation";
-      case "blood_request":
-        return "Blood Request";
       case "blood_response":
         return "Response to Request";
       case "event_registration":
@@ -131,7 +125,7 @@ function HospitalHistoryComponent() {
 
   // Filter records based on search term and filters
   const filteredRecords = interactions.filter((record) => {
-    const matchesSearch = record.hospitalName
+    const matchesSearch = record.organizationName
       .toLowerCase()
       .includes(searchTerm.toLowerCase());
 
@@ -159,7 +153,7 @@ function HospitalHistoryComponent() {
     return (
       <div className="container mx-auto py-6 px-4">
         <div className="flex justify-center items-center h-64">
-          <div className="text-lg">Loading hospital history...</div>
+          <div className="text-lg">Loading organization history...</div>
         </div>
       </div>
     );
@@ -179,8 +173,9 @@ function HospitalHistoryComponent() {
   return (
     <div className="container mx-auto py-6 px-4">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Hospital Interaction History</h1>
+        <h1 className="text-2xl font-bold">Organization Interaction History</h1>
       </div>
+
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <div className="bg-white rounded-xl shadow-sm p-4">
@@ -211,12 +206,16 @@ function HospitalHistoryComponent() {
         </div>
 
         <div className="bg-white rounded-xl shadow-sm p-4">
-          <h3 className="text-gray-500 text-sm mb-1">Donations</h3>
+          <h3 className="text-gray-500 text-sm mb-1">Blood Responses</h3>
           <p className="text-2xl font-bold">
-            {interactions.filter((record) => record.type === "donation").length}
+            {
+              interactions.filter((record) => record.type === "blood_response")
+                .length
+            }
           </p>
         </div>
       </div>
+
       {/* Search and Filter */}
       <div className="bg-white rounded-xl shadow-sm p-4 mb-6">
         <div className="flex flex-col md:flex-row gap-4">
@@ -227,7 +226,7 @@ function HospitalHistoryComponent() {
             />
             <input
               type="text"
-              placeholder="Search by hospital name"
+              placeholder="Search by organization name"
               className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-magenta"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -347,14 +346,14 @@ function HospitalHistoryComponent() {
           </div>
         )}
       </div>
+
       {/* Records Table */}
       <div className="bg-white rounded-xl shadow-sm overflow-hidden mb-6">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              {" "}
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Hospital
+                Organization
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Type
@@ -382,7 +381,7 @@ function HospitalHistoryComponent() {
                 >
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="font-medium text-gray-900">
-                      {record.hospitalName}
+                      {record.organizationName}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -434,7 +433,8 @@ function HospitalHistoryComponent() {
             )}
           </tbody>
         </table>
-      </div>{" "}
+      </div>
+
       {/* Pagination */}
       <div className="flex justify-between items-center">
         <div className="text-sm text-gray-500">

@@ -43,19 +43,32 @@ export function NavUser({
       : user.role === "organization"
         ? user.organizationName
         : user.name;
-
   const options = [
     {
       name: "Edit Profile",
       icon: <ProfileIcon />,
       link: "/dashboard/edit-profile",
     },
-
-    {
-      name: "Hospital History",
-      icon: <HospitalIcon />,
-      link: "/dashboard/hospital-history",
-    },
+    ...(user.role === "user"
+      ? [
+          {
+            name: "Hospital History",
+            icon: <HospitalIcon />,
+            link: "/dashboard/hospital-history",
+          },
+          {
+            name: "Organization History",
+            icon: <HospitalIcon />,
+            link: "/dashboard/organization-history",
+          },
+        ]
+      : [
+          {
+            name: "User History",
+            icon: <ProfileIcon />,
+            link: "/dashboard/user-history",
+          },
+        ]),
     {
       name: "Logout",
       icon: <LogOutIcon color="#fff" />,
