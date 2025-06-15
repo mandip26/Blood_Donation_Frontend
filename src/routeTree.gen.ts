@@ -18,6 +18,11 @@ import { Route as DashboardDashboardLayoutImport } from './routes/dashboard/_das
 import { Route as authSignUpImport } from './routes/(auth)/sign-up'
 import { Route as authLoginImport } from './routes/(auth)/login'
 import { Route as DashboardDashboardLayoutVisualizationApiImport } from './routes/dashboard/_dashboardLayout/visualization-api'
+import { Route as DashboardDashboardLayoutAdminIndexImport } from './routes/dashboard/_dashboardLayout/admin/index'
+import { Route as DashboardDashboardLayoutAdminUsersImport } from './routes/dashboard/_dashboardLayout/admin/users'
+import { Route as DashboardDashboardLayoutAdminPostsImport } from './routes/dashboard/_dashboardLayout/admin/posts'
+import { Route as DashboardDashboardLayoutAdminEventsImport } from './routes/dashboard/_dashboardLayout/admin/events'
+import { Route as DashboardDashboardLayoutAdminBloodRequestsImport } from './routes/dashboard/_dashboardLayout/admin/blood-requests'
 
 // Create Virtual Routes
 
@@ -201,6 +206,41 @@ const DashboardDashboardLayoutVisualizationApiRoute =
     getParentRoute: () => DashboardDashboardLayoutRoute,
   } as any)
 
+const DashboardDashboardLayoutAdminIndexRoute =
+  DashboardDashboardLayoutAdminIndexImport.update({
+    id: '/admin/',
+    path: '/admin/',
+    getParentRoute: () => DashboardDashboardLayoutRoute,
+  } as any)
+
+const DashboardDashboardLayoutAdminUsersRoute =
+  DashboardDashboardLayoutAdminUsersImport.update({
+    id: '/admin/users',
+    path: '/admin/users',
+    getParentRoute: () => DashboardDashboardLayoutRoute,
+  } as any)
+
+const DashboardDashboardLayoutAdminPostsRoute =
+  DashboardDashboardLayoutAdminPostsImport.update({
+    id: '/admin/posts',
+    path: '/admin/posts',
+    getParentRoute: () => DashboardDashboardLayoutRoute,
+  } as any)
+
+const DashboardDashboardLayoutAdminEventsRoute =
+  DashboardDashboardLayoutAdminEventsImport.update({
+    id: '/admin/events',
+    path: '/admin/events',
+    getParentRoute: () => DashboardDashboardLayoutRoute,
+  } as any)
+
+const DashboardDashboardLayoutAdminBloodRequestsRoute =
+  DashboardDashboardLayoutAdminBloodRequestsImport.update({
+    id: '/admin/blood-requests',
+    path: '/admin/blood-requests',
+    getParentRoute: () => DashboardDashboardLayoutRoute,
+  } as any)
+
 // Populate the FileRoutesByPath interface
 
 declare module '@tanstack/react-router' {
@@ -317,6 +357,41 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardDashboardLayoutIndexLazyImport
       parentRoute: typeof DashboardDashboardLayoutImport
     }
+    '/dashboard/_dashboardLayout/admin/blood-requests': {
+      id: '/dashboard/_dashboardLayout/admin/blood-requests'
+      path: '/admin/blood-requests'
+      fullPath: '/dashboard/admin/blood-requests'
+      preLoaderRoute: typeof DashboardDashboardLayoutAdminBloodRequestsImport
+      parentRoute: typeof DashboardDashboardLayoutImport
+    }
+    '/dashboard/_dashboardLayout/admin/events': {
+      id: '/dashboard/_dashboardLayout/admin/events'
+      path: '/admin/events'
+      fullPath: '/dashboard/admin/events'
+      preLoaderRoute: typeof DashboardDashboardLayoutAdminEventsImport
+      parentRoute: typeof DashboardDashboardLayoutImport
+    }
+    '/dashboard/_dashboardLayout/admin/posts': {
+      id: '/dashboard/_dashboardLayout/admin/posts'
+      path: '/admin/posts'
+      fullPath: '/dashboard/admin/posts'
+      preLoaderRoute: typeof DashboardDashboardLayoutAdminPostsImport
+      parentRoute: typeof DashboardDashboardLayoutImport
+    }
+    '/dashboard/_dashboardLayout/admin/users': {
+      id: '/dashboard/_dashboardLayout/admin/users'
+      path: '/admin/users'
+      fullPath: '/dashboard/admin/users'
+      preLoaderRoute: typeof DashboardDashboardLayoutAdminUsersImport
+      parentRoute: typeof DashboardDashboardLayoutImport
+    }
+    '/dashboard/_dashboardLayout/admin/': {
+      id: '/dashboard/_dashboardLayout/admin/'
+      path: '/admin'
+      fullPath: '/dashboard/admin'
+      preLoaderRoute: typeof DashboardDashboardLayoutAdminIndexImport
+      parentRoute: typeof DashboardDashboardLayoutImport
+    }
   }
 }
 
@@ -334,6 +409,11 @@ interface DashboardDashboardLayoutRouteChildren {
   DashboardDashboardLayoutUserHistoryLazyRoute: typeof DashboardDashboardLayoutUserHistoryLazyRoute
   DashboardDashboardLayoutVisualizationLazyRoute: typeof DashboardDashboardLayoutVisualizationLazyRoute
   DashboardDashboardLayoutIndexLazyRoute: typeof DashboardDashboardLayoutIndexLazyRoute
+  DashboardDashboardLayoutAdminBloodRequestsRoute: typeof DashboardDashboardLayoutAdminBloodRequestsRoute
+  DashboardDashboardLayoutAdminEventsRoute: typeof DashboardDashboardLayoutAdminEventsRoute
+  DashboardDashboardLayoutAdminPostsRoute: typeof DashboardDashboardLayoutAdminPostsRoute
+  DashboardDashboardLayoutAdminUsersRoute: typeof DashboardDashboardLayoutAdminUsersRoute
+  DashboardDashboardLayoutAdminIndexRoute: typeof DashboardDashboardLayoutAdminIndexRoute
 }
 
 const DashboardDashboardLayoutRouteChildren: DashboardDashboardLayoutRouteChildren =
@@ -360,6 +440,16 @@ const DashboardDashboardLayoutRouteChildren: DashboardDashboardLayoutRouteChildr
       DashboardDashboardLayoutVisualizationLazyRoute,
     DashboardDashboardLayoutIndexLazyRoute:
       DashboardDashboardLayoutIndexLazyRoute,
+    DashboardDashboardLayoutAdminBloodRequestsRoute:
+      DashboardDashboardLayoutAdminBloodRequestsRoute,
+    DashboardDashboardLayoutAdminEventsRoute:
+      DashboardDashboardLayoutAdminEventsRoute,
+    DashboardDashboardLayoutAdminPostsRoute:
+      DashboardDashboardLayoutAdminPostsRoute,
+    DashboardDashboardLayoutAdminUsersRoute:
+      DashboardDashboardLayoutAdminUsersRoute,
+    DashboardDashboardLayoutAdminIndexRoute:
+      DashboardDashboardLayoutAdminIndexRoute,
   }
 
 const DashboardDashboardLayoutRouteWithChildren =
@@ -395,6 +485,11 @@ export interface FileRoutesByFullPath {
   '/dashboard/user-history': typeof DashboardDashboardLayoutUserHistoryLazyRoute
   '/dashboard/visualization': typeof DashboardDashboardLayoutVisualizationLazyRoute
   '/dashboard/': typeof DashboardDashboardLayoutIndexLazyRoute
+  '/dashboard/admin/blood-requests': typeof DashboardDashboardLayoutAdminBloodRequestsRoute
+  '/dashboard/admin/events': typeof DashboardDashboardLayoutAdminEventsRoute
+  '/dashboard/admin/posts': typeof DashboardDashboardLayoutAdminPostsRoute
+  '/dashboard/admin/users': typeof DashboardDashboardLayoutAdminUsersRoute
+  '/dashboard/admin': typeof DashboardDashboardLayoutAdminIndexRoute
 }
 
 export interface FileRoutesByTo {
@@ -412,6 +507,11 @@ export interface FileRoutesByTo {
   '/dashboard/recipient': typeof DashboardDashboardLayoutRecipientLazyRoute
   '/dashboard/user-history': typeof DashboardDashboardLayoutUserHistoryLazyRoute
   '/dashboard/visualization': typeof DashboardDashboardLayoutVisualizationLazyRoute
+  '/dashboard/admin/blood-requests': typeof DashboardDashboardLayoutAdminBloodRequestsRoute
+  '/dashboard/admin/events': typeof DashboardDashboardLayoutAdminEventsRoute
+  '/dashboard/admin/posts': typeof DashboardDashboardLayoutAdminPostsRoute
+  '/dashboard/admin/users': typeof DashboardDashboardLayoutAdminUsersRoute
+  '/dashboard/admin': typeof DashboardDashboardLayoutAdminIndexRoute
 }
 
 export interface FileRoutesById {
@@ -432,6 +532,11 @@ export interface FileRoutesById {
   '/dashboard/_dashboardLayout/user-history': typeof DashboardDashboardLayoutUserHistoryLazyRoute
   '/dashboard/_dashboardLayout/visualization': typeof DashboardDashboardLayoutVisualizationLazyRoute
   '/dashboard/_dashboardLayout/': typeof DashboardDashboardLayoutIndexLazyRoute
+  '/dashboard/_dashboardLayout/admin/blood-requests': typeof DashboardDashboardLayoutAdminBloodRequestsRoute
+  '/dashboard/_dashboardLayout/admin/events': typeof DashboardDashboardLayoutAdminEventsRoute
+  '/dashboard/_dashboardLayout/admin/posts': typeof DashboardDashboardLayoutAdminPostsRoute
+  '/dashboard/_dashboardLayout/admin/users': typeof DashboardDashboardLayoutAdminUsersRoute
+  '/dashboard/_dashboardLayout/admin/': typeof DashboardDashboardLayoutAdminIndexRoute
 }
 
 export interface FileRouteTypes {
@@ -452,6 +557,11 @@ export interface FileRouteTypes {
     | '/dashboard/user-history'
     | '/dashboard/visualization'
     | '/dashboard/'
+    | '/dashboard/admin/blood-requests'
+    | '/dashboard/admin/events'
+    | '/dashboard/admin/posts'
+    | '/dashboard/admin/users'
+    | '/dashboard/admin'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -468,6 +578,11 @@ export interface FileRouteTypes {
     | '/dashboard/recipient'
     | '/dashboard/user-history'
     | '/dashboard/visualization'
+    | '/dashboard/admin/blood-requests'
+    | '/dashboard/admin/events'
+    | '/dashboard/admin/posts'
+    | '/dashboard/admin/users'
+    | '/dashboard/admin'
   id:
     | '__root__'
     | '/'
@@ -486,6 +601,11 @@ export interface FileRouteTypes {
     | '/dashboard/_dashboardLayout/user-history'
     | '/dashboard/_dashboardLayout/visualization'
     | '/dashboard/_dashboardLayout/'
+    | '/dashboard/_dashboardLayout/admin/blood-requests'
+    | '/dashboard/_dashboardLayout/admin/events'
+    | '/dashboard/_dashboardLayout/admin/posts'
+    | '/dashboard/_dashboardLayout/admin/users'
+    | '/dashboard/_dashboardLayout/admin/'
   fileRoutesById: FileRoutesById
 }
 
@@ -548,7 +668,12 @@ export const routeTree = rootRoute
         "/dashboard/_dashboardLayout/recipient",
         "/dashboard/_dashboardLayout/user-history",
         "/dashboard/_dashboardLayout/visualization",
-        "/dashboard/_dashboardLayout/"
+        "/dashboard/_dashboardLayout/",
+        "/dashboard/_dashboardLayout/admin/blood-requests",
+        "/dashboard/_dashboardLayout/admin/events",
+        "/dashboard/_dashboardLayout/admin/posts",
+        "/dashboard/_dashboardLayout/admin/users",
+        "/dashboard/_dashboardLayout/admin/"
       ]
     },
     "/dashboard/_dashboardLayout/visualization-api": {
@@ -593,6 +718,26 @@ export const routeTree = rootRoute
     },
     "/dashboard/_dashboardLayout/": {
       "filePath": "dashboard/_dashboardLayout/index.lazy.jsx",
+      "parent": "/dashboard/_dashboardLayout"
+    },
+    "/dashboard/_dashboardLayout/admin/blood-requests": {
+      "filePath": "dashboard/_dashboardLayout/admin/blood-requests.tsx",
+      "parent": "/dashboard/_dashboardLayout"
+    },
+    "/dashboard/_dashboardLayout/admin/events": {
+      "filePath": "dashboard/_dashboardLayout/admin/events.tsx",
+      "parent": "/dashboard/_dashboardLayout"
+    },
+    "/dashboard/_dashboardLayout/admin/posts": {
+      "filePath": "dashboard/_dashboardLayout/admin/posts.tsx",
+      "parent": "/dashboard/_dashboardLayout"
+    },
+    "/dashboard/_dashboardLayout/admin/users": {
+      "filePath": "dashboard/_dashboardLayout/admin/users.tsx",
+      "parent": "/dashboard/_dashboardLayout"
+    },
+    "/dashboard/_dashboardLayout/admin/": {
+      "filePath": "dashboard/_dashboardLayout/admin/index.tsx",
       "parent": "/dashboard/_dashboardLayout"
     }
   }

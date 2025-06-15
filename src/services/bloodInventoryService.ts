@@ -11,6 +11,23 @@ const bloodInventoryApi = axios.create({
   withCredentials: true, // Critical for handling cookies/sessions
 });
 
+// Add response interceptor to bloodInventoryApi
+bloodInventoryApi.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (
+      error.response &&
+      (error.response.status === 401 || error.response.status === 403)
+    ) {
+      localStorage.removeItem("bloodDonationUser");
+      if (!window.location.href.includes("/login")) {
+        window.location.href = "/login";
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
 export interface BloodInventory {
   userId?: string;
   aPositive: number;

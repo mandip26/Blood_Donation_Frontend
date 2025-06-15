@@ -1,5 +1,10 @@
 import * as React from "react";
 
+import CalendarIcon from "@/components/icons/CalendarIcon.tsx";
+import HomeIcon from "@/components/icons/HomeIcon.tsx";
+import RecipeIcon from "@/components/icons/RecipeIcon.tsx";
+import VisualizationIcon from "@/components/icons/VisualizationIcon.tsx";
+import { NavUser } from "@/components/layout/NavUser.tsx";
 import {
   Sidebar,
   SidebarContent,
@@ -9,14 +14,9 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { NavUser } from "@/components/layout/NavUser.tsx";
-import HomeIcon from "@/components/icons/HomeIcon.tsx";
-import { Link, useLocation } from "@tanstack/react-router";
-import RecipeIcon from "@/components/icons/RecipeIcon.tsx";
-import CalendarIcon from "@/components/icons/CalendarIcon.tsx";
-import VisualizationIcon from "@/components/icons/VisualizationIcon.tsx";
-import { CirclePlus, Users, Building, Building2 } from "lucide-react";
 import useAuth from "@/hooks/useAuth";
+import { Link, useLocation } from "@tanstack/react-router";
+import { CirclePlus, Users } from "lucide-react";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const location = useLocation();
@@ -107,8 +107,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       icon: <CirclePlus />,
       link: "/dashboard/create",
     },
-  ];
-  // Admin navigation
+  ]; // Admin navigation
   const adminNavData = [
     {
       name: "Home",
@@ -121,29 +120,19 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       link: "/dashboard/admin/users",
     },
     {
-      name: "Hospitals",
-      icon: <Building />,
-      link: "/dashboard/donate",
-    },
-    {
       name: "Events",
       icon: <CalendarIcon />,
       link: "/dashboard/admin/events",
     },
     {
-      name: "Organizations",
-      icon: <Building2 />,
-      link: "/dashboard/events",
+      name: "Blood Requests",
+      icon: <RecipeIcon />,
+      link: "/dashboard/admin/blood-requests",
     },
     {
-      name: "Analytics",
+      name: "Posts",
       icon: <VisualizationIcon />,
-      link: "/dashboard/admin/analytics",
-    },
-    {
-      name: "System",
-      icon: <Users />,
-      link: "/dashboard/admin/profile",
+      link: "/dashboard/admin/posts",
     },
   ];
 

@@ -23,6 +23,23 @@ const donorApi = axios.create({
   withCredentials: true,
 });
 
+// Add response interceptor to donorApi
+donorApi.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (
+      error.response &&
+      (error.response.status === 401 || error.response.status === 403)
+    ) {
+      localStorage.removeItem("bloodDonationUser");
+      if (!window.location.href.includes("/login")) {
+        window.location.href = "/login";
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
 // Request interceptor - useful for adding auth tokens to requests
 api.interceptors.request.use(
   (config) => {
@@ -40,9 +57,12 @@ api.interceptors.response.use(
     return response;
   },
   (error) => {
-    // Handle unauthorized errors (401)
-    if (error.response && error.response.status === 401) {
-      // Clear localStorage on 401
+    // Handle unauthorized errors (401) and blocked account errors (403)
+    if (
+      error.response &&
+      (error.response.status === 401 || error.response.status === 403)
+    ) {
+      // Clear localStorage on 401/403
       localStorage.removeItem("bloodDonationUser");
 
       // Only redirect if not already on login page to prevent redirect loops
@@ -221,6 +241,23 @@ const eventApi = axios.create({
   },
   withCredentials: true,
 });
+
+// Add response interceptor to eventApi
+eventApi.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (
+      error.response &&
+      (error.response.status === 401 || error.response.status === 403)
+    ) {
+      localStorage.removeItem("bloodDonationUser");
+      if (!window.location.href.includes("/login")) {
+        window.location.href = "/login";
+      }
+    }
+    return Promise.reject(error);
+  }
+);
 
 export const eventService = {
   getAllEvents: async () => {
@@ -470,6 +507,23 @@ const eventRegistrationApi = axios.create({
   },
   withCredentials: true,
 });
+
+// Add response interceptor to eventRegistrationApi
+eventRegistrationApi.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (
+      error.response &&
+      (error.response.status === 401 || error.response.status === 403)
+    ) {
+      localStorage.removeItem("bloodDonationUser");
+      if (!window.location.href.includes("/login")) {
+        window.location.href = "/login";
+      }
+    }
+    return Promise.reject(error);
+  }
+);
 
 export const eventRegistrationService = {
   // Register for an event
