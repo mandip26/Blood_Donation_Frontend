@@ -1,5 +1,6 @@
 import * as React from "react";
 
+import logo from "@/assets/logo.jpg";
 import CalendarIcon from "@/components/icons/CalendarIcon.tsx";
 import HomeIcon from "@/components/icons/HomeIcon.tsx";
 import RecipeIcon from "@/components/icons/RecipeIcon.tsx";
@@ -145,11 +146,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   } else if (userRole === "admin") {
     sideNavData = adminNavData;
   }
-
   return (
     <Sidebar variant="inset" {...props} className={"bg-primary-magenta"}>
       <SidebarHeader className="py-8 bg-primary-magenta">
-        <div className="bg-white size-32 mx-auto rounded-full"></div>
+        <img
+          src={logo}
+          alt="Blood Donation Logo"
+          className="size-32 mx-auto rounded-full object-cover"
+        />
       </SidebarHeader>
       <SidebarContent className={"bg-primary-magenta"}>
         <SidebarMenu className={"space-y-2 my-4"}>
