@@ -249,8 +249,7 @@ function RecipientComponent() {
         setSelectedRequest(targetRequest);
       }
     }
-  }, [searchParams.focusRequest, bloodRequests, selectedRequest]);
-  // Fetch blood requests function (for refreshing data)
+  }, [searchParams.focusRequest, bloodRequests, selectedRequest]); // Fetch blood requests function (for refreshing data)
   const fetchBloodRequests = async () => {
     try {
       setIsLoading(true);
@@ -270,59 +269,34 @@ function RecipientComponent() {
         filters.urgency = selectedUrgency;
       }
 
-      // Call the API endpoint to get blood requests
-      const response = await fetch(
-        "http://localhost:8001/api/v1/user/blood-requests"
-      );
-      const data = await response.json();
-
+      // Call the API service to get blood requests
+      const data = await bloodRequestService.getActiveRequests(filters);
       if (data.success) {
-        // For each blood request, check if any response has "Completed" status        // Filter out rejected (soft deleted) requests
+        console.log("Raw backend response:", data); // Debug log
+
+        // Filter out rejected (soft deleted) requests
         const activeRequests = data.bloodRequests.filter(
-          (request: any) => request.status !== "Rejected"
+          (request: any) => request.status !== "Rejected" && !request.isDeleted
         );
+        const formattedRequests = activeRequests.map((request: any) => {
+          console.log("Processing request:", request); // Debug log
 
-        const formattedRequests = await Promise.all(
-          activeRequests.map(async (request: any) => {
-            let hasCompletedResponse = false;
-
-            try {
-              // Check responses for this request
-              const responsesResult =
-                await bloodRequestService.getRequestResponses(request._id);
-              if (
-                responsesResult &&
-                responsesResult.success &&
-                responsesResult.responses
-              ) {
-                hasCompletedResponse = responsesResult.responses.some(
-                  (response: any) => response.status === "Completed"
-                );
-              }
-            } catch (error) {
-              // If we can't get responses, assume no completed responses
-              console.warn(
-                "Could not fetch responses for request:",
-                request._id
-              );
-            }
-
-            return {
-              id: request._id,
-              name: request.patientName,
-              bloodType: request.bloodType,
-              hospital: request.hospital,
-              location: request.location,
-              urgency: request.urgency,
-              postedTime: getTimeAgo(new Date(request.createdAt)),
-              units: request.unitsRequired,
-              contactNumber: request.contactNumber,
-              reason: request.reason,
-              createdBy: request.createdBy?._id || request.createdBy,
-              hasCompletedResponse,
-            };
-          })
-        );
+          return {
+            id: request.id,
+            name: request.name,
+            bloodType: request.bloodType,
+            hospital: request.hospital,
+            location: request.location,
+            urgency: request.urgency,
+            postedTime: getTimeAgo(new Date(request.postedTime)),
+            units: request.units,
+            contactNumber: request.contactNumber,
+            reason: request.reason,
+            createdBy: request.createdBy,
+            hasCompletedResponse: false, // We'll check this separately if needed
+            isDeleted: request.isDeleted || false,
+          };
+        });
 
         // Apply filters if any
         let filteredRequests = formattedRequests;
@@ -599,25 +573,31 @@ function RecipientComponent() {
       if (result && result.success && result.bloodRequests) {
         // Filter out rejected (soft deleted) requests
         const activeRequests = result.bloodRequests.filter(
-          (request: any) => request.status !== "Rejected"
+          (request: any) => !request.isDeleted && request.status !== "rejected"
         );
 
-        setUserCreatedRequests(activeRequests);
-
-        // If there are requests, select the first one by default
+        setUserCreatedRequests(activeRequests); // If there are requests, select the first one by default
         if (activeRequests.length > 0) {
-          setSelectedCreatedRequest(activeRequests[0]._id);
+          const firstRequestId = activeRequests[0].id || activeRequests[0]._id;
+          setSelectedCreatedRequest(firstRequestId);
           // Fetch responses for the first request
-          fetchResponsesForRequest(activeRequests[0]._id);
+          fetchResponsesForRequest(firstRequestId);
+        } else {
+          // No requests found, still show the modal
+          setShowMyRequestsResponsesModal(true);
         }
       } else {
         setUserCreatedRequests([]);
         setUserCreatedRequestsResponses([]);
+        // Still show the modal even if no requests
+        setShowMyRequestsResponsesModal(true);
       }
     } catch (err) {
       console.error("Error fetching user created requests:", err);
       setError("Failed to load your blood requests. Please try again.");
       setUserCreatedRequests([]);
+      // Still show the modal even if there's an error
+      setShowMyRequestsResponsesModal(true);
     } finally {
       setIsLoadingMyRequests(false);
     }
@@ -664,7 +644,6 @@ function RecipientComponent() {
       setIsLoadingDeletedRequests(false);
     }
   };
-
   // Fetch responses for a specific blood request created by the user
   const fetchResponsesForRequest = async (requestId: string) => {
     if (!requestId) return;
@@ -677,15 +656,17 @@ function RecipientComponent() {
 
       if (result && result.success && result.responses) {
         setUserCreatedRequestsResponses(result.responses);
-        setShowMyRequestsResponsesModal(true);
       } else {
         setUserCreatedRequestsResponses([]);
-        setShowMyRequestsResponsesModal(true);
       }
+      // Always show the modal after fetching responses (or trying to)
+      setShowMyRequestsResponsesModal(true);
     } catch (err) {
       console.error("Error fetching responses for request:", err);
       setError("Failed to load responses for this request. Please try again.");
       setUserCreatedRequestsResponses([]);
+      // Still show the modal even if there's an error
+      setShowMyRequestsResponsesModal(true);
     } finally {
       setIsLoadingResponses(false);
     }
@@ -721,11 +702,10 @@ function RecipientComponent() {
       setUpdatingResponseId(null);
     }
   };
-
   // Check if response modification should be disabled
   const isResponseModificationDisabled = (response: BloodRequestResponse) => {
-    // Disable if the original request is deleted
-    if (response.bloodRequest.isDeleted) {
+    // Disable if the original request doesn't exist or is deleted
+    if (!response.bloodRequest || response.bloodRequest.isDeleted) {
       return true;
     }
     // Disable if any response is completed
@@ -1692,17 +1672,23 @@ function RecipientComponent() {
                         <div className="space-y-1">
                           <div className="flex items-center gap-2">
                             <h4 className="font-medium text-gray-800">
-                              Request for {response.bloodRequest.patientName}
+                              Request for{" "}
+                              {response.bloodRequest
+                                ? response.bloodRequest.patientName
+                                : "Unknown Patient"}
                             </h4>
-                            {response.bloodRequest.isDeleted && (
-                              <span className="px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs font-medium">
-                                Request Deleted
-                              </span>
-                            )}
+                            {response.bloodRequest &&
+                              response.bloodRequest.isDeleted && (
+                                <span className="px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs font-medium">
+                                  Request Deleted
+                                </span>
+                              )}
                           </div>
                           <div className="flex items-center gap-2">
                             <span className="inline-block px-2.5 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
-                              {response.bloodRequest.bloodType}
+                              {response.bloodRequest
+                                ? response.bloodRequest.bloodType
+                                : "Unknown"}
                             </span>
                             <span className="text-gray-500 text-sm">
                               {new Date(
@@ -1729,12 +1715,15 @@ function RecipientComponent() {
 
                       <div className="border-t border-gray-100 pt-2 mt-2">
                         <div className="flex flex-col sm:flex-row sm:justify-between gap-2">
+                          {" "}
                           <div>
                             <span className="text-xs text-gray-500 block">
                               Hospital
                             </span>
                             <span className="text-gray-700">
-                              {response.bloodRequest.hospital}
+                              {response.bloodRequest
+                                ? response.bloodRequest.hospital
+                                : "Unknown Hospital"}
                             </span>
                           </div>
                           <div>
@@ -1846,13 +1835,15 @@ function RecipientComponent() {
                     <div className="space-y-2 max-h-96 overflow-y-auto pr-2">
                       {userCreatedRequests.map((request) => (
                         <div
-                          key={request._id}
+                          key={request.id || request._id}
                           onClick={() => {
-                            setSelectedCreatedRequest(request._id);
-                            fetchResponsesForRequest(request._id);
+                            const requestId = request.id || request._id;
+                            setSelectedCreatedRequest(requestId);
+                            fetchResponsesForRequest(requestId);
                           }}
                           className={`p-3 rounded-md cursor-pointer transition-colors ${
-                            selectedCreatedRequest === request._id
+                            selectedCreatedRequest ===
+                            (request.id || request._id)
                               ? "bg-green-100 border-l-4 border-green-500"
                               : "hover:bg-gray-100"
                           }`}

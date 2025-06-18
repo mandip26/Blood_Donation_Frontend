@@ -254,6 +254,15 @@ function RouteComponent() {
     }; // Function to check if a blood request has completed responses
     const checkForCompletedResponses = async (requestId) => {
       try {
+        // Check if requestId is valid before making API call
+        if (!requestId) {
+          console.warn(
+            "Invalid requestId provided to checkForCompletedResponses:",
+            requestId
+          );
+          return false;
+        }
+
         const responseData =
           await bloodRequestService.getRequestResponses(requestId);
         if (responseData.success && responseData.responses) {
@@ -277,29 +286,37 @@ function RouteComponent() {
         setBloodRequestsLoading(true);
         setBloodRequestsError(null);
         const response = await bloodRequestService.getActiveRequests();
-
         if (response.success && response.bloodRequests) {
-          // First filter out requests with Fulfilled status
+          // First filter out requests with Fulfilled status and ensure valid requests
           const nonFulfilledRequests = response.bloodRequests.filter(
-            (request) => request.status !== "Fulfilled"
-          );
-
-          // Then check each remaining request for completed responses
+            (request) => request && request.status !== "Fulfilled"
+          ); // Then check each remaining request for completed responses
           const requestsWithCompletionStatus = await Promise.all(
             nonFulfilledRequests.map(async (request) => {
-              const hasCompletedResponse = await checkForCompletedResponses(
-                request._id
-              );
-              return {
-                ...request,
-                hasCompletedResponse,
-              };
+              try {
+                // Ensure request and request ID are valid
+                if (!request || !request._id) {
+                  console.warn("Invalid request object:", request);
+                  return null;
+                }
+
+                const hasCompletedResponse = await checkForCompletedResponses(
+                  request._id
+                );
+                return {
+                  ...request,
+                  hasCompletedResponse,
+                };
+              } catch (error) {
+                console.error("Error processing request:", request, error);
+                return null;
+              }
             })
           );
 
-          // Filter out requests with completed responses
+          // Filter out null entries and requests with completed responses
           const activeRequests = requestsWithCompletionStatus.filter(
-            (request) => !request.hasCompletedResponse
+            (request) => request && !request.hasCompletedResponse
           );
 
           // Get the 3 most recent active blood requests
@@ -309,10 +326,13 @@ function RouteComponent() {
           setBloodRequests(recentRequests);
         } else {
           setBloodRequestsError("Failed to load blood requests");
+          // Ensure we set an empty array instead of null/undefined
+          setBloodRequests([]);
         }
       } catch (error) {
         console.error("Error fetching blood requests:", error);
         setBloodRequestsError("Error loading blood requests");
+        // Ensure we set an empty array instead of null/undefined
         setBloodRequests([]);
       } finally {
         setBloodRequestsLoading(false);
@@ -475,9 +495,18 @@ function RouteComponent() {
       to: "/dashboard/recipient",
     });
   };
-
   // Handle respond to blood request - navigate to recipient page with specific request
   const handleRespondToRequest = (requestId) => {
+    // Check if requestId is valid before navigating
+    if (!requestId) {
+      console.warn(
+        "Invalid requestId provided to handleRespondToRequest:",
+        requestId
+      );
+      toast.error("Unable to respond to this request. Invalid request ID.");
+      return;
+    }
+
     navigate({
       to: "/dashboard/recipient",
       search: { focusRequest: requestId },
@@ -715,24 +744,37 @@ function RouteComponent() {
     setShowDonorDetails(false);
     setSelectedDonor(null);
   };
-
   // Helper function to format time ago
   const getTimeAgo = (date) => {
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffSec = Math.round(diffMs / 1000);
-    const diffMin = Math.round(diffSec / 60);
-    const diffHour = Math.round(diffMin / 60);
-    const diffDay = Math.round(diffHour / 24);
+    try {
+      if (!date) return "Unknown time";
 
-    if (diffSec < 60) return `${diffSec} seconds ago`;
-    if (diffMin < 60) return `${diffMin} minutes ago`;
-    if (diffHour < 24) return `${diffHour} hours ago`;
-    if (diffDay === 1) return "Yesterday";
-    if (diffDay < 30) return `${diffDay} days ago`;
+      const now = new Date();
+      const inputDate = new Date(date);
 
-    return new Date(date).toLocaleDateString();
+      // Check if the date is valid
+      if (isNaN(inputDate.getTime())) {
+        return "Unknown time";
+      }
+
+      const diffMs = now.getTime() - inputDate.getTime();
+      const diffSec = Math.round(diffMs / 1000);
+      const diffMin = Math.round(diffSec / 60);
+      const diffHour = Math.round(diffMin / 60);
+      const diffDay = Math.round(diffHour / 24);
+
+      if (diffSec < 60) return `${diffSec} seconds ago`;
+      if (diffMin < 60) return `${diffMin} minutes ago`;
+      if (diffHour < 24) return `${diffHour} hours ago`;
+      if (diffDay === 1) return "Yesterday";
+      if (diffDay < 30) return `${diffDay} days ago`;
+      return inputDate.toLocaleDateString();
+    } catch (error) {
+      console.warn("Error formatting time ago:", error);
+      return "Unknown time";
+    }
   };
+
   // Function to refresh posts
   const refreshPosts = () => {
     if (typeof fetchPosts === "function") {
@@ -1696,7 +1738,8 @@ function RouteComponent() {
                       Try Again
                     </Button>
                   </div>
-                ) : bloodRequests.length === 0 ? (
+                ) : !Array.isArray(bloodRequests) ||
+                  bloodRequests.length === 0 ? (
                   <div className="text-center py-10 text-gray-500">
                     <Heart className="mx-auto h-12 w-12 text-gray-400 mb-3" />
                     <p>No blood requests available at the moment</p>
@@ -1704,53 +1747,71 @@ function RouteComponent() {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {bloodRequests.map((request) => (
-                      <div
-                        key={request._id}
-                        className={`border-l-4 p-4 rounded-r-md ${getUrgencyColor(request.urgency)}`}
-                      >
-                        <div className="flex justify-between mb-2">
-                          <h4 className="font-semibold">
-                            {request.urgency?.toUpperCase() === "HIGH"
-                              ? "URGENT: "
-                              : ""}
-                            {request.bloodType} blood needed
-                          </h4>
-                          <span
-                            className={`text-xs px-2 py-1 rounded-full ${
-                              request.urgency?.toLowerCase() === "high"
-                                ? "bg-red-200 text-red-800"
-                                : request.urgency?.toLowerCase() === "medium"
-                                  ? "bg-yellow-200 text-yellow-800"
-                                  : "bg-green-200 text-green-800"
-                            }`}
-                          >
-                            {request.urgency || "Medium"}
-                          </span>
-                        </div>
-                        <p className="text-sm text-gray-600 mb-2">
-                          {request.hospital} requires {request.bloodType} blood
-                          for {request.patientName}. {request.unitsRequired}{" "}
-                          unit{request.unitsRequired > 1 ? "s" : ""} needed.
-                        </p>
-                        <div className="flex items-center text-gray-600 text-sm mb-2">
-                          <MapPin size={14} className="mr-1" />
-                          {request.location}
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <div className="text-xs text-gray-500">
-                            {getTimeAgo(new Date(request.createdAt))}
+                    {bloodRequests
+                      .filter((request) => request && request._id)
+                      .map((request) => (
+                        <div
+                          key={request._id}
+                          className={`border-l-4 p-4 rounded-r-md ${getUrgencyColor(request.urgency)}`}
+                        >
+                          <div className="flex justify-between mb-2">
+                            {" "}
+                            <h4 className="font-semibold">
+                              {request.urgency?.toUpperCase() === "HIGH"
+                                ? "URGENT: "
+                                : ""}
+                              {request?.bloodType || "Unknown"} blood needed
+                            </h4>
+                            <span
+                              className={`text-xs px-2 py-1 rounded-full ${
+                                request.urgency?.toLowerCase() === "high"
+                                  ? "bg-red-200 text-red-800"
+                                  : request.urgency?.toLowerCase() === "medium"
+                                    ? "bg-yellow-200 text-yellow-800"
+                                    : "bg-green-200 text-green-800"
+                              }`}
+                            >
+                              {request.urgency || "Medium"}
+                            </span>
+                          </div>{" "}
+                          <p className="text-sm text-gray-600 mb-2">
+                            {request?.hospital || "Unknown Hospital"} requires{" "}
+                            {request?.bloodType || "Unknown"} blood for{" "}
+                            {request?.patientName || "Unknown Patient"}.{" "}
+                            {request?.unitsRequired ||
+                              request?.unitsNeeded ||
+                              1}{" "}
+                            unit
+                            {(request?.unitsRequired ||
+                              request?.unitsNeeded ||
+                              1) > 1
+                              ? "s"
+                              : ""}{" "}
+                            needed.
+                          </p>
+                          <div className="flex items-center text-gray-600 text-sm mb-2">
+                            <MapPin size={14} className="mr-1" />
+                            {request?.location || "Location not specified"}
                           </div>
-                          <Button
-                            size="sm"
-                            className="bg-primary-magenta hover:bg-primary-magenta/90 h-8"
-                            onClick={() => handleRespondToRequest(request._id)}
-                          >
-                            Respond
-                          </Button>
+                          <div className="flex justify-between items-center">
+                            <div className="text-xs text-gray-500">
+                              {request?.createdAt
+                                ? getTimeAgo(new Date(request.createdAt))
+                                : "Unknown time"}
+                            </div>
+                            <Button
+                              size="sm"
+                              className="bg-primary-magenta hover:bg-primary-magenta/90 h-8"
+                              onClick={() =>
+                                handleRespondToRequest(request?._id)
+                              }
+                              disabled={!request?._id}
+                            >
+                              Respond
+                            </Button>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      ))}
                   </div>
                 )}
               </CardContent>
