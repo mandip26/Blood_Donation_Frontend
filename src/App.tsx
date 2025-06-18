@@ -1,5 +1,6 @@
 import { createRouter, RouterProvider } from "@tanstack/react-router";
 import { routeTree } from "./routeTree.gen";
+import { ChatbotProvider } from "@/components/common/ChatbotProvider";
 
 const router = createRouter({ routeTree });
 
@@ -10,5 +11,9 @@ declare module "@tanstack/react-router" {
 }
 
 export default function App() {
-  return <RouterProvider router={router} />;
+  return (
+    <ChatbotProvider>
+      <RouterProvider router={router} />
+    </ChatbotProvider>
+  );
 }
