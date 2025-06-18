@@ -293,7 +293,7 @@ function RecipientComponent() {
             contactNumber: request.contactNumber,
             reason: request.reason,
             createdBy: request.createdBy,
-            hasCompletedResponse: false, // We'll check this separately if needed
+            hasCompletedResponse: request.hasCompletedResponse || false,
             isDeleted: request.isDeleted || false,
           };
         });

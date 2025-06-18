@@ -4,13 +4,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   Table,
   TableBody,
   TableCell,
@@ -51,14 +44,13 @@ function EventsManagement() {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
 
   useEffect(() => {
     fetchEvents();
-  }, [search, statusFilter, currentPage]);
+  }, [search, currentPage]);
 
   const fetchEvents = async () => {
     try {
@@ -68,7 +60,6 @@ function EventsManagement() {
         page: currentPage.toString(),
         limit: "10",
         ...(search && { search }),
-        ...(statusFilter !== "all" && { status: statusFilter }),
       });
 
       const data = await adminApi.getEvents(params);
@@ -141,37 +132,17 @@ function EventsManagement() {
               <CardTitle className="text-lg font-semibold">Filters</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex flex-col md:flex-row gap-4">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <Input
-                    placeholder="Search by title, venue..."
-                    value={search}
-                    onChange={(e) => {
-                      setSearch(e.target.value);
-                      setCurrentPage(1);
-                    }}
-                    className="pl-10"
-                  />
-                </div>
-                <Select
-                  value={statusFilter}
-                  onValueChange={(value: string) => {
-                    setStatusFilter(value);
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input
+                  placeholder="Search by title, venue..."
+                  value={search}
+                  onChange={(e) => {
+                    setSearch(e.target.value);
                     setCurrentPage(1);
                   }}
-                >
-                  <SelectTrigger className="w-full md:w-48">
-                    <SelectValue placeholder="Filter by status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="pending">Pending</SelectItem>
-                    <SelectItem value="approved">Approved</SelectItem>
-                    <SelectItem value="rejected">Rejected</SelectItem>
-                    <SelectItem value="completed">Completed</SelectItem>
-                  </SelectContent>
-                </Select>
+                  className="pl-10"
+                />
               </div>
             </CardContent>
           </Card>

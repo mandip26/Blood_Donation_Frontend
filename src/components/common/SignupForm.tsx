@@ -142,9 +142,7 @@ export default function SignupForm({ userType, isLogin = false }: props) {
       setNameBasedOnUser("Full Name");
       setIdBasedOnUser("Aadhar ID");
     }
-  }, [userType]);
-
-  // Helper function to format and display error messages properly
+  }, [userType]); // Helper function to format and display error messages properly
   const ErrorMessage = ({ errors }: { errors: any[] }) => {
     if (!errors || errors.length === 0) return null;
 
@@ -155,7 +153,20 @@ export default function SignupForm({ userType, isLogin = false }: props) {
       .join(", ");
 
     return (
-      <div className="text-red-400 text-xs ml-2 mt-1">{formattedErrors}</div>
+      <div className="text-red-500 text-sm mt-1 flex items-center gap-1">
+        <svg
+          className="w-4 h-4 flex-shrink-0"
+          fill="currentColor"
+          viewBox="0 0 20 20"
+        >
+          <path
+            fillRule="evenodd"
+            d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+            clipRule="evenodd"
+          />
+        </svg>
+        <span>{formattedErrors}</span>
+      </div>
     );
   };
 

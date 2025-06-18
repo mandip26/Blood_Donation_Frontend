@@ -16,9 +16,7 @@ export default function LoginForm() {
   const [apiError, setApiError] = useState<string | null>(null);
   const [formSubmitting, setFormSubmitting] = useState(false);
   const { login } = useAuth();
-  const navigate = useNavigate();
-
-  // Helper function to format and display error messages properly
+  const navigate = useNavigate(); // Helper function to format and display error messages properly
   const ErrorMessage = ({ errors }: { errors: any[] }) => {
     if (!errors || errors.length === 0) return null;
 
@@ -29,10 +27,23 @@ export default function LoginForm() {
       .join(", ");
 
     return (
-      <div className="text-red-400 text-xs ml-2 mt-1">{formattedErrors}</div>
+      <div className="text-red-500 text-sm mt-1 flex items-center gap-1">
+        <svg
+          className="w-4 h-4 flex-shrink-0"
+          fill="currentColor"
+          viewBox="0 0 20 20"
+        >
+          <path
+            fillRule="evenodd"
+            d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+            clipRule="evenodd"
+          />
+        </svg>
+        <span>{formattedErrors}</span>
+      </div>
     );
   };
-  
+
   const form = useForm({
     defaultValues: {
       email: "",
@@ -45,37 +56,36 @@ export default function LoginForm() {
       try {
         setFormSubmitting(true);
         setApiError(null);
-        
+
         console.log("Submitting login form with:", value.email); // Debug email
-        
+
         // Call login function from auth hook
         const response = await login(value.email, value.password);
-        
+
         console.log("Login function returned:", response); // Debug response
-        
+
         // Token storage is handled by the useAuth hook
-        
+
         // Show success message
         toast.success("Login successful!");
-        
+
         // Give toast time to display before navigating
         setTimeout(() => {
           console.log("Navigating to dashboard...");
           navigate({ to: "/dashboard" });
         }, 300);
-        
       } catch (error: any) {
         console.error("Login error:", error);
-        
+
         // Extract and display error message
         let errorMessage = "An error occurred during login";
-        
+
         if (error.response?.data?.message) {
           errorMessage = error.response.data.message;
         } else if (error.message) {
           errorMessage = error.message;
         }
-        
+
         setApiError(errorMessage);
         toast.error(errorMessage);
       } finally {

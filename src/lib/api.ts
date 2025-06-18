@@ -51,6 +51,7 @@ export const apiCall = async (endpoint: string, options: RequestInit = {}) => {
 export const adminApi = {
   // Dashboard Stats
   getDashboardStats: () => apiCall("/admin/dashboard/stats"),
+  getBloodInventoryStats: () => apiCall("/admin/blood-inventory/stats"),
 
   // Users
   getUsers: (params: URLSearchParams) => apiCall(`/admin/users?${params}`),

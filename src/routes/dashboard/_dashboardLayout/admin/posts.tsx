@@ -11,7 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Search, FileText, Trash2, Eye } from "lucide-react";
+import { Search, FileText, Trash2, Eye, X } from "lucide-react";
 import { toast } from "sonner";
 import { adminApi } from "@/lib/api";
 
@@ -22,7 +22,6 @@ interface Post {
   location?: any;
   likes: any[];
   comments: any[];
-  shares: number;
   user?: {
     _id: string;
     name?: string;
@@ -47,6 +46,8 @@ function PostsManagement() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
+  const [selectedPost, setSelectedPost] = useState<Post | null>(null);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
 
   useEffect(() => {
     fetchPosts();
@@ -100,6 +101,16 @@ function PostsManagement() {
     }
   };
 
+  const viewPost = (post: Post) => {
+    setSelectedPost(post);
+    setIsViewModalOpen(true);
+  };
+
+  const closeViewModal = () => {
+    setIsViewModalOpen(false);
+    setSelectedPost(null);
+  };
+
   const getCreatorName = (creator: Post["user"]) => {
     if (!creator) return "Unknown";
     return (
@@ -118,6 +129,67 @@ function PostsManagement() {
   const truncateText = (text: string, maxLength: number) => {
     if (text.length <= maxLength) return text;
     return text.substring(0, maxLength) + "...";
+  };
+
+  const formatLocation = (location: any) => {
+    if (!location) return "";
+
+    if (typeof location === "string") {
+      return location;
+    }
+
+    // If location is an object, format it as a readable address
+    if (typeof location === "object") {
+      const parts: string[] = [];
+
+      // Common location fields in order of specificity
+      const fields = [
+        "street",
+        "area",
+        "locality",
+        "subLocality",
+        "city",
+        "district",
+        "state",
+        "country",
+        "postalCode",
+        "zipCode",
+        "pinCode",
+      ];
+
+      fields.forEach((field) => {
+        if (location[field] && typeof location[field] === "string") {
+          parts.push(location[field]);
+        }
+      });
+
+      // If no standard fields found, try to extract meaningful values
+      if (parts.length === 0) {
+        Object.entries(location).forEach(([key, value]) => {
+          // Skip ID fields and other technical fields
+          const skipFields = [
+            "_id",
+            "id",
+            "__v",
+            "createdAt",
+            "updatedAt",
+            "userId",
+            "postId",
+          ];
+          const isIdField = skipFields.some((field) =>
+            key.toLowerCase().includes(field.toLowerCase())
+          );
+
+          if (!isIdField && typeof value === "string" && value.trim() !== "") {
+            parts.push(value);
+          }
+        });
+      }
+
+      return parts.join(", ") || JSON.stringify(location, null, 2);
+    }
+
+    return String(location);
   };
 
   return (
@@ -233,7 +305,6 @@ function PostsManagement() {
                         <div className="flex flex-col text-sm text-gray-600">
                           <span>❤️ {post.likes?.length || 0} likes</span>
                           <span>💬 {post.comments?.length || 0} comments</span>
-                          <span>🔄 {post.shares || 0} shares</span>
                         </div>
                       </TableCell>
                       <TableCell>
@@ -244,13 +315,7 @@ function PostsManagement() {
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => {
-                              // Open post in new tab or modal for viewing
-                              window.open(
-                                `/dashboard/posts/${post._id}`,
-                                "_blank"
-                              );
-                            }}
+                            onClick={() => viewPost(post)}
                             className="h-8 w-8 p-0"
                             title="View Post"
                           >
@@ -306,6 +371,129 @@ function PostsManagement() {
           )}
         </CardContent>
       </Card>
+
+      {/* View Post Modal */}
+      {isViewModalOpen && selectedPost && (
+        <div className="fixed inset-0 bg-transparent flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl max-h-[90vh] overflow-y-auto m-4 w-full">
+            <div className="flex items-center justify-between p-6 border-b">
+              <h2 className="text-xl font-semibold text-gray-900">
+                View Post Details
+              </h2>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={closeViewModal}
+                className="h-8 w-8 p-0"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="p-6 space-y-6">
+              {/* Post Image */}
+              {selectedPost.image && (
+                <div className="space-y-2">
+                  <h3 className="text-sm font-medium text-gray-700">
+                    Post Image
+                  </h3>
+                  <img
+                    src={selectedPost.image}
+                    alt="Post"
+                    className="w-full h-64 object-cover rounded-lg border"
+                  />
+                </div>
+              )}
+
+              {/* Post Query */}
+              <div className="space-y-2">
+                <h3 className="text-sm font-medium text-gray-700">Query</h3>
+                <p className="text-gray-900 bg-gray-50 p-3 rounded-lg">
+                  {selectedPost.query}
+                </p>
+              </div>
+
+              {/* Author Information */}
+              <div className="space-y-2">
+                <h3 className="text-sm font-medium text-gray-700">Author</h3>
+                <div className="bg-gray-50 p-3 rounded-lg">
+                  <div className="flex flex-col space-y-1">
+                    <span className="font-medium">
+                      {getCreatorName(selectedPost.user)}
+                    </span>
+                    <span className="text-sm text-gray-600">
+                      Role: {getCreatorRole(selectedPost.user)}
+                    </span>
+                    {selectedPost.user?.email && (
+                      <span className="text-sm text-gray-600">
+                        Email: {selectedPost.user.email}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Location */}
+              {selectedPost.location && (
+                <div className="space-y-2">
+                  <h3 className="text-sm font-medium text-gray-700">
+                    Location
+                  </h3>
+                  <p className="text-gray-900 bg-gray-50 p-3 rounded-lg">
+                    {formatLocation(selectedPost.location)}
+                  </p>
+                </div>
+              )}
+
+              {/* Engagement Stats */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-gray-50 p-3 rounded-lg">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-lg">❤️</span>
+                    <div>
+                      <p className="font-medium text-gray-900">
+                        {selectedPost.likes?.length || 0}
+                      </p>
+                      <p className="text-sm text-gray-600">Likes</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="bg-gray-50 p-3 rounded-lg">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-lg">💬</span>
+                    <div>
+                      <p className="font-medium text-gray-900">
+                        {selectedPost.comments?.length || 0}
+                      </p>
+                      <p className="text-sm text-gray-600">Comments</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Post Metadata */}
+              <div className="space-y-2">
+                <h3 className="text-sm font-medium text-gray-700">
+                  Post Information
+                </h3>
+                <div className="bg-gray-50 p-3 rounded-lg space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600">Post ID:</span>
+                    <span className="text-sm font-mono text-gray-900">
+                      {selectedPost._id}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600">Created:</span>
+                    <span className="text-sm text-gray-900">
+                      {new Date(selectedPost.createdAt).toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

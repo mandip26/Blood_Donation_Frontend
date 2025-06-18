@@ -71,10 +71,12 @@ function EditProfileComponent() {
   const { user } = useAuth();
   // Cast user to ExtendedUser to access health-related properties
   const loggedInUser = user as unknown as ExtendedUser;
-
   // Determine if user is hospital or organization
   const isHospitalOrOrg =
     loggedInUser?.role === "hospital" || loggedInUser?.role === "organization";
+
+  // Determine if user is admin
+  const isAdmin = loggedInUser?.role === "admin";
   // Blood inventory state
   const [inventory, setInventory] = useState<BloodInventory>({
     aPositive: 0,
@@ -98,9 +100,10 @@ function EditProfileComponent() {
           : loggedInUser?.name || "",
     phone: loggedInUser?.phone || "",
     email: loggedInUser?.email || "",
-    bloodType: !isHospitalOrOrg ? loggedInUser?.bloodType || "" : "",
-    dob: !isHospitalOrOrg ? loggedInUser?.dateOfBirth || "" : "", // Changed from dob to dateOfBirth to match backend
-    gender: !isHospitalOrOrg ? loggedInUser?.gender || "" : "",
+    bloodType:
+      !isHospitalOrOrg && !isAdmin ? loggedInUser?.bloodType || "" : "",
+    dob: !isHospitalOrOrg && !isAdmin ? loggedInUser?.dateOfBirth || "" : "", // Changed from dob to dateOfBirth to match backend
+    gender: !isHospitalOrOrg && !isAdmin ? loggedInUser?.gender || "" : "",
     address: loggedInUser?.address || "",
     emergencyContact: loggedInUser?.emergencyContact || "",
   });
@@ -464,7 +467,7 @@ function EditProfileComponent() {
             </div>
           </div>{" "}
           {/* Next Eligible Donation - Only for regular users */}
-          {!isHospitalOrOrg && (
+          {!isHospitalOrOrg && !isAdmin && (
             <div className="bg-white rounded-xl shadow-sm p-6 mt-6">
               <h3 className="font-medium mb-4">Next Eligible Donation</h3>
               <div className="flex items-center justify-between">
@@ -566,17 +569,18 @@ function EditProfileComponent() {
 
             {!editingPersonal ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-10">
+                {" "}
                 <div>
                   <h3 className="text-sm text-gray-500 mb-1">Full Name</h3>
                   <p className="font-medium">{personalInfo.name}</p>
                 </div>
-                {!isHospitalOrOrg && (
+                {!isHospitalOrOrg && !isAdmin && (
                   <div>
                     <h3 className="text-sm text-gray-500 mb-1">Blood Type</h3>
                     <p className="font-medium">{personalInfo.bloodType}</p>
                   </div>
                 )}
-                {!isHospitalOrOrg && (
+                {!isHospitalOrOrg && !isAdmin && (
                   <div>
                     <h3 className="text-sm text-gray-500 mb-1">
                       Date of Birth
@@ -586,7 +590,7 @@ function EditProfileComponent() {
                     </p>
                   </div>
                 )}
-                {!isHospitalOrOrg && (
+                {!isHospitalOrOrg && !isAdmin && (
                   <div>
                     <h3 className="text-sm text-gray-500 mb-1">Gender</h3>
                     <p className="font-medium">{personalInfo.gender}</p>
@@ -615,6 +619,7 @@ function EditProfileComponent() {
               <form onSubmit={handlePersonalFormSubmit}>
                 {" "}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                  {" "}
                   <div>
                     <label className="block text-sm text-gray-700 mb-1">
                       Full Name
@@ -631,8 +636,7 @@ function EditProfileComponent() {
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-magenta focus:border-transparent"
                     />
                   </div>
-
-                  {!isHospitalOrOrg && (
+                  {!isHospitalOrOrg && !isAdmin && (
                     <div>
                       <label className="block text-sm text-gray-700 mb-1">
                         Blood Type
@@ -658,8 +662,7 @@ function EditProfileComponent() {
                       </select>
                     </div>
                   )}
-
-                  {!isHospitalOrOrg && (
+                  {!isHospitalOrOrg && !isAdmin && (
                     <div>
                       <label className="block text-sm text-gray-700 mb-1">
                         Date of Birth
@@ -677,8 +680,7 @@ function EditProfileComponent() {
                       />
                     </div>
                   )}
-
-                  {!isHospitalOrOrg && (
+                  {!isHospitalOrOrg && !isAdmin && (
                     <div>
                       <label className="block text-sm text-gray-700 mb-1">
                         Gender
@@ -702,7 +704,6 @@ function EditProfileComponent() {
                       </select>
                     </div>
                   )}
-
                   <div>
                     <label className="block text-sm text-gray-700 mb-1">
                       Email
@@ -780,7 +781,7 @@ function EditProfileComponent() {
             )}
           </div>{" "}
           {/* Medical Details Section - Only for regular users */}
-          {!isHospitalOrOrg && (
+          {!isHospitalOrOrg && !isAdmin && (
             <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-xl font-semibold">Medical Details</h2>

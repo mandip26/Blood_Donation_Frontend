@@ -33,6 +33,7 @@ interface BloodRequest {
   location: string;
   status: string;
   urgency: string;
+  hasCompletedResponse?: boolean;
   requestedBy?: {
     _id: string;
     name?: string;
@@ -63,7 +64,6 @@ function BloodRequestsManagement() {
   const [bloodRequests, setBloodRequests] = useState<BloodRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
   const [bloodTypeFilter, setBloodTypeFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -71,7 +71,7 @@ function BloodRequestsManagement() {
 
   useEffect(() => {
     fetchBloodRequests();
-  }, [search, statusFilter, bloodTypeFilter, currentPage]);
+  }, [search, bloodTypeFilter, currentPage]);
 
   const fetchBloodRequests = async () => {
     try {
@@ -81,7 +81,6 @@ function BloodRequestsManagement() {
         page: currentPage.toString(),
         limit: "10",
         ...(search && { search }),
-        ...(statusFilter !== "all" && { status: statusFilter }),
         ...(bloodTypeFilter !== "all" && { bloodType: bloodTypeFilter }),
       });
 
@@ -125,26 +124,20 @@ function BloodRequestsManagement() {
     }
   };
 
-  const getStatusBadgeColor = (status: string) => {
-    switch (status) {
-      case "fulfilled":
-        return "bg-green-100 text-green-800";
-      case "cancelled":
-        return "bg-red-100 text-red-800";
-      case "pending":
-        return "bg-yellow-100 text-yellow-800";
-      case "urgent":
-        return "bg-red-100 text-red-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
-  };
   const getUrgencyIcon = (urgency: string) => {
-    if (urgency === "urgent") {
+    if (urgency === "urgent" || urgency === "high") {
       return <AlertTriangle className="h-4 w-4 text-red-500" />;
     }
     return null;
   };
+
+  const urgentRequests = bloodRequests.filter(
+    (r) =>
+      (r.status === "urgent" ||
+        r.urgency === "urgent" ||
+        r.urgency === "high") &&
+      !r.hasCompletedResponse
+  );
 
   const bloodTypes = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 
@@ -167,7 +160,7 @@ function BloodRequestsManagement() {
               <CardTitle className="text-lg font-semibold">Filters</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                   <Input
@@ -180,24 +173,6 @@ function BloodRequestsManagement() {
                     className="pl-10"
                   />
                 </div>
-                <Select
-                  value={statusFilter}
-                  onValueChange={(value: string) => {
-                    setStatusFilter(value);
-                    setCurrentPage(1);
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="pending">Pending</SelectItem>
-                    <SelectItem value="urgent">Urgent</SelectItem>
-                    <SelectItem value="fulfilled">Fulfilled</SelectItem>
-                    <SelectItem value="cancelled">Cancelled</SelectItem>
-                  </SelectContent>
-                </Select>
                 <Select
                   value={bloodTypeFilter}
                   onValueChange={(value: string) => {
@@ -244,11 +219,7 @@ function BloodRequestsManagement() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-red-600">
-              {
-                bloodRequests.filter(
-                  (r) => r.status === "urgent" || r.urgency === "urgent"
-                ).length
-              }
+              {urgentRequests.length}
             </div>
             <p className="text-xs text-gray-500">Need attention</p>
           </CardContent>
@@ -274,6 +245,79 @@ function BloodRequestsManagement() {
         </Card>
       </div>
 
+      {/* Urgent Requests Section */}
+      {urgentRequests.length > 0 && (
+        <Card className="bg-red-50 border-red-200 shadow-even-md">
+          <CardHeader>
+            <CardTitle className="text-lg font-semibold text-red-800 flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5" />
+              Urgent Blood Requests ({urgentRequests.length})
+            </CardTitle>
+            <p className="text-red-700 text-sm">
+              These requests require immediate attention
+            </p>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {urgentRequests.slice(0, 5).map((request) => (
+                <div
+                  key={request._id}
+                  className="bg-white p-4 rounded-lg border border-red-200 shadow-sm"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                      <div className="flex items-center space-x-2">
+                        <AlertTriangle className="h-4 w-4 text-red-500" />
+                        <span className="font-semibold text-gray-900">
+                          {request.patientName}
+                        </span>
+                      </div>
+                      <Badge
+                        variant="outline"
+                        className="font-mono bg-red-100 text-red-800"
+                      >
+                        {request.bloodType}
+                      </Badge>
+                      <span className="text-sm text-gray-600">
+                        {request.unitsNeeded || request.unitsRequired || 0}{" "}
+                        units needed
+                      </span>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <div className="text-right">
+                        <div className="text-sm font-medium text-gray-900">
+                          {request.hospitalName || "No hospital"}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          {request.location}
+                        </div>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => deleteBloodRequest(request._id)}
+                        className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
+                        title="Delete Request"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {urgentRequests.length > 5 && (
+                <div className="text-center pt-2">
+                  <p className="text-sm text-red-700">
+                    +{urgentRequests.length - 5} more urgent requests in the
+                    table below
+                  </p>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Blood Requests Table */}
       <Card className="bg-white shadow-even-md">
         <CardHeader>
@@ -296,14 +340,22 @@ function BloodRequestsManagement() {
                     <TableHead>Units</TableHead>
                     <TableHead>Created By</TableHead>
                     <TableHead>Location</TableHead>
-                    <TableHead>Status</TableHead>
                     <TableHead>Created At</TableHead>
                     <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {bloodRequests.map((request) => (
-                    <TableRow key={request._id}>
+                    <TableRow
+                      key={request._id}
+                      className={
+                        request.status === "urgent" ||
+                        request.urgency === "urgent" ||
+                        request.urgency === "high"
+                          ? "bg-red-50 hover:bg-red-100 border-l-4 border-l-red-400"
+                          : ""
+                      }
+                    >
                       <TableCell className="font-medium">
                         <div className="flex items-center space-x-2">
                           {getUrgencyIcon(request.urgency)}
@@ -332,11 +384,6 @@ function BloodRequestsManagement() {
                         >
                           {request.location}
                         </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge className={getStatusBadgeColor(request.status)}>
-                          {request.status}
-                        </Badge>
                       </TableCell>
                       <TableCell>
                         {new Date(request.createdAt).toLocaleDateString()}

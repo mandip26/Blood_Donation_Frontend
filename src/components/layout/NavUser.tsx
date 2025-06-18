@@ -62,13 +62,15 @@ export function NavUser({
             link: "/dashboard/organization-history",
           },
         ]
-      : [
-          {
-            name: "User History",
-            icon: <ProfileIcon />,
-            link: "/dashboard/user-history",
-          },
-        ]),
+      : user.role === "admin"
+        ? []
+        : [
+            {
+              name: "User History",
+              icon: <ProfileIcon />,
+              link: "/dashboard/user-history",
+            },
+          ]),
     {
       name: "Logout",
       icon: <LogOutIcon color="#fff" />,
