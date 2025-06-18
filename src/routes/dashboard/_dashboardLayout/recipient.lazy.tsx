@@ -559,10 +559,15 @@ function RecipientComponent() {
     } finally {
       setIsLoadingResponses(false);
     }
-  };
-  // Fetch user created blood requests
+  }; // Fetch user created blood requests
   const fetchUserCreatedRequests = async () => {
     if (!user || (!user._id && !user.id)) return;
+
+    // Only allow non-user roles to access this functionality
+    if (user.role === "user") {
+      console.warn("Access denied: Users cannot create blood requests");
+      return;
+    }
 
     try {
       setIsLoadingMyRequests(true);
@@ -1773,9 +1778,9 @@ function RecipientComponent() {
             </div>
           </div>
         </div>
-      )}
-      {/* Modal to display responses to user's created requests */}
-      {showMyRequestsResponsesModal && (
+      )}{" "}
+      {/* Modal to display responses to user's created requests - Only for non-user roles */}
+      {showMyRequestsResponsesModal && user?.role !== "user" && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
           <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-xl border border-gray-100">
             <div className="p-5 border-b bg-gradient-to-r from-green-50 to-white">
@@ -1849,7 +1854,7 @@ function RecipientComponent() {
                           }`}
                         >
                           <div className="font-medium text-gray-800">
-                            {request.patientName}
+                            {request.name || request.patientName}
                           </div>
                           <div className="text-sm text-gray-500">
                             {request.hospital}
