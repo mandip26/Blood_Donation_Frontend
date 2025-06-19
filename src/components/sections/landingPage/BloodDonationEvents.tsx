@@ -24,7 +24,7 @@ export default function BloodDonationEvents() {
       try {
         setLoading(true);
         const response = await axios.get(
-          "http://localhost:8001/api/v1/events/"
+          "https://blood-donation-backend-buge.onrender.com/api/v1/events/"
         );
         if (response.data.success && Array.isArray(response.data.events)) {
           setEvents(response.data.events);

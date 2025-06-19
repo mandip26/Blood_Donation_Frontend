@@ -144,7 +144,7 @@ function RouteComponent() {
     const fetchHospitalsAndOrgs = async () => {
       try {
         const response = await fetch(
-          "http://localhost:8001/api/v1/user/users",
+          "https://blood-donation-backend-buge.onrender.com/api/v1/user/users",
           {
             method: "GET",
             credentials: "include",
@@ -790,13 +790,16 @@ function RouteComponent() {
   const fetchActiveDonors = async () => {
     try {
       setActiveDonorsLoading(true);
-      const response = await fetch("http://localhost:8001/api/v1/user/users", {
-        method: "GET",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
+      const response = await fetch(
+        "https://blood-donation-backend-buge.onrender.com/api/v1/user/users",
+        {
+          method: "GET",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
       const data = await response.json();
 

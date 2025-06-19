@@ -1,6 +1,7 @@
 import axios from "axios";
 
-const INVENTORY_API_URL = "http://localhost:8001/api/v1/blood-inventory";
+const INVENTORY_API_URL =
+  "https://blood-donation-backend-buge.onrender.com/api/v1/blood-inventory";
 
 // Create axios instance with default config
 const bloodInventoryApi = axios.create({
