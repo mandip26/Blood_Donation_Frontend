@@ -64,9 +64,12 @@ function VisualizationPage() {
     const checkBackendConnection = async () => {
       try {
         // Simple ping to backend - adjust the timeout to be shorter for quick response
-        await axios.get("http://localhost:5000/api/v1/health", {
-          timeout: 2000,
-        });
+        await axios.get(
+          "https://medical-report-ai.onrender.com/api/v1/health",
+          {
+            timeout: 2000,
+          }
+        );
         setBackendStatus("connected");
       } catch (error) {
         console.error("Backend connection error:", error);
@@ -163,7 +166,7 @@ function VisualizationPage() {
 
       // Make the API call to the backend
       const response = await axios.post(
-        "http://localhost:5000/api/v1/extract",
+        "https://medical-report-ai.onrender.com/api/v1/extract",
         formData,
         {
           headers: {

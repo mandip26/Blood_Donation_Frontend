@@ -199,7 +199,8 @@ function VisualizationComponent() {
 
     try {
       const response = await fetch(
-        "http://localhost:5000/api/v1/extract?user_id=" + user?._id,
+        "https://medical-report-ai.onrender.com/api/v1/extract?user_id=" +
+          user?._id,
         {
           method: "POST",
           body: formData,
@@ -341,7 +342,7 @@ function VisualizationComponent() {
 
     try {
       const response = await fetch(
-        "http://localhost:5000/api/v1/record/" + reportId,
+        "https://medical-report-ai.onrender.com/api/v1/record/" + reportId,
         {
           method: "DELETE",
           redirect: "follow",
@@ -367,7 +368,7 @@ function VisualizationComponent() {
   const getReports = async () => {
     try {
       const reportsResponse = await fetch(
-        "http://localhost:5000/api/v1/user/" + user?._id,
+        "https://medical-report-ai.onrender.com/api/v1/user/" + user?._id,
         {
           method: "GET",
         }

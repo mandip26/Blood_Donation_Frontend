@@ -4,7 +4,8 @@ import { messageFormatter } from "@/utils/messageFormatter";
 
 // Chatbot API configuration
 const CHATBOT_API_BASE_URL =
-  import.meta.env.VITE_CHATBOT_API_URL || "http://localhost:5001/api/v1";
+  import.meta.env.VITE_CHATBOT_API_URL ||
+  "https://medi-chatbot-gemini-fastapi.onrender.com/api/v1";
 
 // Create axios instance for chatbot API
 const chatbotApi = axios.create({
@@ -90,7 +91,7 @@ export const chatbotService = {
       try {
         // Fallback to main health endpoint
         const fallbackResponse = await axios.get(
-          "http://localhost:5001/health"
+          "https://medi-chatbot-gemini-fastapi.onrender.com/health"
         );
         return fallbackResponse.status === 200;
       } catch (fallbackError) {
