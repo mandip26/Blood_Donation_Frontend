@@ -16,7 +16,6 @@ export default function AuthLayout({ isLogin = false }: AuthLayoutProps) {
       <h2 className="text-2xl font-bold mb-8 text-white text-center">
         {isLogin ? "Login" : "Create an Account"}
       </h2>
-
       {isLogin ? (
         <LoginForm />
       ) : (
@@ -42,19 +41,14 @@ export default function AuthLayout({ isLogin = false }: AuthLayoutProps) {
             <SignupForm userType={current} isLogin={false} />
           </div>
         </div>
-      )}
-
+      )}{" "}
       <div className="absolute -bottom-12 left-0 right-0 flex justify-center space-x-4 text-white/90 text-sm">
-        <Link to="/" className="hover:text-white">
+        <Link to="/terms" className="hover:text-white">
           Terms
         </Link>
         <span>•</span>
-        <Link to="/" className="hover:text-white">
+        <Link to="/privacy" className="hover:text-white">
           Privacy
-        </Link>
-        <span>•</span>
-        <Link to="/" className="hover:text-white">
-          Docs
         </Link>
         <span>•</span>
         <Link to="/" className="hover:text-white">

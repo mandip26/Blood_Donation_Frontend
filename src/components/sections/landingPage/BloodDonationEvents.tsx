@@ -83,9 +83,9 @@ export default function BloodDonationEvents() {
       </section>
     );
   }
-
   return (
     <section
+      id="blood-donation-events"
       className="container max-w-7xl mx-auto py-16 px-4"
       data-scroll
       data-scroll-speed="0.1"

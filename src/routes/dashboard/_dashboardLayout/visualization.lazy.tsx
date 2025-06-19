@@ -7,7 +7,6 @@ import {
   AlertTriangle,
   Trash2,
   BarChart3,
-  LineChart,
   PieChart,
   TrendingUp,
   Clock,
@@ -82,7 +81,7 @@ function VisualizationComponent() {
   >("upload");
   const [errorMessage, setErrorMessage] = useState("");
   const [activeTab, setActiveTab] = useState<
-    "overview" | "parameters" | "history" | "trends"
+    "overview" | "parameters" | "history"
   >("overview");
   const { user } = useAuth();
   // State for extracted data from backend
@@ -246,14 +245,59 @@ function VisualizationComponent() {
     setExtractedData(null);
     setBloodParameters([]);
   };
-
   const formatDate = (dateString: string) => {
+    if (!dateString) return "Date not available";
+
+    // Handle various date formats that might come from the backend
+    let date: Date;
+
+    // Try parsing the date string directly first
+    date = new Date(dateString);
+
+    // If that fails, try to parse common date formats
+    if (isNaN(date.getTime())) {
+      // Try parsing formats like "DD/MM/YYYY", "DD-MM-YYYY", "DD.MM.YYYY"
+      const dateFormats = [
+        /(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})/, // DD/MM/YYYY or DD-MM-YYYY or DD.MM.YYYY
+        /(\d{4})[\/\-\.](\d{1,2})[\/\-\.](\d{1,2})/, // YYYY-MM-DD or YYYY/MM/DD
+        /(\d{1,2})\s+(\w+)\s+(\d{4})/, // DD Month YYYY
+      ];
+
+      for (const format of dateFormats) {
+        const match = dateString.match(format);
+        if (match) {
+          if (format === dateFormats[0]) {
+            // DD/MM/YYYY format - assume day/month/year
+            const [, day, month, year] = match;
+            date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+          } else if (format === dateFormats[1]) {
+            // YYYY-MM-DD format
+            const [, year, month, day] = match;
+            date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+          } else if (format === dateFormats[2]) {
+            // Try to parse "DD Month YYYY" format
+            date = new Date(dateString);
+          }
+
+          if (!isNaN(date.getTime())) {
+            break;
+          }
+        }
+      }
+    }
+
+    // If still invalid, return the original string or a fallback
+    if (isNaN(date.getTime())) {
+      console.warn("Unable to parse date:", dateString);
+      return dateString; // Return original string if we can't parse it
+    }
+
     const options: Intl.DateTimeFormatOptions = {
       year: "numeric",
       month: "long",
       day: "numeric",
     };
-    return new Date(dateString).toLocaleDateString(undefined, options);
+    return date.toLocaleDateString(undefined, options);
   };
 
   const getBadgeColor = (status: "normal" | "low" | "high") => {
@@ -819,16 +863,6 @@ function VisualizationComponent() {
                   Blood Parameters
                 </button>
                 <button
-                  onClick={() => setActiveTab("trends")}
-                  className={`pb-4 px-1 ${
-                    activeTab === "trends"
-                      ? "border-b-2 border-primary-magenta text-primary-magenta font-medium"
-                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                  }`}
-                >
-                  Trends
-                </button>
-                <button
                   onClick={() => setActiveTab("history")}
                   className={`pb-4 px-1 ${
                     activeTab === "history"
@@ -1201,101 +1235,6 @@ function VisualizationComponent() {
                     ))}
                   </tbody>
                 </table>
-              </div>
-            )}
-
-            {/* Trends Tab */}
-            {activeTab === "trends" && (
-              <div>
-                <div className="bg-white border border-gray-200 rounded-xl p-6 mb-6">
-                  <h3 className="text-lg font-medium text-gray-800 mb-4 flex items-center">
-                    <LineChart
-                      size={20}
-                      className="text-primary-magenta mr-2"
-                    />
-                    Parameter Trends Over Time
-                  </h3>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="border border-gray-200 rounded-lg p-4">
-                      <h4 className="text-sm font-medium text-gray-700 mb-2">
-                        Hemoglobin Trend
-                      </h4>
-                      <div className="h-60 flex items-center justify-center">
-                        <p className="text-gray-500">Chart would appear here</p>
-                      </div>
-                    </div>
-
-                    <div className="border border-gray-200 rounded-lg p-4">
-                      <h4 className="text-sm font-medium text-gray-700 mb-2">
-                        White Blood Cell Count Trend
-                      </h4>
-                      <div className="h-60 flex items-center justify-center">
-                        <p className="text-gray-500">Chart would appear here</p>
-                      </div>
-                    </div>
-
-                    <div className="border border-gray-200 rounded-lg p-4">
-                      <h4 className="text-sm font-medium text-gray-700 mb-2">
-                        Platelets Trend
-                      </h4>
-                      <div className="h-60 flex items-center justify-center">
-                        <p className="text-gray-500">Chart would appear here</p>
-                      </div>
-                    </div>
-
-                    <div className="border border-gray-200 rounded-lg p-4">
-                      <h4 className="text-sm font-medium text-gray-700 mb-2">
-                        Neutrophils Trend
-                      </h4>
-                      <div className="h-60 flex items-center justify-center">
-                        <p className="text-gray-500">Chart would appear here</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-white border border-gray-200 rounded-xl p-6">
-                  <h3 className="text-lg font-medium text-gray-800 mb-4">
-                    Analysis & Insights
-                  </h3>
-
-                  <div className="space-y-4">
-                    <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                      <h4 className="font-medium text-blue-800 flex items-center">
-                        <TrendingUp size={18} className="mr-2" /> Trend Analysis
-                      </h4>
-                      <p className="text-blue-700 text-sm mt-1">
-                        Your White Blood Cell count has been steadily increasing
-                        over the past 3 reports, which might indicate a
-                        developing infection or inflammatory condition.
-                      </p>
-                    </div>
-
-                    <div className="p-4 bg-green-50 rounded-lg border border-green-200">
-                      <h4 className="font-medium text-green-800 flex items-center">
-                        <Clock size={18} className="mr-2" /> Long-term Patterns
-                      </h4>
-                      <p className="text-green-700 text-sm mt-1">
-                        Your Hemoglobin levels have remained stable within the
-                        normal range across all your reports, indicating good
-                        red blood cell health and oxygen-carrying capacity.
-                      </p>
-                    </div>
-
-                    <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
-                      <h4 className="font-medium text-yellow-800 flex items-center">
-                        <Info size={18} className="mr-2" /> Recommendations
-                      </h4>
-                      <p className="text-yellow-700 text-sm mt-1">
-                        Based on your trends, we recommend monitoring your White
-                        Blood Cell count and Platelets more frequently. Consider
-                        scheduling a follow-up test in 1 month rather than the
-                        usual 3 months.
-                      </p>
-                    </div>
-                  </div>
-                </div>
               </div>
             )}
 

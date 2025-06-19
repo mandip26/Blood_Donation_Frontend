@@ -18,9 +18,9 @@ export default function LandingPageHeroBanner() {
             Donate Your Blood to Us, Save More Life Together
           </h1>
           <p className="text-lg sm:text-xl md:text-2xl text-center">
-            Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Aenean
-            commodo ligula eget dolor. Aenean massa. Cum sociis natoque
-            penatibus et magnis dis parturient montes.
+            Every 2 seconds, someone needs blood. Your single donation can save
+            up to 3 lives. Join our community of heroes and make a difference in
+            someone's life today.
           </p>
           <div className="flex items-center justify-center gap-x-4 sm:gap-x-8">
             <Button

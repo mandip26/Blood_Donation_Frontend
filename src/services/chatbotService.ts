@@ -97,19 +97,14 @@ export const chatbotService = {
         return false;
       }
     }
-  },
-
-  /**
+  } /**
    * Clear a chat session
-   * @param sessionId Session ID to clear
+   * @param _sessionId Session ID to clear (unused - handled frontend-only)
    * @returns Promise resolving to success status
-   */
-  async clearSession(sessionId: string): Promise<boolean> {
-    try {
-      await chatbotApi.delete(`/chat/session/${sessionId}`);
-      return true;
-    } catch (error) {
-      return false;
-    }
+   */,
+  async clearSession(_sessionId: string): Promise<boolean> {
+    // Since the backend doesn't have a delete session endpoint,
+    // we handle session clearing purely on the frontend side
+    return true;
   },
 };

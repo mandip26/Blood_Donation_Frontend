@@ -1,20 +1,20 @@
 export default function LandingPageStates() {
   const data = [
     {
-      stat: "24+",
-      detail: "Year Experience",
+      stat: "5+",
+      detail: "Years of Service",
     },
     {
-      stat: "98+",
-      detail: "Expert Staff",
+      stat: "150+",
+      detail: "Medical Professionals",
+    },
+    {
+      stat: "500+",
+      detail: "Donations Per Month",
     },
     {
       stat: "50+",
-      detail: "Blood Per Month",
-    },
-    {
-      stat: "33+",
-      detail: "Cooperation",
+      detail: "Partner Hospitals",
     },
   ];
   return (

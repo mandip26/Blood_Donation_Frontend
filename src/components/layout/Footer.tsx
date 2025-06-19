@@ -6,6 +6,7 @@ import {
   MapPin,
   Phone,
   Twitter,
+  Heart,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -18,7 +19,8 @@ export default function Footer() {
           <div className="text-lg">
             <p className="font-semibold text-xl">Join To Get Our Newsletter</p>
             <p className="text-gray-500">
-              Lorem ipsum dolor sit amet, consectetur adipisicing elit.
+              Stay updated with blood donation drives, health tips, and
+              community impact stories.
             </p>
           </div>
           <div className="relative w-full lg:w-auto lg:flex-1 max-w-2xl">
@@ -38,12 +40,13 @@ export default function Footer() {
           {/* Logo and info */}
           <div className="md:w-1/3">
             <div className="flex items-center gap-2 mb-4">
-              <div className="w-6 h-6 rounded-full bg-white"></div>
-              <span className="font-bold text-xl">LOGO</span>
+              <Heart className="w-6 h-6 text-white fill-white" />
+              <span className="font-bold text-xl">LifeShare</span>
             </div>
             <p className="text-white/80 mb-6">
-              Lorem ipsum dolor sit amet consectetur adipiscing elit augue duis
-              vitae pulvinar sem.
+              Connecting donors with recipients to save lives. Our platform
+              makes blood donation accessible, safe, and impactful for
+              communities across the region.
             </p>
             <div className="flex gap-4">
               <a
@@ -110,11 +113,11 @@ export default function Footer() {
                 </li>
                 <li className="flex items-center gap-2">
                   <Phone size={16} className="flex-shrink-0" />
-                  <span>+1(234) 567 8910</span>
+                  <span>+91 98765 43210</span>
                 </li>
                 <li className="flex items-center gap-2">
                   <Mail size={16} className="flex-shrink-0" />
-                  <span>hello@email.com</span>
+                  <span>support@lifeshare.org</span>
                 </li>
               </ul>
             </div>

@@ -1,4 +1,4 @@
-import { createFileRoute, Outlet } from "@tanstack/react-router";
+import ProtectedRoute from "@/components/common/ProtectedRoute";
 import { AppSidebar } from "@/components/layout/AppSidebar.tsx";
 import {
   SidebarInset,
@@ -6,13 +6,7 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar.tsx";
 import { Separator } from "@radix-ui/react-separator";
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-} from "@/components/ui/breadcrumb";
-import ProtectedRoute from "@/components/common/ProtectedRoute";
+import { createFileRoute, Outlet } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/dashboard/_dashboardLayout")({
   component: RouteComponent,
@@ -31,14 +25,6 @@ function RouteComponent() {
                 orientation="vertical"
                 className="mx-2 h-4 w-[1.2px] bg-gray-400"
               />
-              <Breadcrumb>
-                <BreadcrumbList>
-                  <BreadcrumbItem>
-                    <BreadcrumbLink href="/dashboard">Dashboard</BreadcrumbLink>
-                  </BreadcrumbItem>
-                  {/*<BreadcrumbSeparator/>*/}
-                </BreadcrumbList>
-              </Breadcrumb>
             </div>
 
             <Outlet />

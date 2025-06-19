@@ -21,6 +21,17 @@ export default function Navbar() {
   const dropdownContentRef = useRef<HTMLDivElement>(null);
   const { isLoggedIn, logout } = useAuth();
 
+  const scrollToEvents = () => {
+    const eventsSection = document.getElementById("blood-donation-events");
+    if (eventsSection) {
+      eventsSection.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }
+    setIsMenuOpen(false); // Close mobile menu if open
+  };
+
   // Enhanced GSAP animation for mobile menu with more poppy animation
   useEffect(() => {
     if (mobileMenuRef.current) {
@@ -246,7 +257,7 @@ export default function Navbar() {
       {/* Logo */}
       <div className="flex items-center gap-1">
         <Heart className="text-primary-magenta" fill="currentColor" />
-        <span className="font-bold text-lg hidden sm:inline">LOGO</span>
+        <span className="font-bold text-lg hidden sm:inline">LifeShare</span>
       </div>
 
       {/* Mobile menu button */}
@@ -263,24 +274,31 @@ export default function Navbar() {
 
       {/* Desktop menu */}
       <div className="hidden md:flex gap-x-8 items-center font-light">
+        {" "}
         <ul className="flex gap-x-4 lg:gap-x-8 items-center">
-          <li className="cursor-pointer hover:text-primary-magenta transition-colors duration-200">
-            Home
+          <li>
+            <Link
+              to="/"
+              className="cursor-pointer hover:text-primary-magenta transition-colors duration-200"
+            >
+              Home
+            </Link>
           </li>
-          <li className="cursor-pointer hover:text-primary-magenta transition-colors duration-200">
-            About Us
+          <li>
+            <Link
+              to="/about"
+              className="cursor-pointer hover:text-primary-magenta transition-colors duration-200"
+            >
+              About Us
+            </Link>
           </li>
-          <li className="cursor-pointer hover:text-primary-magenta transition-colors duration-200">
+          <li
+            className="cursor-pointer hover:text-primary-magenta transition-colors duration-200"
+            onClick={scrollToEvents}
+          >
             Events
           </li>
-          <li className="cursor-pointer hover:text-primary-magenta transition-colors duration-200">
-            Page
-          </li>
-          <li className="cursor-pointer hover:text-primary-magenta transition-colors duration-200">
-            News
-          </li>
         </ul>
-
         {/* User profile dropdown menu */}
         <DropdownMenu onOpenChange={setIsDropdownOpen}>
           <DropdownMenuTrigger asChild>
@@ -315,7 +333,7 @@ export default function Navbar() {
                         <span>Dashboard</span>
                       </Link>
                     </DropdownMenuItem>
-                    <DropdownMenuItem 
+                    <DropdownMenuItem
                       className="dropdown-item"
                       onClick={() => logout()}
                     >
@@ -368,14 +386,30 @@ export default function Navbar() {
           ref={mobileMenuRef}
           className="absolute top-16 right-4 w-[min(300px,calc(100%-2rem))] bg-white shadow-lg rounded-lg p-4 md:hidden z-50"
         >
+          {" "}
           <ul className="flex flex-col gap-y-3">
-            <li className="cursor-pointer hover:text-primary-magenta transition-colors duration-200">
-              Home
+            <li>
+              <Link
+                to="/"
+                className="cursor-pointer hover:text-primary-magenta transition-colors duration-200"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Home
+              </Link>
             </li>
-            <li className="cursor-pointer hover:text-primary-magenta transition-colors duration-200">
-              About Us
+            <li>
+              <Link
+                to="/about"
+                className="cursor-pointer hover:text-primary-magenta transition-colors duration-200"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                About Us
+              </Link>
             </li>
-            <li className="cursor-pointer hover:text-primary-magenta transition-colors duration-200">
+            <li
+              className="cursor-pointer hover:text-primary-magenta transition-colors duration-200"
+              onClick={scrollToEvents}
+            >
               Events
             </li>
             <li className="cursor-pointer hover:text-primary-magenta transition-colors duration-200">
@@ -385,7 +419,7 @@ export default function Navbar() {
               News
             </li>
             <li className="h-px bg-gray-200 my-2"></li>
-            
+
             {isLoggedIn ? (
               <>
                 <li>
@@ -397,7 +431,7 @@ export default function Navbar() {
                     Dashboard
                   </Link>
                 </li>
-                <li 
+                <li
                   className="flex items-center gap-2 hover:text-primary-magenta transition-colors duration-200 w-full cursor-pointer"
                   onClick={() => logout()}
                 >
@@ -427,7 +461,7 @@ export default function Navbar() {
                 </li>
               </>
             )}
-            
+
             <li className="h-px bg-gray-200 my-2"></li>
             <li className="flex items-center gap-2 hover:text-primary-magenta cursor-pointer transition-colors duration-200">
               <HelpCircle className="w-4 h-4" />

@@ -10,12 +10,12 @@ export default function FacilitiesSection() {
   const [currentIndex, setCurrentIndex] = useState(0);
 
   const data = [
-    { title: "Expert Staff", image: facilityOne },
+    { title: "Expert Medical Staff", image: facilityOne },
     {
-      title: "Expert Staff",
+      title: "Modern Equipment",
       image: facilityTwo,
     },
-    { title: "Expert Staff", image: facilityThree },
+    { title: "Safe & Sterile Environment", image: facilityThree },
   ];
 
   return (
@@ -34,8 +34,9 @@ export default function FacilitiesSection() {
         <div className="space-y-8">
           <h4 className="font-bold text-4xl">Facilities Offered</h4>
           <p className="w-4/5 max-w-xl opacity-80">
-            Lorem ipsum dolor sit amet, consectetur adipisicing elit. Amet
-            aperiam dolorem eaque,
+            State-of-the-art medical facilities with certified professionals,
+            modern equipment, and comprehensive care for all blood donation
+            needs.
           </p>
         </div>
 
@@ -93,7 +94,7 @@ const AnimatedCard = ({
         duration: 0.4,
         ease: "none",
       },
-      0,
+      0
     ); // Start at time 0
 
     // Image scale animation
@@ -104,7 +105,7 @@ const AnimatedCard = ({
         duration: 0.4,
         ease: "none",
       },
-      "<",
+      "<"
     ); // Start at time 0 too, so they animate together
 
     // Conditional animations for text
@@ -121,7 +122,7 @@ const AnimatedCard = ({
           ease: "power1.out",
           immediateRender: false,
         },
-        0, // starts after previous animations
+        0 // starts after previous animations
       );
       tl.to(
         smallTextRef.current,
@@ -133,7 +134,7 @@ const AnimatedCard = ({
           duration: 0.2,
           ease: "power1.out",
         },
-        0,
+        0
       ); // starts at same time as large text animation
     } else {
       tl.fromTo(
@@ -148,7 +149,7 @@ const AnimatedCard = ({
           ease: "power1.out",
           immediateRender: false,
         },
-        "0",
+        "0"
       );
       tl.to(
         largeTextRef.current,
@@ -160,7 +161,7 @@ const AnimatedCard = ({
           duration: 0.3,
           ease: "power1.out",
         },
-        0,
+        0
       );
     }
   }, [activeIndex, currentIndex, index]);
