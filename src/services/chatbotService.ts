@@ -16,9 +16,18 @@ const chatbotApi = axios.create({
   timeout: 30000, // 30 seconds timeout for chat responses
 });
 
-// Request interceptor
+// Request interceptor for token handling
 chatbotApi.interceptors.request.use(
   (config) => {
+    // Get user data from localStorage
+    const userData = localStorage.getItem("bloodDonationUser");
+    if (userData) {
+      const user = JSON.parse(userData);
+      // If token exists in user data, add it to Authorization header
+      if (user.token) {
+        config.headers.Authorization = `Bearer ${user.token}`;
+      }
+    }
     return config;
   },
   (error) => {

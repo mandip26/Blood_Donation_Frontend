@@ -1,7 +1,6 @@
-import axios from "axios";
+import axios from 'axios';
 
-const API_BASE_URL =
-  "https://blood-donation-backend-buge.onrender.com/api/v1/admin";
+const API_BASE_URL = "https://blood-donation-backend-buge.onrender.com/api/v1/admin";
 
 // Create axios instance for admin API
 const adminApiClient = axios.create({
@@ -51,7 +50,7 @@ adminApiClient.interceptors.response.use(
 export const adminApi = {
   // Dashboard Stats
   getDashboardStats: async () => {
-    const response = await adminApiClient.get("/dashboard/stats");
+    const response = await adminApiClient.get('/dashboard/stats');
     return response.data;
   },
 
@@ -62,9 +61,7 @@ export const adminApi = {
   },
 
   updateUserStatus: async (userId: string, isActive: boolean) => {
-    const response = await adminApiClient.put(`/users/${userId}/status`, {
-      isActive,
-    });
+    const response = await adminApiClient.put(`/users/${userId}/status`, { isActive });
     return response.data;
   },
 
@@ -80,9 +77,7 @@ export const adminApi = {
   },
 
   updateEventStatus: async (eventId: string, status: string) => {
-    const response = await adminApiClient.put(`/events/${eventId}/status`, {
-      status,
-    });
+    const response = await adminApiClient.put(`/events/${eventId}/status`, { status });
     return response.data;
   },
 
@@ -98,17 +93,12 @@ export const adminApi = {
   },
 
   updateBloodRequestStatus: async (requestId: string, status: string) => {
-    const response = await adminApiClient.put(
-      `/blood-requests/${requestId}/status`,
-      { status }
-    );
+    const response = await adminApiClient.put(`/blood-requests/${requestId}/status`, { status });
     return response.data;
   },
 
   deleteBloodRequest: async (requestId: string) => {
-    const response = await adminApiClient.delete(
-      `/blood-requests/${requestId}`
-    );
+    const response = await adminApiClient.delete(`/blood-requests/${requestId}`);
     return response.data;
   },
 
@@ -121,5 +111,5 @@ export const adminApi = {
   deletePost: async (postId: string) => {
     const response = await adminApiClient.delete(`/posts/${postId}`);
     return response.data;
-  },
+  }
 };

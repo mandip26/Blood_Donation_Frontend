@@ -12,6 +12,25 @@ const bloodInventoryApi = axios.create({
   withCredentials: true, // Critical for handling cookies/sessions
 });
 
+// Add request interceptor to bloodInventoryApi for token handling
+bloodInventoryApi.interceptors.request.use(
+  (config) => {
+    // Get user data from localStorage
+    const userData = localStorage.getItem("bloodDonationUser");
+    if (userData) {
+      const user = JSON.parse(userData);
+      // If token exists in user data, add it to Authorization header
+      if (user.token) {
+        config.headers.Authorization = `Bearer ${user.token}`;
+      }
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
 // Add response interceptor to bloodInventoryApi
 bloodInventoryApi.interceptors.response.use(
   (response) => response,
