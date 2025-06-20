@@ -33,6 +33,7 @@ interface BloodRequest {
   location: string;
   status: string;
   urgency: string;
+  isDeleted?: boolean;
   hasCompletedResponse?: boolean;
   requestedBy?: {
     _id: string;
@@ -87,9 +88,13 @@ function BloodRequestsManagement() {
       const data = await adminApi.getBloodRequests(params);
 
       if (data.success) {
-        setBloodRequests(data.data.bloodRequests);
+        // Filter out deleted requests if they somehow made it through the backend filter
+        const filteredRequests = data.data.bloodRequests.filter(
+          (request: any) => !request.isDeleted
+        );
+        setBloodRequests(filteredRequests);
         setTotalPages(data.data.pages);
-        setTotal(data.data.total);
+        setTotal(filteredRequests.length); // Update total based on filtered count
       } else {
         toast.error(data.message || "Failed to fetch blood requests");
       }
@@ -113,10 +118,16 @@ function BloodRequestsManagement() {
     try {
       await adminApi.deleteBloodRequest(requestId);
 
+      // Mark the request as deleted in the local state rather than removing it from the array
       setBloodRequests(
-        bloodRequests.filter((request) => request._id !== requestId)
+        bloodRequests.map((request) =>
+          request._id === requestId ? { ...request, isDeleted: true } : request
+        )
       );
-      setTotal(total - 1);
+
+      // Re-fetch to update all counts
+      fetchBloodRequests();
+
       toast.success("Blood request deleted successfully");
     } catch (error) {
       console.error("Error deleting blood request:", error);
@@ -136,7 +147,8 @@ function BloodRequestsManagement() {
       (r.status === "urgent" ||
         r.urgency === "urgent" ||
         r.urgency === "high") &&
-      !r.hasCompletedResponse
+      !r.hasCompletedResponse &&
+      !r.isDeleted
   );
 
   const bloodTypes = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
@@ -236,7 +248,9 @@ function BloodRequestsManagement() {
             <div className="text-2xl font-bold text-gray-900">
               {
                 bloodRequests.filter(
-                  (r) => r.status === "pending" || r.status === "urgent"
+                  (r) =>
+                    (r.status === "pending" || r.status === "urgent") &&
+                    !r.isDeleted
                 ).length
               }
             </div>
@@ -345,64 +359,66 @@ function BloodRequestsManagement() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {bloodRequests.map((request) => (
-                    <TableRow
-                      key={request._id}
-                      className={
-                        request.status === "urgent" ||
-                        request.urgency === "urgent" ||
-                        request.urgency === "high"
-                          ? "bg-red-50 hover:bg-red-100 border-l-4 border-l-red-400"
-                          : ""
-                      }
-                    >
-                      <TableCell className="font-medium">
-                        <div className="flex items-center space-x-2">
-                          {getUrgencyIcon(request.urgency)}
-                          <span>{request.patientName}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="font-mono">
-                          {request.bloodType}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="font-medium">
-                        {request.unitsNeeded || request.unitsRequired || 0}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex flex-col">
-                          <span className="font-medium text-sm">
-                            {request.hospitalName || "No hospital"}
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div
-                          className="max-w-32 truncate"
-                          title={request.location}
-                        >
-                          {request.location}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {new Date(request.createdAt).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center space-x-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => deleteBloodRequest(request._id)}
-                            className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
-                            title="Delete Request"
+                  {bloodRequests
+                    .filter((request) => !request.isDeleted)
+                    .map((request) => (
+                      <TableRow
+                        key={request._id}
+                        className={
+                          request.status === "urgent" ||
+                          request.urgency === "urgent" ||
+                          request.urgency === "high"
+                            ? "bg-red-50 hover:bg-red-100 border-l-4 border-l-red-400"
+                            : ""
+                        }
+                      >
+                        <TableCell className="font-medium">
+                          <div className="flex items-center space-x-2">
+                            {getUrgencyIcon(request.urgency)}
+                            <span>{request.patientName}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="font-mono">
+                            {request.bloodType}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="font-medium">
+                          {request.unitsNeeded || request.unitsRequired || 0}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-col">
+                            <span className="font-medium text-sm">
+                              {request.hospitalName || "No hospital"}
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div
+                            className="max-w-32 truncate"
+                            title={request.location}
                           >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                            {request.location}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {new Date(request.createdAt).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center space-x-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => deleteBloodRequest(request._id)}
+                              className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
+                              title="Delete Request"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
                 </TableBody>
               </Table>
 

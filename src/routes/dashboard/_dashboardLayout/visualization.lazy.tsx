@@ -364,13 +364,22 @@ function VisualizationComponent() {
       setErrorMessage("Failed to delete report. Please try again.");
     }
   };
-
   const getReports = async () => {
+    if (!user?._id) {
+      console.log("No user ID available, skipping report fetch");
+      return;
+    }
+
     try {
+      console.log("Fetching reports for user:", user._id);
+
       const reportsResponse = await fetch(
-        "https://medical-report-ai.onrender.com/api/v1/user/" + user?._id,
+        "https://medical-report-ai.onrender.com/api/v1/user/" + user._id,
         {
           method: "GET",
+          headers: {
+            Accept: "application/json",
+          },
         }
       );
 
@@ -382,26 +391,59 @@ function VisualizationComponent() {
 
       console.log("Fetched reports data:", reportsData);
 
-      setReportsHistory(reportsData);
+      // If we have data, set it and show the first report
+      if (Array.isArray(reportsData) && reportsData.length > 0) {
+        setReportsHistory(reportsData);
+
+        // Optionally load the first report details
+        if (reportsData[0]?.extraction_result) {
+          setExtractedData({
+            patient: reportsData[0].extraction_result.patient,
+            reports: reportsData[0].extraction_result.reports,
+            _id: reportsData[0]._id,
+          });
+
+          // Convert reports to BloodParameter format
+          const convertedParameters = convertToBloodParameters(
+            reportsData[0].extraction_result.reports
+          );
+          setBloodParameters(convertedParameters);
+        }
+      }
     } catch (error) {
-      console.error("Error in useEffect:", error);
-      setErrorMessage("An unexpected error occurred. Please try again.");
-      setUploadStep("error");
+      console.error("Error fetching reports:", error);
+      setErrorMessage("Failed to load your reports. Please try again.");
     }
   };
+  // Initialize loading state for reports
+  const [isLoadingReports, setIsLoadingReports] = useState(false);
 
   useEffect(() => {
-    if (user?._id) {
-      getReports();
+    async function loadInitialData() {
+      if (user?._id) {
+        setIsLoadingReports(true);
+        try {
+          await getReports();
+        } finally {
+          setIsLoadingReports(false);
+        }
+      }
     }
+
+    loadInitialData();
   }, [user?._id]);
 
   return (
     <div className="container mx-auto py-6 px-4">
-      <h1 className="text-2xl font-bold mb-6">Visualize Blood Reports</h1>
+      <h1 className="text-2xl font-bold mb-6">Visualize Blood Reports</h1>{" "}
       {uploadStep === "upload" && (
         <div className="bg-gradient-to-br from-white via-pink-50/30 to-purple-50/20 rounded-2xl shadow-lg border border-gray-100/50 p-8 mb-8 backdrop-blur-sm">
-          {reportsHistory.length > 0 ? (
+          {isLoadingReports ? (
+            <div className="flex flex-col items-center justify-center py-12">
+              <div className="w-10 h-10 border-4 border-primary-magenta border-t-transparent rounded-full animate-spin mb-4"></div>
+              <p className="text-gray-600">Loading your reports...</p>
+            </div>
+          ) : reportsHistory.length > 0 ? (
             <div className="space-y-6">
               {/* Quick Upload Section */}
               <div className="mt-8 p-6 bg-gradient-to-r from-primary-magenta/5 to-purple-50/50 rounded-xl border border-primary-magenta/20">
@@ -774,7 +816,6 @@ function VisualizationComponent() {
           )}
         </div>
       )}
-
       {uploadStep === "processing" && (
         <div className="bg-white rounded-xl shadow-md p-12 border border-gray-100 mb-8">
           <div className="flex flex-col items-center justify-center">
@@ -789,7 +830,6 @@ function VisualizationComponent() {
           </div>
         </div>
       )}
-
       {uploadStep === "results" && extractedData && (
         <>
           <div className="bg-white rounded-xl shadow-sm p-6 mb-6">

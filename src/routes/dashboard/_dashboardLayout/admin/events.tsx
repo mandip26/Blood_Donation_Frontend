@@ -1,7 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
   Table,
@@ -11,9 +9,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Search, Calendar, Trash2, Clock } from "lucide-react";
-import { toast } from "sonner";
 import { adminApi } from "@/lib/api";
+import { createFileRoute } from "@tanstack/react-router";
+import { Calendar, Search, Trash2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 interface Event {
   _id: string;
@@ -158,21 +158,6 @@ function EventsManagement() {
           <CardContent>
             <div className="text-2xl font-bold text-gray-900">{total}</div>
             <p className="text-xs text-gray-500">All events</p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-white shadow-even-md">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">
-              Pending Approval
-            </CardTitle>
-            <Clock className="h-4 w-4 text-primary-magenta" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-gray-900">
-              {events.filter((e) => e.status === "pending").length}
-            </div>
-            <p className="text-xs text-gray-500">Awaiting review</p>
           </CardContent>
         </Card>
       </div>

@@ -60,6 +60,8 @@ function HospitalHistoryComponent() {
     []
   );
   const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const recordsPerPage = 10;
 
   const { user, isLoading: authLoading } = useAuth();
 
@@ -234,6 +236,16 @@ function HospitalHistoryComponent() {
   filteredRecords.sort(
     (a, b) =>
       new Date(b.donationDate).getTime() - new Date(a.donationDate).getTime()
+  );
+
+  // Calculate pagination
+  const totalRecords = filteredRecords.length;
+  const totalPages = Math.ceil(totalRecords / recordsPerPage);
+
+  // Get current records for the page
+  const currentPageRecords = filteredRecords.slice(
+    (currentPage - 1) * recordsPerPage,
+    currentPage * recordsPerPage
   );
 
   return (
@@ -505,14 +517,11 @@ function HospitalHistoryComponent() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Status
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredRecords.length > 0 ? (
-                  filteredRecords.map((record, index) => (
+                {currentPageRecords.length > 0 ? (
+                  currentPageRecords.map((record, index) => (
                     <tr
                       key={record.id}
                       className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}
@@ -594,28 +603,49 @@ function HospitalHistoryComponent() {
           <div className="flex justify-between items-center">
             <div className="text-sm text-gray-500">
               Showing{" "}
-              <span className="font-medium">{filteredRecords.length}</span> of{" "}
-              <span className="font-medium">{currentData.length}</span> records
+              <span className="font-medium">
+                {currentPageRecords.length > 0
+                  ? `${(currentPage - 1) * recordsPerPage + 1} - ${Math.min(currentPage * recordsPerPage, totalRecords)}`
+                  : "0"}
+              </span>{" "}
+              of <span className="font-medium">{totalRecords}</span> records
             </div>
 
             <div className="flex space-x-2">
-              <Button variant="outline" size="sm" className="text-gray-600">
-                Previous
-              </Button>
               <Button
                 variant="outline"
                 size="sm"
-                className="bg-primary-magenta/10 border-primary-magenta text-primary-magenta"
+                className="text-gray-600"
+                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
               >
-                1
+                Previous
               </Button>
-              <Button variant="outline" size="sm" className="text-gray-600">
-                2
-              </Button>
-              <Button variant="outline" size="sm" className="text-gray-600">
-                3
-              </Button>
-              <Button variant="outline" size="sm" className="text-gray-600">
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                (page) => (
+                  <Button
+                    key={page}
+                    variant="outline"
+                    size="sm"
+                    className={`${
+                      currentPage === page
+                        ? "bg-primary-magenta/10 border-primary-magenta text-primary-magenta"
+                        : "text-gray-600"
+                    }`}
+                    onClick={() => setCurrentPage(page)}
+                  >
+                    {page}
+                  </Button>
+                )
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-gray-600"
+                onClick={() =>
+                  setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                }
+                disabled={currentPage === totalPages}
+              >
                 Next
               </Button>
             </div>

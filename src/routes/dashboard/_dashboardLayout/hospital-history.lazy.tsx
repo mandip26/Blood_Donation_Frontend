@@ -50,6 +50,8 @@ function HospitalHistoryComponent() {
   const [interactions, setInteractions] = useState<HospitalInteraction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const recordsPerPage = 10;
 
   const statuses = [
     "Completed",
@@ -148,6 +150,20 @@ function HospitalHistoryComponent() {
       new Date(b.interactionDate).getTime() -
       new Date(a.interactionDate).getTime()
   );
+
+  // Calculate pagination
+  const indexOfLastRecord = currentPage * recordsPerPage;
+  const indexOfFirstRecord = indexOfLastRecord - recordsPerPage;
+  const currentRecords = filteredRecords.slice(
+    indexOfFirstRecord,
+    indexOfLastRecord
+  );
+  const totalPages = Math.ceil(filteredRecords.length / recordsPerPage);
+
+  // Function to change page
+  const paginate = (pageNumber: number) => {
+    setCurrentPage(pageNumber);
+  };
 
   // Loading state
   if (isLoading) {
@@ -369,8 +385,8 @@ function HospitalHistoryComponent() {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {filteredRecords.length > 0 ? (
-              filteredRecords.map((record, index) => (
+            {currentRecords.length > 0 ? (
+              currentRecords.map((record, index) => (
                 <tr
                   key={record.id}
                   className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}
@@ -433,28 +449,49 @@ function HospitalHistoryComponent() {
       {/* Pagination */}
       <div className="flex justify-between items-center">
         <div className="text-sm text-gray-500">
-          Showing <span className="font-medium">{filteredRecords.length}</span>{" "}
-          of <span className="font-medium">{interactions.length}</span> records
+          Showing{" "}
+          <span className="font-medium">
+            {(currentPage - 1) * recordsPerPage + 1} -{" "}
+            {Math.min(currentPage * recordsPerPage, filteredRecords.length)}
+          </span>{" "}
+          of <span className="font-medium">{filteredRecords.length}</span>{" "}
+          records
         </div>
 
         <div className="flex space-x-2">
-          <Button variant="outline" size="sm" className="text-gray-600">
-            Previous
-          </Button>
           <Button
             variant="outline"
             size="sm"
-            className="bg-primary-magenta/10 border-primary-magenta text-primary-magenta"
+            className="text-gray-600"
+            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+            disabled={currentPage === 1}
           >
-            1
+            Previous
           </Button>
-          <Button variant="outline" size="sm" className="text-gray-600">
-            2
-          </Button>
-          <Button variant="outline" size="sm" className="text-gray-600">
-            3
-          </Button>
-          <Button variant="outline" size="sm" className="text-gray-600">
+          {Array.from({ length: totalPages }, (_, i) => (
+            <Button
+              key={i + 1}
+              variant="outline"
+              size="sm"
+              className={`${
+                currentPage === i + 1
+                  ? "bg-primary-magenta/10 border-primary-magenta text-primary-magenta"
+                  : "text-gray-600"
+              }`}
+              onClick={() => setCurrentPage(i + 1)}
+            >
+              {i + 1}
+            </Button>
+          ))}
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-gray-600"
+            onClick={() =>
+              setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+            }
+            disabled={currentPage === totalPages}
+          >
             Next
           </Button>
         </div>
