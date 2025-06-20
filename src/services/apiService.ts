@@ -24,6 +24,25 @@ const donorApi = axios.create({
   withCredentials: true,
 });
 
+// Add request interceptor to donorApi
+donorApi.interceptors.request.use(
+  (config) => {
+    // Get user data from localStorage
+    const userData = localStorage.getItem("bloodDonationUser");
+    if (userData) {
+      const user = JSON.parse(userData);
+      // If token exists in user data, add it to Authorization header
+      if (user.token) {
+        config.headers.Authorization = `Bearer ${user.token}`;
+      }
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
 // Add response interceptor to donorApi
 donorApi.interceptors.response.use(
   (response) => response,
@@ -44,7 +63,15 @@ donorApi.interceptors.response.use(
 // Request interceptor - useful for adding auth tokens to requests
 api.interceptors.request.use(
   (config) => {
-    // Add any request interceptor logic here
+    // Get user data from localStorage
+    const userData = localStorage.getItem("bloodDonationUser");
+    if (userData) {
+      const user = JSON.parse(userData);
+      // If token exists in user data, add it to Authorization header
+      if (user.token) {
+        config.headers.Authorization = `Bearer ${user.token}`;
+      }
+    }
     return config;
   },
   (error) => {
@@ -89,16 +116,16 @@ export const authService = {
         }
       );
 
-      // Debug cookie reception
-      console.log("Login response headers:", response.headers);
       console.log("Login response data:", response.data);
 
       if (response.data && response.data.user) {
-        // Store user data in localStorage for quick access
-        localStorage.setItem(
-          "bloodDonationUser",
-          JSON.stringify(response.data.user)
-        );
+        // Store user data AND token in localStorage for cross-domain support
+        const userData = {
+          ...response.data.user,
+          token: response.data.token, // Store token for API authentication
+        };
+
+        localStorage.setItem("bloodDonationUser", JSON.stringify(userData));
       } else {
         console.error("Missing user data in login response");
       }

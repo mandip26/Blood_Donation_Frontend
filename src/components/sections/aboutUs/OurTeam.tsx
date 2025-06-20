@@ -3,15 +3,15 @@ import { Linkedin, Twitter, Mail, Users } from "lucide-react";
 export default function OurTeam() {
   const teamMembers = [
     {
-      name: "Dr. Sarah Johnson",
-      role: "Chief Medical Officer",
-      bio: "Leading blood bank specialist with 15+ years of experience in transfusion medicine.",
+      name: "Mr. Mandip Chowdhury",
+      role: "AI/ML Developer",
+      bio: "A dedicated AI/ML developer with a passion for healthcare innovation. Mandip is committed to leveraging technology to improve blood donation processes and enhance patient outcomes.",
       image:
-        "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=400&h=400&fit=crop&crop=face",
+        "assests/images/team/mandip-chowdhury.png",
       social: {
-        linkedin: "#",
-        twitter: "#",
-        email: "sarah@lifeshare.com",
+        linkedin: "https://www.linkedin.com/in/mandip-chowdhury",
+        twitter: "https://x.com/Mandip2002",
+        email: "mandipchowdhury717@gmail.com",
       },
     },
     {
