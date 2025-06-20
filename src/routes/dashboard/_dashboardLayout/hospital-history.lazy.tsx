@@ -160,11 +160,6 @@ function HospitalHistoryComponent() {
   );
   const totalPages = Math.ceil(filteredRecords.length / recordsPerPage);
 
-  // Function to change page
-  const paginate = (pageNumber: number) => {
-    setCurrentPage(pageNumber);
-  };
-
   // Loading state
   if (isLoading) {
     return (
