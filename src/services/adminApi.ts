@@ -2,14 +2,34 @@ import axios from "axios";
 
 // Define API base URL with better fallbacks
 const getApiBaseUrl = () => {
-  // Try different possible admin API URLs
+  // Get the base URL and properly construct admin URL
+  let baseUrl = import.meta.env.VITE_BASE_API_URL;
+
+  if (!baseUrl) {
+    baseUrl = "https://blood-donation-backend-buge.onrender.com/api/v1/user";
+  }
+
+  // Replace /user with /admin in the base URL
+  const adminUrl = baseUrl.replace("/user", "/admin");
+
+  console.log("Admin API URL construction:", {
+    originalBaseUrl: baseUrl,
+    adminUrl: adminUrl,
+    envAdminUrl: import.meta.env.VITE_ADMIN_API_URL,
+  });
+
+  // Fallback options in order of preference
   const possibleUrls = [
     import.meta.env.VITE_ADMIN_API_URL,
-    import.meta.env.VITE_BASE_API_URL?.replace("/user", "/admin"),
+    adminUrl,
     "https://blood-donation-backend-buge.onrender.com/api/v1/admin",
   ];
 
-  return possibleUrls.find((url) => url) || possibleUrls[2];
+  const finalUrl =
+    possibleUrls.find((url) => url && url.trim() !== "") || possibleUrls[2];
+  console.log("Final admin API URL:", finalUrl);
+
+  return finalUrl;
 };
 
 const API_BASE_URL = getApiBaseUrl();
@@ -104,10 +124,14 @@ adminApiClient.interceptors.response.use(
       console.error("1. The API endpoint does not exist");
       console.error("2. There is a server error");
       console.error("3. The route is not properly configured");
+      console.error("4. Authentication failed and server returned login page");
+      console.error("5. CORS issue or server configuration problem");
 
       // Create a more meaningful error message
       const newError = new Error(
-        `Server returned HTML instead of JSON for ${error.config?.url}. Check if the API endpoint exists and is properly configured.`
+        `Server returned HTML instead of JSON for ${error.config?.url}. ` +
+          `Status: ${error.response?.status}. ` +
+          `This usually indicates the API endpoint is not working correctly.`
       );
       newError.name = "InvalidResponseTypeError";
       return Promise.reject(newError);
@@ -117,6 +141,9 @@ adminApiClient.interceptors.response.use(
       error.response &&
       (error.response.status === 401 || error.response.status === 403)
     ) {
+      console.error(
+        "Authentication/Authorization error. User might not have admin privileges."
+      );
       localStorage.removeItem("bloodDonationUser");
       if (!window.location.href.includes("/login")) {
         window.location.href = "/login";
@@ -248,21 +275,21 @@ export const adminApi = {
   getDashboardStats: async () => {
     try {
       console.log("Fetching dashboard stats...");
-
-      // First check connectivity
-      const connectivityTest = await adminApi.testConnectivity();
-      if (!connectivityTest.success) {
-        console.error("Admin API connectivity test failed:", connectivityTest);
-        throw new Error(
-          "Admin API is not accessible. Please check the server status."
-        );
-      }
+      console.log("Request URL:", `${API_BASE_URL}/dashboard/stats`);
 
       const response = await adminApiClient.get("/dashboard/stats");
       console.log("Dashboard stats response:", response.data);
       return response.data;
     } catch (error: any) {
       console.error("Error fetching dashboard stats:", error);
+      console.error("Error details:", {
+        message: error.message,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        responseData: error.response?.data,
+        url: error.config?.url,
+        headers: error.config?.headers,
+      });
 
       // Check if it's a JSON parsing error
       if (
@@ -282,7 +309,7 @@ export const adminApi = {
         console.warn("Using mock data for dashboard stats due to API error");
         return {
           success: true,
-          stats: {
+          data: {
             totalUsers: 0,
             totalHospitals: 0,
             totalOrganizations: 0,
@@ -291,25 +318,31 @@ export const adminApi = {
             totalBloodRequests: 0,
             totalPosts: 0,
             activeBloodRequests: 0,
-            recentRegistrations: 0,
-            recentEvents: 0,
-            recentBloodRequests: 0,
-            userRegistrationStats: [],
-            eventStats: [],
-            bloodRequestStats: [],
+            recentUsers: 0,
           },
           error: error.message,
         };
       }
       throw error;
     }
-  },
-  // Users
+  }, // Users
   getUsers: async (params: URLSearchParams) => {
     try {
+      console.log("Fetching users with params:", params.toString());
+      console.log("Request URL:", `${API_BASE_URL}/users?${params}`);
+
       const response = await adminApiClient.get(`/users?${params}`);
       return response.data;
     } catch (error: any) {
+      console.error("Error fetching users:", error);
+      console.error("Error details:", {
+        message: error.message,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        responseData: error.response?.data,
+        url: error.config?.url,
+      });
+
       if (
         error.message.includes("Unexpected token") ||
         error.name === "SyntaxError"
@@ -356,13 +389,24 @@ export const adminApi = {
       }
       throw error;
     }
-  },
-  // Events
+  }, // Events
   getEvents: async (params: URLSearchParams) => {
     try {
+      console.log("Fetching events with params:", params.toString());
+      console.log("Request URL:", `${API_BASE_URL}/events?${params}`);
+
       const response = await adminApiClient.get(`/events?${params}`);
       return response.data;
     } catch (error: any) {
+      console.error("Error fetching events:", error);
+      console.error("Error details:", {
+        message: error.message,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        responseData: error.response?.data,
+        url: error.config?.url,
+      });
+
       if (
         error.message.includes("Unexpected token") ||
         error.name === "SyntaxError"
@@ -410,13 +454,24 @@ export const adminApi = {
       throw error;
     }
   },
-
   // Blood Requests
   getBloodRequests: async (params: URLSearchParams) => {
     try {
+      console.log("Fetching blood requests with params:", params.toString());
+      console.log("Request URL:", `${API_BASE_URL}/blood-requests?${params}`);
+
       const response = await adminApiClient.get(`/blood-requests?${params}`);
       return response.data;
     } catch (error: any) {
+      console.error("Error fetching blood requests:", error);
+      console.error("Error details:", {
+        message: error.message,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        responseData: error.response?.data,
+        url: error.config?.url,
+      });
+
       if (
         error.message.includes("Unexpected token") ||
         error.name === "SyntaxError"
@@ -467,13 +522,24 @@ export const adminApi = {
       throw error;
     }
   },
-
   // Posts
   getPosts: async (params: URLSearchParams) => {
     try {
+      console.log("Fetching posts with params:", params.toString());
+      console.log("Request URL:", `${API_BASE_URL}/posts?${params}`);
+
       const response = await adminApiClient.get(`/posts?${params}`);
       return response.data;
     } catch (error: any) {
+      console.error("Error fetching posts:", error);
+      console.error("Error details:", {
+        message: error.message,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        responseData: error.response?.data,
+        url: error.config?.url,
+      });
+
       if (
         error.message.includes("Unexpected token") ||
         error.name === "SyntaxError"
@@ -498,6 +564,49 @@ export const adminApi = {
         throw new Error(
           "API returned invalid response format for post deletion"
         );
+      }
+      throw error;
+    }
+  },
+
+  // Blood Inventory Stats
+  getBloodInventoryStats: async () => {
+    try {
+      console.log("Fetching blood inventory stats...");
+      const response = await adminApiClient.get("/blood-inventory/stats");
+      console.log("Blood inventory stats response:", response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error("Error fetching blood inventory stats:", error);
+
+      // Check if it's a JSON parsing error
+      if (
+        error.message.includes("Unexpected token") ||
+        error.name === "SyntaxError"
+      ) {
+        console.error(
+          "Server returned invalid JSON. This usually means the API endpoint returned HTML instead of JSON."
+        );
+        throw new Error(
+          "API returned invalid response format. Please check server configuration."
+        );
+      }
+
+      // Add fallback for development/testing
+      if (process.env.NODE_ENV !== "production") {
+        console.warn(
+          "Using mock data for blood inventory stats due to API error"
+        );
+        return {
+          success: true,
+          data: {
+            hospitalInventories: [],
+            totalUnits: 0,
+            lowStockAlerts: 0,
+            expiryAlerts: 0,
+          },
+          error: error.message,
+        };
       }
       throw error;
     }
