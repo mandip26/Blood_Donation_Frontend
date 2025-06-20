@@ -1,7 +1,6 @@
 import axios from "axios";
 
-const INVENTORY_API_URL =
-  "https://blood-donation-backend-buge.onrender.com/api/v1/blood-inventory";
+const INVENTORY_API_URL = "http://localhost:8001/api/v1/blood-inventory";
 
 // Create axios instance with default config
 const bloodInventoryApi = axios.create({
@@ -11,25 +10,6 @@ const bloodInventoryApi = axios.create({
   },
   withCredentials: true, // Critical for handling cookies/sessions
 });
-
-// Add request interceptor to bloodInventoryApi for token handling
-bloodInventoryApi.interceptors.request.use(
-  (config) => {
-    // Get user data from localStorage
-    const userData = localStorage.getItem("bloodDonationUser");
-    if (userData) {
-      const user = JSON.parse(userData);
-      // If token exists in user data, add it to Authorization header
-      if (user.token) {
-        config.headers.Authorization = `Bearer ${user.token}`;
-      }
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
 
 // Add response interceptor to bloodInventoryApi
 bloodInventoryApi.interceptors.response.use(

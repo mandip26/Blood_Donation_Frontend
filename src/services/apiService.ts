@@ -3,8 +3,7 @@ import { bloodInventoryService } from "./bloodInventoryService";
 
 // Base API configuration
 const API_BASE_URL =
-  import.meta.env.VITE_BASE_API_URL ||
-  "https://blood-donation-backend-buge.onrender.com/api/v1/user";
+  import.meta.env.VITE_BASE_API_URL || "http://localhost:8001/api/v1/user";
 
 // Create axios instance with default config
 const api = axios.create({
@@ -17,31 +16,12 @@ const api = axios.create({
 
 // Donor API configuration
 const donorApi = axios.create({
-  baseURL: `${"https://blood-donation-backend-buge.onrender.com/api/v1"}/donor`,
+  baseURL: `${"http://localhost:8001/api/v1"}/donor`,
   headers: {
     "Content-Type": "application/json",
   },
   withCredentials: true,
 });
-
-// Add request interceptor to donorApi
-donorApi.interceptors.request.use(
-  (config) => {
-    // Get user data from localStorage
-    const userData = localStorage.getItem("bloodDonationUser");
-    if (userData) {
-      const user = JSON.parse(userData);
-      // If token exists in user data, add it to Authorization header
-      if (user.token) {
-        config.headers.Authorization = `Bearer ${user.token}`;
-      }
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
 
 // Add response interceptor to donorApi
 donorApi.interceptors.response.use(
@@ -63,15 +43,7 @@ donorApi.interceptors.response.use(
 // Request interceptor - useful for adding auth tokens to requests
 api.interceptors.request.use(
   (config) => {
-    // Get user data from localStorage
-    const userData = localStorage.getItem("bloodDonationUser");
-    if (userData) {
-      const user = JSON.parse(userData);
-      // If token exists in user data, add it to Authorization header
-      if (user.token) {
-        config.headers.Authorization = `Bearer ${user.token}`;
-      }
-    }
+    // Add any request interceptor logic here
     return config;
   },
   (error) => {
@@ -116,16 +88,16 @@ export const authService = {
         }
       );
 
+      // Debug cookie reception
+      console.log("Login response headers:", response.headers);
       console.log("Login response data:", response.data);
 
       if (response.data && response.data.user) {
-        // Store user data AND token in localStorage for cross-domain support
-        const userData = {
-          ...response.data.user,
-          token: response.data.token, // Store token for API authentication
-        };
-
-        localStorage.setItem("bloodDonationUser", JSON.stringify(userData));
+        // Store user data in localStorage for quick access
+        localStorage.setItem(
+          "bloodDonationUser",
+          JSON.stringify(response.data.user)
+        );
       } else {
         console.error("Missing user data in login response");
       }
@@ -260,7 +232,7 @@ export const authService = {
 // Event services - using correct base URL for events
 const EVENT_API_BASE_URL =
   import.meta.env.VITE_BASE_API_URL?.replace("/user", "/events") ||
-  "https://blood-donation-backend-buge.onrender.com/api/v1/events";
+  "http://localhost:8001/api/v1/events";
 
 const eventApi = axios.create({
   baseURL: EVENT_API_BASE_URL,
@@ -269,25 +241,6 @@ const eventApi = axios.create({
   },
   withCredentials: true,
 });
-
-// Add request interceptor to eventApi for token handling
-eventApi.interceptors.request.use(
-  (config) => {
-    // Get user data from localStorage
-    const userData = localStorage.getItem("bloodDonationUser");
-    if (userData) {
-      const user = JSON.parse(userData);
-      // If token exists in user data, add it to Authorization header
-      if (user.token) {
-        config.headers.Authorization = `Bearer ${user.token}`;
-      }
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
 
 // Add response interceptor to eventApi
 eventApi.interceptors.response.use(
@@ -545,7 +498,7 @@ export const donationService = {
 // Event registration API base URL
 const EVENT_REGISTRATION_API_BASE_URL =
   import.meta.env.VITE_BASE_API_URL?.replace("/user", "/event-registrations") ||
-  "https://blood-donation-backend-buge.onrender.com/api/v1/event-registrations";
+  "http://localhost:8001/api/v1/event-registrations";
 
 const eventRegistrationApi = axios.create({
   baseURL: EVENT_REGISTRATION_API_BASE_URL,
@@ -554,25 +507,6 @@ const eventRegistrationApi = axios.create({
   },
   withCredentials: true,
 });
-
-// Add request interceptor to eventRegistrationApi for token handling
-eventRegistrationApi.interceptors.request.use(
-  (config) => {
-    // Get user data from localStorage
-    const userData = localStorage.getItem("bloodDonationUser");
-    if (userData) {
-      const user = JSON.parse(userData);
-      // If token exists in user data, add it to Authorization header
-      if (user.token) {
-        config.headers.Authorization = `Bearer ${user.token}`;
-      }
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
 
 // Add response interceptor to eventRegistrationApi
 eventRegistrationApi.interceptors.response.use(
@@ -945,7 +879,7 @@ export const testimonialService = {
     try {
       // Using direct axios call to ensure we're using the correct endpoint
       const response = await axios.get(
-        "https://blood-donation-backend-buge.onrender.com/api/v1/testimonials/"
+        "http://localhost:8001/api/v1/testimonials/"
       );
       return response.data;
     } catch (error) {
@@ -963,7 +897,7 @@ export const testimonialService = {
   }) => {
     try {
       const response = await axios.post(
-        "https://blood-donation-backend-buge.onrender.com/api/v1/testimonials/create",
+        "http://localhost:8001/api/v1/testimonials/create",
         testimonialData
       );
       return response.data;

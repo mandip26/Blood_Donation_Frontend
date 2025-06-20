@@ -70,7 +70,7 @@ function OrganizationHistoryComponent() {
 
         // Use cookies for authentication - no need to manually send token
         const response = await fetch(
-          "https://blood-donation-backend-buge.onrender.com/api/v1/user/organization-history",
+          "http://localhost:8001/api/v1/user/organization-history",
           {
             method: "GET",
             credentials: "include", // This ensures cookies are sent with the request
