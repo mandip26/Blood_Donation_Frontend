@@ -6,8 +6,7 @@ export default function OurTeam() {
       name: "Mr. Mandip Chowdhury",
       role: "AI/ML Developer",
       bio: "A dedicated AI/ML developer with a passion for healthcare innovation. Mandip is committed to leveraging technology to improve blood donation processes and enhance patient outcomes.",
-      image:
-        "assests/images/team/mandip-chowdhury.png",
+      image: "assests/images/team/mandip-chowdhury.png",
       social: {
         linkedin: "https://www.linkedin.com/in/mandip-chowdhury",
         twitter: "https://x.com/Mandip2002",
@@ -15,63 +14,39 @@ export default function OurTeam() {
       },
     },
     {
-      name: "Michael Chen",
-      role: "CEO & Founder",
-      bio: "Passionate about using technology to solve healthcare challenges and save lives.",
+      name: "Ms. Ritika Halder",
+      role: "JAVA Full Stack Developer",
+      bio: "A passionate full stack developer specializing in Java technologies. Ritika is dedicated to building robust applications that streamline blood donation logistics and enhance user experience.",
       image:
         "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop&crop=face",
       social: {
-        linkedin: "#",
+        linkedin: "https://www.linkedin.com/in/ritikah15",
         twitter: "#",
-        email: "michael@lifeshare.com",
+        email: "ritikahalder2018@gmail.com",
       },
     },
     {
-      name: "Emily Rodriguez",
-      role: "Head of Operations",
-      bio: "Expert in healthcare logistics and community outreach programs.",
+      name: "Sankhajit Das",
+      role: "MERN Full Stack Developer",
+      bio: "A skilled MERN stack developer with a focus on creating dynamic web applications. Sankhajit is passionate about using technology to connect donors and recipients effectively.",
       image:
         "https://images.unsplash.com/photo-1494790108755-2616b9ade5db?w=400&h=400&fit=crop&crop=face",
       social: {
         linkedin: "#",
         twitter: "#",
-        email: "emily@lifeshare.com",
+        email: "sankhajitdas3@gmail.com",
       },
     },
     {
-      name: "Dr. James Wilson",
-      role: "Research Director",
-      bio: "Leading research in blood compatibility and donation optimization algorithms.",
+      name: "Bal Krishan Choudhary",
+      role: "Frontend Developer",
+      bio: "A creative frontend developer with a keen eye for design and user experience. Bal Krishan is dedicated to building intuitive interfaces that make blood donation easy and accessible.",
       image:
         "https://images.unsplash.com/photo-1582750433449-648ed127bb54?w=400&h=400&fit=crop&crop=face",
       social: {
         linkedin: "#",
         twitter: "#",
-        email: "james@lifeshare.com",
-      },
-    },
-    {
-      name: "Lisa Park",
-      role: "Community Manager",
-      bio: "Building bridges between donors, recipients, and healthcare providers.",
-      image:
-        "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400&h=400&fit=crop&crop=face",
-      social: {
-        linkedin: "#",
-        twitter: "#",
-        email: "lisa@lifeshare.com",
-      },
-    },
-    {
-      name: "David Kumar",
-      role: "Tech Lead",
-      bio: "Full-stack developer ensuring our platform runs smoothly 24/7.",
-      image:
-        "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop&crop=face",
-      social: {
-        linkedin: "#",
-        twitter: "#",
-        email: "david@lifeshare.com",
+        email: "bikkuchoudhary111@gmail.com",
       },
     },
   ];

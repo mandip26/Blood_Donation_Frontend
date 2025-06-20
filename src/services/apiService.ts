@@ -270,6 +270,25 @@ const eventApi = axios.create({
   withCredentials: true,
 });
 
+// Add request interceptor to eventApi for token handling
+eventApi.interceptors.request.use(
+  (config) => {
+    // Get user data from localStorage
+    const userData = localStorage.getItem("bloodDonationUser");
+    if (userData) {
+      const user = JSON.parse(userData);
+      // If token exists in user data, add it to Authorization header
+      if (user.token) {
+        config.headers.Authorization = `Bearer ${user.token}`;
+      }
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
 // Add response interceptor to eventApi
 eventApi.interceptors.response.use(
   (response) => response,
@@ -535,6 +554,25 @@ const eventRegistrationApi = axios.create({
   },
   withCredentials: true,
 });
+
+// Add request interceptor to eventRegistrationApi for token handling
+eventRegistrationApi.interceptors.request.use(
+  (config) => {
+    // Get user data from localStorage
+    const userData = localStorage.getItem("bloodDonationUser");
+    if (userData) {
+      const user = JSON.parse(userData);
+      // If token exists in user data, add it to Authorization header
+      if (user.token) {
+        config.headers.Authorization = `Bearer ${user.token}`;
+      }
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
 
 // Add response interceptor to eventRegistrationApi
 eventRegistrationApi.interceptors.response.use(

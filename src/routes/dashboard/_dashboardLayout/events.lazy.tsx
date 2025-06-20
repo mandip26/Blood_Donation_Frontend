@@ -25,6 +25,7 @@ import {
   eventService,
   donationService,
   eventRegistrationService,
+  authService,
 } from "@/services/apiService";
 import { useAuth } from "@/hooks/useAuth";
 import { useResponsive } from "@/hooks/useResponsive";
@@ -345,6 +346,24 @@ function EventsComponent() {
       try {
         setIsLoadingEvents(true);
         setEventsError(null);
+
+        // Check if user token exists (should be stored in local storage with our changes)
+        const userData = localStorage.getItem("bloodDonationUser");
+        const userObj = userData ? JSON.parse(userData) : null;
+        const hasToken = userObj && userObj.token;
+
+        if (!hasToken && user) {
+          // We have user data but no token - fetch fresh user data to get token
+          try {
+            const userId = user._id || user.id;
+            if (userId) {
+              await authService.getUserProfile(userId);
+            }
+          } catch (error) {
+            console.error("Failed to refresh user data:", error);
+          }
+        }
+
         const response = await eventService.getAllEvents();
 
         if (response.success && response.events) {
@@ -403,9 +422,21 @@ function EventsComponent() {
         } else {
           setEventsError("Failed to load events");
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error fetching events:", error);
-        setEventsError("Error loading events. Please try again.");
+
+        // Handle authentication errors specifically
+        if (
+          error.response &&
+          (error.response.status === 401 || error.response.status === 403)
+        ) {
+          setEventsError("Authentication error. Please log in again.");
+
+          // Instead of immediately redirecting, show a helpful error message
+          // The interceptor in apiService will handle the redirect if needed
+        } else {
+          setEventsError("Error loading events. Please try again.");
+        }
       } finally {
         setIsLoadingEvents(false);
       }
