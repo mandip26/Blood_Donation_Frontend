@@ -1,5 +1,5 @@
 // This file provides a utility for testing and monitoring authentication state
-import { authService } from "../services/apiService";
+
 
 /**
  * Checks if the user has a valid auth token in localStorage
@@ -29,8 +29,6 @@ export async function verifyAuthToken(): Promise<{
       // Try to refresh user data to get token
       if (user._id || user.id) {
         try {
-          const userId = user._id || user.id;
-          const refreshedUser = await authService.getUserProfile(userId);
 
           // Check if token was retrieved
           const updatedUserData = localStorage.getItem("bloodDonationUser");

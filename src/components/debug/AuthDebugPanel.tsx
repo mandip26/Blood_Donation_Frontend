@@ -11,7 +11,7 @@ export function AuthDebugPanel() {
   } | null>(null);
 
   const [isChecking, setIsChecking] = useState(false);
-  const { user, reloadUser } = useAuth();
+  const { reloadUser } = useAuth();
 
   const checkAuthState = async () => {
     setIsChecking(true);
