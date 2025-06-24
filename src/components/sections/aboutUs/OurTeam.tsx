@@ -1,4 +1,8 @@
 import { Linkedin, Twitter, Mail, Users } from "lucide-react";
+import mandipImage from "../../../assets/team/mandip-chowdhury.png";
+import ritikaImage from "../../../assets/team/ritika-halder.png";
+import sankhaImage from "../../../assets/team/sankhajit-das.jpg";
+import balImage from "../../../assets/team/bal-krishan-choudhary.jpg";
 
 export default function OurTeam() {
   const teamMembers = [
@@ -6,7 +10,7 @@ export default function OurTeam() {
       name: "Mr. Mandip Chowdhury",
       role: "AI/ML Developer",
       bio: "A dedicated AI/ML developer with a passion for healthcare innovation. Mandip is committed to leveraging technology to improve blood donation processes and enhance patient outcomes.",
-      image: "assests/images/team/mandip-chowdhury.png",
+      image: mandipImage,
       social: {
         linkedin: "https://www.linkedin.com/in/mandip-chowdhury",
         twitter: "https://x.com/Mandip2002",
@@ -17,8 +21,7 @@ export default function OurTeam() {
       name: "Ms. Ritika Halder",
       role: "JAVA Full Stack Developer",
       bio: "A passionate full stack developer specializing in Java technologies. Ritika is dedicated to building robust applications that streamline blood donation logistics and enhance user experience.",
-      image:
-        "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop&crop=face",
+      image: ritikaImage,
       social: {
         linkedin: "https://www.linkedin.com/in/ritikah15",
         twitter: "#",
@@ -29,8 +32,7 @@ export default function OurTeam() {
       name: "Sankhajit Das",
       role: "MERN Full Stack Developer",
       bio: "A skilled MERN stack developer with a focus on creating dynamic web applications. Sankhajit is passionate about using technology to connect donors and recipients effectively.",
-      image:
-        "https://images.unsplash.com/photo-1494790108755-2616b9ade5db?w=400&h=400&fit=crop&crop=face",
+      image: sankhaImage,
       social: {
         linkedin: "#",
         twitter: "#",
@@ -41,8 +43,7 @@ export default function OurTeam() {
       name: "Bal Krishan Choudhary",
       role: "Frontend Developer",
       bio: "A creative frontend developer with a keen eye for design and user experience. Bal Krishan is dedicated to building intuitive interfaces that make blood donation easy and accessible.",
-      image:
-        "https://images.unsplash.com/photo-1582750433449-648ed127bb54?w=400&h=400&fit=crop&crop=face",
+      image: balImage,
       social: {
         linkedin: "#",
         twitter: "#",
