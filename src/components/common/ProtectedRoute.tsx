@@ -1,6 +1,6 @@
-import { ReactNode, useEffect, useState } from 'react';
-import { Navigate, useNavigate } from '@tanstack/react-router';
-import useAuth from '@/hooks/useAuth';
+import { ReactNode, useEffect, useState } from "react";
+import { Navigate, useNavigate } from "@tanstack/react-router";
+import useAuth from "@/hooks/useAuth";
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -19,40 +19,40 @@ export function ProtectedRoute({
   const { isLoggedIn, isLoading } = useAuth();
   const navigate = useNavigate();
   const [showLoading, setShowLoading] = useState(false);
-  
-  // Only show loading state if it takes more than 100ms to determine auth status
+
+  // Only show loading state if it takes more than 50ms to determine auth status
   // Making this faster since we're using localStorage
   useEffect(() => {
     const timer = setTimeout(() => {
       if (isLoading) {
         setShowLoading(true);
       }
-    }, 100);
-    
+    }, 50);
+
     if (!isLoading) {
       setShowLoading(false);
     }
-    
+
     return () => clearTimeout(timer);
   }, [isLoading]);
 
   useEffect(() => {
     // Skip if still loading
     if (isLoading) return;
-    
+
     // For protected routes: if not authenticated, redirect to login
     if (requireAuth && !isLoggedIn) {
       console.log("Not authenticated, redirecting to login");
-      navigate({ to: '/login' });
+      navigate({ to: "/login" });
     }
-    
+
     // For auth routes (login/signup): if already authenticated, redirect to dashboard
     if (!requireAuth && isLoggedIn) {
       console.log("Already authenticated, redirecting to dashboard");
-      navigate({ to: '/dashboard' });
+      navigate({ to: "/dashboard" });
     }
   }, [requireAuth, isLoggedIn, isLoading, navigate]);
-  
+
   // If we're loading for longer than our threshold, show spinner
   if (isLoading && showLoading) {
     return (
@@ -64,7 +64,7 @@ export function ProtectedRoute({
       </div>
     );
   }
-  
+
   // Skip rendering anything while initial auth check is happening
   if (isLoading) {
     return null;

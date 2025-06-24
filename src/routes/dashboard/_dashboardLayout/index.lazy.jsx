@@ -76,6 +76,26 @@ export const Route = createLazyFileRoute("/dashboard/_dashboardLayout/")({
 function RouteComponent() {
   const { user, isLoading } = useAuth();
   const navigate = useNavigate();
+
+  // Redirect admin users to admin dashboard - this should happen immediately
+  useEffect(() => {
+    if (!isLoading && user && user.role === "admin") {
+      console.log("Admin user detected, redirecting to admin dashboard");
+      navigate({ to: "/dashboard/admin" });
+      return;
+    }
+  }, [user, isLoading, navigate]);
+
+  // Don't render the dashboard for admin users
+  if (user && user.role === "admin") {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-magenta"></div>
+        <p className="mt-3 text-gray-600">Redirecting to admin dashboard...</p>
+      </div>
+    );
+  }
+
   const [stats, setStats] = useState({});
   const [statsLoading, setStatsLoading] = useState(true);
   const [posts, setPosts] = useState([]);

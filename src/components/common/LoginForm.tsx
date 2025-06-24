@@ -64,16 +64,19 @@ export default function LoginForm() {
 
         console.log("Login function returned:", response); // Debug response
 
-        // Token storage is handled by the useAuth hook
-
-        // Show success message
+        // Token storage is handled by the useAuth hook        // Show success message
         toast.success("Login successful!");
 
-        // Give toast time to display before navigating
+        // Give more time for state updates and toast display before navigating
         setTimeout(() => {
           console.log("Navigating to dashboard...");
-          navigate({ to: "/dashboard" });
-        }, 300);
+          // Force a page refresh to ensure proper state synchronization
+          if (response.user?.role === "admin") {
+            navigate({ to: "/dashboard/admin" });
+          } else {
+            navigate({ to: "/dashboard" });
+          }
+        }, 500);
       } catch (error: any) {
         console.error("Login error:", error);
 

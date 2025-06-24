@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { adminApi } from "@/lib/api";
 import { toast } from "sonner";
+import useAuth from "@/hooks/useAuth";
 
 interface DashboardStats {
   totalUsers: number;
@@ -72,6 +73,7 @@ export const Route = createFileRoute("/dashboard/_dashboardLayout/admin/")({
 });
 
 function AdminDashboard() {
+  const { user } = useAuth();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [bloodInventory, setBloodInventory] =
     useState<BloodInventoryStats | null>(null);
@@ -81,10 +83,20 @@ function AdminDashboard() {
   >(null);
   const navigate = useNavigate();
 
+  // Check if user is admin, redirect if not
   useEffect(() => {
-    fetchDashboardStats();
-    fetchBloodInventoryStats();
-  }, []);
+    if (user && user.role !== "admin") {
+      navigate({ to: "/dashboard" });
+      return;
+    }
+  }, [user, navigate]);
+
+  useEffect(() => {
+    if (user?.role === "admin") {
+      fetchDashboardStats();
+      fetchBloodInventoryStats();
+    }
+  }, [user]);
 
   const fetchDashboardStats = async () => {
     try {
@@ -122,6 +134,11 @@ function AdminDashboard() {
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-magenta"></div>
       </div>
     );
+  }
+
+  // Don't render anything for non-admin users (they get redirected)
+  if (!user || user.role !== "admin") {
+    return null;
   }
 
   return (

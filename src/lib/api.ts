@@ -1,5 +1,7 @@
 // API Configuration
-const API_BASE_URL = import.meta.env.VITE_API_URL || "/api/v1";
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL ||
+  "https://blood-donation-backend-buge.onrender.com/api/v1";
 
 export const apiConfig = {
   baseURL: API_BASE_URL,
@@ -20,12 +22,11 @@ export const apiCall = async (endpoint: string, options: RequestInit = {}) => {
     ...options,
   };
   try {
-    const response = await fetch(url, defaultOptions);
-
-    // Handle 401 (unauthorized) and 403 (forbidden/blocked) responses
+    const response = await fetch(url, defaultOptions); // Handle 401 (unauthorized) and 403 (forbidden/blocked) responses
     if (response.status === 401 || response.status === 403) {
       // Clear localStorage
       localStorage.removeItem("bloodDonationUser");
+      localStorage.removeItem("bloodDonationAuth");
 
       // Only redirect if not already on login page to prevent redirect loops
       if (!window.location.href.includes("/login")) {

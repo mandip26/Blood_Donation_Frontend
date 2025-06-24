@@ -54,19 +54,20 @@ export function useAuth() {
   const [authState, setAuthState] = useState<AuthState>(() => {
     // Try to get cached user data from localStorage for immediate UI display
     const cachedUser = localStorage.getItem("bloodDonationUser");
+    const authFlag = localStorage.getItem("bloodDonationAuth");
     return {
-      user: cachedUser ? JSON.parse(cachedUser) : null,
+      user: cachedUser && authFlag ? JSON.parse(cachedUser) : null,
       isLoading: false, // Start with false since we've checked localStorage
       error: null,
     };
-  });
-  // Define checkUserSession function outside of useEffect for reuse
+  }); // Define checkUserSession function outside of useEffect for reuse
   const checkUserSession = useCallback(async () => {
     try {
       // We'll use the localStorage data and consider it valid
       const cachedUser = localStorage.getItem("bloodDonationUser");
+      const authFlag = localStorage.getItem("bloodDonationAuth");
 
-      if (cachedUser) {
+      if (cachedUser && authFlag) {
         const userData = JSON.parse(cachedUser);
         setAuthState({
           user: userData,
@@ -137,9 +138,9 @@ export function useAuth() {
       const response = await authService.login(email, password);
 
       console.log("Login response:", response);
-
       if (response && response.user) {
         // Auth success - store user data and update state
+        localStorage.setItem("bloodDonationAuth", "true");
         setAuthState({
           user: response.user,
           isLoading: false,
@@ -201,10 +202,9 @@ export function useAuth() {
       setAuthState((prev) => ({ ...prev, isLoading: true }));
       const response = await authService.logout();
 
-      console.log("Logout response in hook:", response);
-
-      // Remove user data from localStorage on logout
+      console.log("Logout response in hook:", response); // Remove user data from localStorage on logout
       localStorage.removeItem("bloodDonationUser");
+      localStorage.removeItem("bloodDonationAuth");
 
       setAuthState({
         user: null,
@@ -214,9 +214,9 @@ export function useAuth() {
 
       return response;
     } catch (error: any) {
-      console.error("Logout error in hook:", error);
-      // Even if the API call fails, clear local storage and state
+      console.error("Logout error in hook:", error); // Even if the API call fails, clear local storage and state
       localStorage.removeItem("bloodDonationUser");
+      localStorage.removeItem("bloodDonationAuth");
 
       setAuthState({
         user: null,

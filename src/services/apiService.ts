@@ -33,6 +33,7 @@ donorApi.interceptors.response.use(
       (error.response.status === 401 || error.response.status === 403)
     ) {
       localStorage.removeItem("bloodDonationUser");
+      localStorage.removeItem("bloodDonationAuth");
       if (!window.location.href.includes("/login")) {
         window.location.href = "/login";
       }
@@ -65,6 +66,7 @@ api.interceptors.response.use(
     ) {
       // Clear localStorage on 401/403
       localStorage.removeItem("bloodDonationUser");
+      localStorage.removeItem("bloodDonationAuth");
 
       // Only redirect if not already on login page to prevent redirect loops
       if (!window.location.href.includes("/login")) {
@@ -85,13 +87,18 @@ export const authService = {
         { email, password },
         {
           withCredentials: true,
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            // Add any existing authorization header if present
+            ...(document.cookie.includes("token=") ? {} : {}),
+          },
         }
       );
 
       // Debug cookie reception
       console.log("Login response headers:", response.headers);
       console.log("Login response data:", response.data);
+      console.log("Document cookies after login:", document.cookie);
 
       if (response.data && response.data.user) {
         // Store user data in localStorage for quick access
@@ -99,6 +106,9 @@ export const authService = {
           "bloodDonationUser",
           JSON.stringify(response.data.user)
         );
+
+        // Also store a flag indicating successful authentication
+        localStorage.setItem("bloodDonationAuth", "true");
       } else {
         console.error("Missing user data in login response");
       }
@@ -106,6 +116,9 @@ export const authService = {
       return response.data;
     } catch (error) {
       console.error("Login error details:", error);
+      // Clear localStorage on login failure
+      localStorage.removeItem("bloodDonationUser");
+      localStorage.removeItem("bloodDonationAuth");
       throw error;
     }
   },
@@ -136,12 +149,14 @@ export const authService = {
 
       // Always remove from localStorage regardless of API response
       localStorage.removeItem("bloodDonationUser");
+      localStorage.removeItem("bloodDonationAuth");
 
       return response.data;
     } catch (error) {
       console.error("Logout error:", error);
       // Even on error, remove from localStorage
       localStorage.removeItem("bloodDonationUser");
+      localStorage.removeItem("bloodDonationAuth");
       // Don't throw error as we want logout to succeed locally even if API fails
       return { success: true, message: "Logged out locally" };
     }
@@ -150,7 +165,9 @@ export const authService = {
     try {
       // Try to get user from localStorage first for speed
       const cachedUser = localStorage.getItem("bloodDonationUser");
-      if (cachedUser) {
+      const authFlag = localStorage.getItem("bloodDonationAuth");
+
+      if (cachedUser && authFlag) {
         return JSON.parse(cachedUser);
       }
 
@@ -163,6 +180,17 @@ export const authService = {
           signal: controller.signal,
         });
         clearTimeout(timeoutId);
+
+        if (response.data && response.data.user) {
+          // Update localStorage with fresh data
+          localStorage.setItem(
+            "bloodDonationUser",
+            JSON.stringify(response.data.user)
+          );
+          localStorage.setItem("bloodDonationAuth", "true");
+          return response.data.user;
+        }
+
         return response.data;
       } catch (err) {
         clearTimeout(timeoutId);
@@ -252,6 +280,7 @@ eventApi.interceptors.response.use(
       (error.response.status === 401 || error.response.status === 403)
     ) {
       localStorage.removeItem("bloodDonationUser");
+      localStorage.removeItem("bloodDonationAuth");
       if (!window.location.href.includes("/login")) {
         window.location.href = "/login";
       }
