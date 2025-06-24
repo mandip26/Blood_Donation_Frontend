@@ -3,7 +3,8 @@ import { bloodInventoryService } from "./bloodInventoryService";
 
 // Base API configuration
 const API_BASE_URL =
-  import.meta.env.VITE_BASE_API_URL || "http://localhost:8001/api/v1/user";
+  import.meta.env.VITE_BASE_API_URL ||
+  "https://blood-donation-backend-buge.onrender.com/api/v1/user";
 
 // Create axios instance with default config
 const api = axios.create({
@@ -16,7 +17,7 @@ const api = axios.create({
 
 // Donor API configuration
 const donorApi = axios.create({
-  baseURL: `${"http://localhost:8001/api/v1"}/donor`,
+  baseURL: `${"https://blood-donation-backend-buge.onrender.com/api/v1"}/donor`,
   headers: {
     "Content-Type": "application/json",
   },
@@ -232,7 +233,7 @@ export const authService = {
 // Event services - using correct base URL for events
 const EVENT_API_BASE_URL =
   import.meta.env.VITE_BASE_API_URL?.replace("/user", "/events") ||
-  "http://localhost:8001/api/v1/events";
+  "https://blood-donation-backend-buge.onrender.com/api/v1/events";
 
 const eventApi = axios.create({
   baseURL: EVENT_API_BASE_URL,
@@ -498,7 +499,7 @@ export const donationService = {
 // Event registration API base URL
 const EVENT_REGISTRATION_API_BASE_URL =
   import.meta.env.VITE_BASE_API_URL?.replace("/user", "/event-registrations") ||
-  "http://localhost:8001/api/v1/event-registrations";
+  "https://blood-donation-backend-buge.onrender.com/api/v1/event-registrations";
 
 const eventRegistrationApi = axios.create({
   baseURL: EVENT_REGISTRATION_API_BASE_URL,
@@ -879,7 +880,7 @@ export const testimonialService = {
     try {
       // Using direct axios call to ensure we're using the correct endpoint
       const response = await axios.get(
-        "http://localhost:8001/api/v1/testimonials/"
+        "https://blood-donation-backend-buge.onrender.com/api/v1/testimonials/"
       );
       return response.data;
     } catch (error) {
@@ -897,7 +898,7 @@ export const testimonialService = {
   }) => {
     try {
       const response = await axios.post(
-        "http://localhost:8001/api/v1/testimonials/create",
+        "https://blood-donation-backend-buge.onrender.com/api/v1/testimonials/create",
         testimonialData
       );
       return response.data;
